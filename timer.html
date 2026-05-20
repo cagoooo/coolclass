@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⏱️ 教室計時器 · 阿凱老師的教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4ec0a0">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    color: #2a3a4e;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(180,240,210,.5), transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(180,220,240,.5), transparent 50%),
+      linear-gradient(135deg, #f0fff5 0%, #f0f8ff 100%);
+    transition: background .3s;
+  }
+  body.warn-mode { background: linear-gradient(135deg, #fff5e0 0%, #ffe5d0 100%); }
+  body.done-mode {
+    background: linear-gradient(135deg, #ffd0d0 0%, #ffe0e0 100%);
+    animation: flashbg 1s infinite;
+  }
+  @keyframes flashbg {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+  }
+
+  .home-btn {
+    position: fixed; top: 16px; left: 16px;
+    background: #fff; border: 3px solid #b8e0c8; color: #4a8a5e;
+    padding: 10px 18px; border-radius: 999px; font-weight: 700;
+    text-decoration: none; font-size: 14px;
+    box-shadow: 0 4px 12px rgba(150,210,170,.25); z-index: 100;
+    transition: transform .2s;
+  }
+  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
+
+  header { text-align: center; padding: 50px 20px 4px; }
+  header h1 {
+    margin: 0; font-size: clamp(28px, 5vw, 44px); color: #2e8a6a;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  header .sub { color: #6a8a7e; margin-top: 6px; font-size: 14px; }
+
+  main { max-width: 1000px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* 大型顯示 */
+  .timer-display {
+    text-align: center;
+    margin: 20px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .time-num {
+    font-size: clamp(160px, 28vw, 320px);
+    font-weight: 900;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: #2e8a6a;
+    text-shadow:
+      4px 4px 0 rgba(80,180,120,.2),
+      8px 8px 0 rgba(80,180,120,.1);
+    letter-spacing: -4px;
+    transition: color .3s, transform .2s;
+  }
+  body.warn-mode .time-num { color: #e09040; }
+  body.done-mode .time-num { color: #d04040; }
+  .time-num.tick { animation: tickAnim .15s ease-out; }
+  @keyframes tickAnim {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+  }
+  .timer-label {
+    margin-top: 14px;
+    font-size: clamp(20px, 3vw, 32px);
+    font-weight: 700;
+    color: #4a8a6e;
+  }
+
+  /* 進度條 */
+  .progress-wrap {
+    max-width: 700px; margin: 14px auto 30px;
+    background: rgba(255,255,255,.7);
+    border-radius: 999px;
+    height: 18px;
+    overflow: hidden;
+    border: 3px solid #fff;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,.08);
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #80c890, #b8e0a8);
+    transition: width .3s, background .3s;
+    border-radius: 999px;
+  }
+  body.warn-mode .progress-bar { background: linear-gradient(90deg, #e09040, #ffc070); }
+  body.done-mode .progress-bar { background: linear-gradient(90deg, #d04040, #ff6060); }
+
+  .actions {
+    display: flex; gap: 12px; justify-content: center;
+    flex-wrap: wrap; margin: 20px 0;
+  }
+  .big-btn {
+    padding: 16px 36px;
+    border-radius: 999px;
+    border: none;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 8px 20px rgba(0,0,0,.12);
+    transition: all .2s;
+  }
+  .big-btn:hover { transform: translateY(-3px) scale(1.03); }
+  .btn-start { background: linear-gradient(135deg, #80c890, #4ec0a0); color: #fff; min-width: 160px; }
+  .btn-pause { background: linear-gradient(135deg, #ffc040, #e0a040); color: #fff; }
+  .btn-reset { background: #fff; color: #888; border: 3px solid #ddd; }
+  .btn-add { background: #fff; color: #4a8a6e; border: 3px solid #b8e0c8; padding: 10px 18px; font-size: 15px; }
+
+  /* 預設按鈕 */
+  .presets {
+    background: rgba(255,255,255,.8);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-top: 20px;
+  }
+  .presets h3 {
+    margin: 0 0 12px; color: #2e8a6a; font-size: 16px;
+  }
+  .preset-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .preset-btn {
+    background: #fff; border: 2px solid #b8e0c8;
+    border-radius: 14px; padding: 14px 8px;
+    cursor: pointer; font-family: inherit;
+    font-weight: 700; color: #4a8a6e;
+    transition: all .2s;
+    text-align: center;
+  }
+  .preset-btn:hover { transform: translateY(-2px); background: #e0f4e5; }
+  .preset-btn .label { display: block; font-size: 13px; opacity: .7; margin-bottom: 2px; }
+  .preset-btn .mins { display: block; font-size: 22px; font-weight: 900; }
+
+  /* 自訂 */
+  .custom-row {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .custom-row label { font-weight: 700; color: #4a8a6e; font-size: 14px; }
+  .custom-row input {
+    width: 80px;
+    padding: 10px 12px;
+    border: 2px solid #b8e0c8;
+    border-radius: 10px;
+    font-size: 16px;
+    font-family: inherit;
+    text-align: center;
+  }
+  .custom-row input:focus { outline: none; border-color: #4ec0a0; }
+
+  /* 設定 */
+  .settings {
+    background: rgba(255,255,255,.8);
+    border-radius: 20px;
+    padding: 18px 22px;
+    margin-top: 16px;
+  }
+  .settings h3 { margin: 0 0 10px; color: #2e8a6a; font-size: 16px; }
+  .settings label {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px; font-size: 14px;
+  }
+
+  /* 全螢幕 */
+  body.fullscreen .home-btn { opacity: .15; }
+  body.fullscreen header,
+  body.fullscreen .presets,
+  body.fullscreen .settings,
+  body.fullscreen footer { display: none; }
+  body.fullscreen .actions { margin-top: 50px; }
+  body.fullscreen .timer-display { margin-top: 10vh; }
+  body.fullscreen .time-num { font-size: clamp(240px, 40vw, 600px); }
+
+  footer {
+    text-align: center; padding: 20px; font-size: 13px; color: #6a8a7e;
+  }
+  footer a { color: #2e8a6a; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<header>
+  <h1>⏱️ 教室計時器</h1>
+  <p class="sub">討論、考試、休息都好用 · 空白鍵 = 開始/暫停 · F = 全螢幕</p>
+</header>
+
+<main>
+
+  <div class="timer-display" id="display" onclick="toggleStart()">
+    <div class="time-num" id="timeNum">10:00</div>
+    <div class="timer-label" id="timerLabel">準備開始</div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:100%"></div></div>
+
+  <div class="actions">
+    <button class="big-btn btn-start" id="startBtn" onclick="toggleStart()">▶️ 開始</button>
+    <button class="big-btn btn-add" onclick="addTime(60)">+1 分</button>
+    <button class="big-btn btn-reset" onclick="reset()">🔄 重設</button>
+    <button class="big-btn btn-add" onclick="toggleFull()">🖥️ 全螢幕</button>
+  </div>
+
+  <div class="presets">
+    <h3>🎯 快速設定</h3>
+    <div class="preset-grid">
+      <button class="preset-btn" data-sec="60"><span class="label">1 分鐘</span><span class="mins">1</span></button>
+      <button class="preset-btn" data-sec="180"><span class="label">3 分鐘</span><span class="mins">3</span></button>
+      <button class="preset-btn" data-sec="300"><span class="label">5 分鐘</span><span class="mins">5</span></button>
+      <button class="preset-btn" data-sec="600"><span class="label">10 分鐘</span><span class="mins">10</span></button>
+      <button class="preset-btn" data-sec="1200"><span class="label">20 分鐘</span><span class="mins">20</span></button>
+      <button class="preset-btn" data-sec="1800"><span class="label">30 分鐘</span><span class="mins">30</span></button>
+      <button class="preset-btn" data-sec="2400"><span class="label">40 分鐘</span><span class="mins">40</span></button>
+      <button class="preset-btn" data-sec="3000"><span class="label">50 分鐘</span><span class="mins">50</span></button>
+    </div>
+    <div class="custom-row">
+      <label>自訂：</label>
+      <input type="number" id="customMin" min="0" max="180" placeholder="分">
+      <label>分</label>
+      <input type="number" id="customSec" min="0" max="59" placeholder="秒">
+      <label>秒</label>
+      <button class="big-btn btn-add" onclick="applyCustom()">設定</button>
+    </div>
+  </div>
+
+  <div class="settings">
+    <h3>⚙️ 設定</h3>
+    <label><input type="checkbox" id="sound" checked> 🔔 時間到時播放鈴聲</label>
+    <label><input type="checkbox" id="warnTick" checked> ⏰ 最後 30 秒切換警示色</label>
+    <label><input type="checkbox" id="tickSound"> 🔊 每秒滴答聲（用於考試專注）</label>
+  </div>
+
+</main>
+
+<footer>
+  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+</footer>
+
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+<script>
+const STORAGE_KEY = 'akai_timer_v1';
+let settings = loadSettings();
+
+let totalSec = 600;     // 預設 10 分
+let remainSec = 600;
+let running = false;
+let intervalId = null;
+let endAt = 0;
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      sound: obj.sound !== false,
+      warnTick: obj.warnTick !== false,
+      tickSound: !!obj.tickSound,
+      lastSec: obj.lastSec || 600,
+    };
+  } catch { return { sound: true, warnTick: true, tickSound: false, lastSec: 600 }; }
+}
+function saveSettings() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmt(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+function updateDisplay() {
+  const el = document.getElementById('timeNum');
+  el.textContent = fmt(remainSec);
+  el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+
+  // 進度條
+  const pct = totalSec > 0 ? (remainSec / totalSec * 100) : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  // 警示色
+  if (remainSec <= 0) {
+    document.body.classList.add('done-mode');
+    document.body.classList.remove('warn-mode');
+    document.getElementById('timerLabel').textContent = '⏰ 時間到！';
+  } else if (settings.warnTick && remainSec <= 30) {
+    document.body.classList.add('warn-mode');
+    document.body.classList.remove('done-mode');
+    document.getElementById('timerLabel').textContent = '⚡ 最後衝刺！';
+  } else {
+    document.body.classList.remove('warn-mode', 'done-mode');
+    document.getElementById('timerLabel').textContent = running ? '⏳ 計時中…' : '⏸️ 已暫停';
+  }
+}
+
+function toggleStart() {
+  if (remainSec <= 0) {
+    reset();
+    return;
+  }
+  if (running) {
+    pause();
+  } else {
+    start();
+  }
+}
+
+function start() {
+  if (remainSec <= 0) return;
+  running = true;
+  endAt = Date.now() + remainSec * 1000;
+  document.getElementById('startBtn').innerHTML = '⏸️ 暫停';
+  document.body.classList.remove('done-mode');
+  intervalId = setInterval(tick, 200);
+  tick();
+}
+
+function pause() {
+  running = false;
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  document.getElementById('startBtn').innerHTML = '▶️ 繼續';
+  updateDisplay();
+}
+
+function tick() {
+  const left = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+  if (left !== remainSec) {
+    remainSec = left;
+    updateDisplay();
+    if (settings.tickSound && running && remainSec > 0) playTick();
+  }
+  if (left <= 0 && running) {
+    clearInterval(intervalId); intervalId = null;
+    running = false;
+    document.getElementById('startBtn').innerHTML = '🔄 重設';
+    playBell();
+  }
+}
+
+function reset() {
+  if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  running = false;
+  remainSec = totalSec;
+  document.getElementById('startBtn').innerHTML = '▶️ 開始';
+  document.body.classList.remove('done-mode', 'warn-mode');
+  updateDisplay();
+}
+
+function setTotal(sec) {
+  totalSec = Math.max(1, sec);
+  remainSec = totalSec;
+  settings.lastSec = totalSec;
+  saveSettings();
+  reset();
+}
+
+function addTime(sec) {
+  if (remainSec <= 0) { setTotal(sec); start(); return; }
+  remainSec += sec;
+  totalSec += sec;
+  if (running) endAt += sec * 1000;
+  updateDisplay();
+}
+
+function applyCustom() {
+  const m = parseInt(document.getElementById('customMin').value) || 0;
+  const s = parseInt(document.getElementById('customSec').value) || 0;
+  const t = m * 60 + s;
+  if (t <= 0) { alert('請輸入大於 0 的時間'); return; }
+  setTotal(t);
+}
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.onclick = () => setTotal(parseInt(btn.dataset.sec));
+});
+
+document.getElementById('sound').checked = settings.sound;
+document.getElementById('warnTick').checked = settings.warnTick;
+document.getElementById('tickSound').checked = settings.tickSound;
+document.getElementById('sound').onchange = e => { settings.sound = e.target.checked; saveSettings(); };
+document.getElementById('warnTick').onchange = e => { settings.warnTick = e.target.checked; saveSettings(); updateDisplay(); };
+document.getElementById('tickSound').onchange = e => { settings.tickSound = e.target.checked; saveSettings(); };
+
+function toggleFull() { document.body.classList.toggle('fullscreen'); }
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); toggleStart(); }
+  else if (e.code === 'KeyR') reset();
+  else if (e.code === 'KeyF') toggleFull();
+  else if (e.code === 'Escape' && document.body.classList.contains('fullscreen')) toggleFull();
+});
+
+// 音效
+function playBell() {
+  if (!settings.sound) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // 三聲鈴
+    [0, 0.4, 0.8].forEach(t => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'sine';
+      o.frequency.setValueAtTime(900, ctx.currentTime + t);
+      g.gain.setValueAtTime(0.4, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + 0.4);
+      o.start(ctx.currentTime + t);
+      o.stop(ctx.currentTime + t + 0.4);
+    });
+  } catch {}
+}
+function playTick() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'square';
+    o.frequency.setValueAtTime(400, ctx.currentTime);
+    g.gain.setValueAtTime(0.08, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+    o.start();
+    o.stop(ctx.currentTime + 0.05);
+  } catch {}
+}
+
+// 初始
+totalSec = settings.lastSec;
+remainSec = totalSec;
+updateDisplay();
+</script>
+
+</body>
+</html>

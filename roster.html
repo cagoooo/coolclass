@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>👥 班級名單 · 阿凱老師的教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7aa0e0">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    color: #2a3a4e;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(200,220,250,.5), transparent 50%),
+      radial-gradient(circle at 85% 85%, rgba(220,240,200,.5), transparent 50%),
+      linear-gradient(135deg, #f4f8ff 0%, #f8ffff 100%);
+  }
+  .home-btn {
+    position: fixed; top: 16px; left: 16px;
+    background: #fff; border: 3px solid #b8c8e0; color: #4a5a8e;
+    padding: 10px 18px; border-radius: 999px; font-weight: 700;
+    text-decoration: none; font-size: 14px;
+    box-shadow: 0 4px 12px rgba(150,170,210,.25); z-index: 100;
+    transition: transform .2s;
+  }
+  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
+
+  header { text-align: center; padding: 50px 20px 16px; }
+  header h1 {
+    margin: 0; font-size: clamp(26px, 5vw, 40px); color: #3a4a8e;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  header .sub { color: #5a6a9e; margin-top: 8px; font-size: 14px; }
+
+  main {
+    max-width: 1000px; margin: 0 auto; padding: 20px 24px 80px;
+  }
+  .panel {
+    background: rgba(255,255,255,.88);
+    border-radius: 24px;
+    padding: 24px 28px;
+    margin-bottom: 22px;
+    box-shadow: 0 8px 22px rgba(120,150,200,.12);
+    backdrop-filter: blur(6px);
+  }
+  .panel h2 {
+    margin: 0 0 14px; color: #3a4a8e; font-size: 20px;
+    border-bottom: 3px solid #c8d4ec; padding-bottom: 8px;
+    display: inline-block;
+  }
+  .field-row {
+    display: grid; grid-template-columns: 140px 1fr;
+    gap: 12px; align-items: center; margin-bottom: 12px;
+  }
+  .field-row label {
+    font-size: 14px; font-weight: 700; color: #4a5a8e;
+  }
+  .field-row input {
+    padding: 10px 14px; border: 2px solid #c8d4ec;
+    border-radius: 12px; font-size: 15px;
+    font-family: inherit; background: #fff;
+  }
+  .field-row input:focus { outline: none; border-color: #7aa0e0; }
+
+  .btn {
+    padding: 10px 20px; border-radius: 999px; border: none;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    font-size: 14px; transition: transform .2s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: #7aa0e0; color: #fff; }
+  .btn.success { background: #80c890; color: #fff; }
+  .btn.warn    { background: #e0a04a; color: #fff; }
+  .btn.danger  { background: #d06070; color: #fff; }
+  .btn.ghost   { background: #fff; color: #4a5a8e; border: 2px solid #c8d4ec; }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .name-cell {
+    display: flex; align-items: center; gap: 8px;
+    background: #fff; border: 2px solid #e0e8f4;
+    border-radius: 12px; padding: 8px 10px;
+  }
+  .name-cell:focus-within { border-color: #7aa0e0; }
+  .name-cell .num {
+    background: #c8d4ec; color: #3a4a8e;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .name-cell input {
+    flex: 1; border: none; outline: none;
+    font-size: 15px; font-family: inherit;
+    background: transparent;
+    min-width: 0;
+  }
+
+  .toolbar {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px;
+    border-top: 2px dashed #c8d4ec; padding-top: 14px;
+  }
+
+  .impact {
+    background: #fff8dc; border-left: 5px solid #ffd060;
+    padding: 14px 18px; border-radius: 0 14px 14px 0;
+    margin-bottom: 18px; color: #6a5a10; font-size: 14px;
+    line-height: 1.7;
+  }
+  .impact ul { margin: 6px 0 0; padding-left: 20px; }
+  .impact code { background: #fff; padding: 2px 6px; border-radius: 6px; }
+
+  textarea {
+    width: 100%; min-height: 120px; padding: 12px;
+    border: 2px solid #c8d4ec; border-radius: 12px;
+    font-family: inherit; font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: #7aa0e0; }
+
+  footer {
+    text-align: center; padding: 20px; font-size: 13px; color: #6a7a9e;
+  }
+  footer a { color: #3a4a8e; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<header>
+  <h1>👥 班級名單設定</h1>
+  <p class="sub">設定一次，五個工具都會用到這份名單</p>
+</header>
+
+<main>
+
+  <div class="impact">
+    🔗 <strong>這份名單會影響：</strong>
+    <ul>
+      <li>😊 情緒打卡牆 — 顯示「3 號 小明」</li>
+      <li>📋 出勤記錄表 — 列印 / CSV 都會有姓名</li>
+      <li>🎯 隨機抽號 — 抽到時顯示姓名</li>
+      <li>👥 隨機分組 — 名牌會印姓名</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>📚 基本設定</h2>
+    <div class="field-row">
+      <label>班級名稱</label>
+      <input type="text" id="className" placeholder="例：石門國小 五年甲班" maxlength="30">
+    </div>
+    <div class="field-row">
+      <label>學生人數</label>
+      <input type="number" id="studentCount" min="1" max="60" step="1">
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" onclick="applyCount()">📐 套用人數並重排</button>
+      <button class="btn success" onclick="saveAll()">💾 立即存檔</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>✏️ 學生姓名（可選填）</h2>
+    <p style="color:#6a7a9e;font-size:14px;margin:0 0 4px;">每格填一位學生的名字，沒填的會顯示「3 號」這樣。</p>
+    <p style="color:#aa8a40;font-size:13px;margin:0;">💡 編輯後會自動存檔，不用按按鈕。</p>
+    <div class="names-grid" id="namesGrid"></div>
+
+    <div class="toolbar">
+      <button class="btn ghost" onclick="openBulk()">📋 批次貼上（一行一名）</button>
+      <button class="btn warn" onclick="clearNames()">🧹 清空所有姓名</button>
+      <button class="btn ghost" onclick="exportRoster()">📤 匯出 JSON</button>
+      <button class="btn ghost" onclick="importRoster()">📥 匯入 JSON</button>
+      <button class="btn danger" onclick="resetAll()" style="margin-left:auto;">🔄 全部重置</button>
+    </div>
+  </div>
+
+  <div class="panel" id="bulkPanel" style="display:none;">
+    <h2>📋 批次貼上姓名</h2>
+    <p style="color:#6a7a9e;font-size:14px;">一行一個名字，從 1 號開始依序填入。可以從 Excel 直接複製一欄貼進來。</p>
+    <textarea id="bulkArea" placeholder="陳小明&#10;林小華&#10;王小美&#10;..."></textarea>
+    <div class="toolbar">
+      <button class="btn primary" onclick="applyBulk()">✓ 套用</button>
+      <button class="btn ghost" onclick="closeBulk()">取消</button>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+</footer>
+
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+<script src="roster.js"></script>
+<script>
+let saveTimer;
+let current = AkaiRoster.load();
+
+function render() {
+  document.getElementById('className').value = current.className || '';
+  document.getElementById('studentCount').value = current.count || 30;
+  const grid = document.getElementById('namesGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= current.count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'name-cell';
+    cell.innerHTML = `
+      <span class="num">${i}</span>
+      <input type="text" maxlength="20" placeholder="（未填）">
+    `;
+    const inp = cell.querySelector('input');
+    inp.value = current.names[String(i)] || '';
+    inp.addEventListener('input', () => {
+      const v = inp.value.trim();
+      if (v) current.names[String(i)] = v;
+      else delete current.names[String(i)];
+      scheduleSave();
+    });
+    grid.appendChild(cell);
+  }
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    AkaiRoster.save(current);
+    flash('✓ 已自動存檔');
+  }, 500);
+}
+
+function applyCount() {
+  const v = parseInt(document.getElementById('studentCount').value);
+  if (isNaN(v) || v < 1 || v > 60) { alert('人數請設在 1～60 之間'); return; }
+  current.count = v;
+  // 移除超過範圍的名字
+  Object.keys(current.names).forEach(k => {
+    if (parseInt(k) > v) delete current.names[k];
+  });
+  current.className = document.getElementById('className').value.trim();
+  AkaiRoster.save(current);
+  render();
+  flash('✓ 已套用');
+}
+
+function saveAll() {
+  current.className = document.getElementById('className').value.trim();
+  current.count = parseInt(document.getElementById('studentCount').value) || 30;
+  AkaiRoster.save(current);
+  flash('✓ 已存檔');
+}
+
+function clearNames() {
+  if (!confirm('要清掉所有姓名嗎？（班級名稱和人數會保留）')) return;
+  current.names = {};
+  AkaiRoster.save(current);
+  render();
+}
+
+function resetAll() {
+  if (!confirm('要把整份名單重置到預設嗎？（班級名、人數、姓名都會清空）')) return;
+  current = { className: '', count: 30, names: {} };
+  AkaiRoster.save(current);
+  render();
+}
+
+function openBulk() {
+  document.getElementById('bulkPanel').style.display = 'block';
+  document.getElementById('bulkArea').focus();
+}
+function closeBulk() {
+  document.getElementById('bulkPanel').style.display = 'none';
+}
+function applyBulk() {
+  const text = document.getElementById('bulkArea').value;
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (lines.length === 0) { alert('沒有偵測到名字'); return; }
+  if (lines.length > current.count) {
+    if (!confirm(`偵測到 ${lines.length} 個名字，目前人數設定 ${current.count}。要把人數調整成 ${lines.length} 嗎？`)) return;
+    current.count = lines.length;
+  }
+  lines.forEach((n, i) => {
+    current.names[String(i + 1)] = n;
+  });
+  AkaiRoster.save(current);
+  closeBulk();
+  render();
+  flash(`✓ 已匯入 ${lines.length} 位學生`);
+}
+
+function exportRoster() {
+  const blob = new Blob([JSON.stringify(current, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safe = (current.className || '班級').replace(/[\/\\:*?"<>|]/g, '_');
+  a.href = url;
+  a.download = `班級名單_${safe}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importRoster() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  inp.onchange = () => {
+    const f = inp.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result);
+        if (!confirm('要用這個檔案覆蓋目前的名單嗎？')) return;
+        current = {
+          className: obj.className || '',
+          count: parseInt(obj.count) || 30,
+          names: obj.names || {},
+        };
+        AkaiRoster.save(current);
+        render();
+        flash('✓ 匯入成功');
+      } catch { alert('檔案格式不對'); }
+    };
+    reader.readAsText(f);
+  };
+  inp.click();
+}
+
+document.getElementById('className').addEventListener('input', () => {
+  current.className = document.getElementById('className').value.trim();
+  scheduleSave();
+});
+
+function flash(text) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: #7aa0e0; color: #fff; padding: 10px 22px;
+    border-radius: 999px; font-weight: 700; z-index: 9999;
+    box-shadow: 0 6px 18px rgba(120,160,224,.4); font-size: 14px;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+render();
+</script>
+
+</body>
+</html>

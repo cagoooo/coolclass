@@ -4,7 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🌈 阿凱老師的教室小幫手</title>
-<meta name="description" content="石門國小阿凱老師自製 — 情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈通知">
+<meta name="description" content="石門國小阿凱老師自製 — 情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、抽號、計時、分組">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9ab0">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
@@ -16,6 +20,9 @@
     --green: #c8f0d0;
     --blue: #c5e3f6;
     --purple: #e2d3f4;
+    --rose: #ffc8d8;
+    --mint: #c8f0e0;
+    --lilac: #d8c8ec;
     --ink: #4a4a4a;
   }
   * { box-sizing: border-box; }
@@ -32,7 +39,6 @@
       linear-gradient(135deg, #fff7ee 0%, #f0f7ff 100%);
     overflow-x: hidden;
   }
-  /* 飄浮裝飾 */
   .floaty {
     position: fixed;
     font-size: 32px;
@@ -47,7 +53,7 @@
   }
   header {
     text-align: center;
-    padding: 50px 20px 30px;
+    padding: 40px 20px 16px;
     position: relative;
     z-index: 1;
   }
@@ -69,26 +75,99 @@
     font-size: 13px;
     color: #9a8aae;
   }
+
   main {
-    max-width: 1180px;
+    max-width: 1300px;
     margin: 0 auto;
-    padding: 20px 24px 60px;
+    padding: 12px 24px 60px;
     position: relative;
     z-index: 1;
   }
+
+  /* === 今日儀表板 === */
+  .dashboard {
+    background: rgba(255,255,255,.78);
+    border-radius: 28px;
+    padding: 22px 28px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 24px rgba(150,130,200,.1);
+    backdrop-filter: blur(8px);
+    border: 3px solid #fff;
+  }
+  .dash-head {
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+  }
+  .dash-title {
+    font-weight: 900; color: #5a4a6e; font-size: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dash-date {
+    color: #8a7a9e; font-size: 14px; font-weight: 700;
+  }
+  .dash-class {
+    background: linear-gradient(135deg, #ffd1dc, #c5e3f6);
+    color: #5a4a8e;
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .dash-class:hover { transform: translateY(-1px); }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 18px;
+    padding: 16px 18px;
+    border-left: 5px solid;
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+    text-decoration: none;
+    color: inherit;
+    transition: transform .2s;
+  }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0,0,0,.1); }
+  .stat-card .ico { font-size: 26px; }
+  .stat-card .lbl { font-size: 12px; color: #888; font-weight: 700; margin-top: 4px; }
+  .stat-card .val {
+    font-size: 24px; font-weight: 900;
+    color: #3a2a4e; margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-card .val small { font-size: 14px; font-weight: 700; color: #888; }
+  .stat-card .quote {
+    font-size: 13px; color: #5a4a6e; font-weight: 700;
+    line-height: 1.4; margin-top: 4px;
+  }
+  .stat-card.emo  { border-color: #ff9ab0; }
+  .stat-card.todo { border-color: #80c890; }
+  .stat-card.card { border-color: #c8a8e6; }
+  .stat-card.atn  { border-color: #6aa8d4; }
+
+  /* === 工具卡 === */
+  .section-title {
+    color: #5a4a6e; font-size: 22px; font-weight: 900;
+    margin: 18px 0 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
   }
   .card {
     display: block;
     text-decoration: none;
     color: inherit;
     background: #fff;
-    border-radius: 28px;
-    padding: 28px 24px 24px;
-    box-shadow: 0 10px 30px rgba(120,100,140,.12), 0 2px 6px rgba(120,100,140,.06);
+    border-radius: 24px;
+    padding: 24px 22px 20px;
+    box-shadow: 0 8px 24px rgba(120,100,140,.1), 0 2px 6px rgba(120,100,140,.04);
     border: 3px solid #fff;
     transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
     position: relative;
@@ -105,45 +184,71 @@
   .card > * { position: relative; z-index: 1; }
   .card:hover {
     transform: translateY(-6px) rotate(-.5deg);
-    box-shadow: 0 18px 40px rgba(120,100,140,.18);
+    box-shadow: 0 16px 36px rgba(120,100,140,.18);
     border-color: var(--accent);
   }
   .card .emoji {
-    font-size: 64px;
+    font-size: 56px;
     line-height: 1;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     display: inline-block;
     transition: transform .3s;
   }
   .card:hover .emoji { transform: scale(1.1) rotate(-8deg); }
   .card h2 {
-    margin: 0 0 8px;
-    font-size: 24px;
+    margin: 0 0 6px;
+    font-size: 22px;
     font-weight: 900;
     color: #3a2a4e;
   }
   .card p {
-    margin: 0 0 16px;
-    font-size: 14px;
-    line-height: 1.7;
+    margin: 0 0 14px;
+    font-size: 13px;
+    line-height: 1.6;
     color: #6a5a7e;
   }
   .card .badge {
     display: inline-block;
-    padding: 6px 14px;
+    padding: 5px 12px;
     background: #fff;
     border-radius: 999px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: #6a5a7e;
     border: 2px dashed rgba(0,0,0,.08);
   }
-  .card.pink { --accent: var(--pink); }
-  .card.green { --accent: var(--green); }
+  .card.pink   { --accent: var(--pink); }
+  .card.green  { --accent: var(--green); }
   .card.rainbow { --accent: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); }
   .card.rainbow::before { background: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); opacity: .25; }
-  .card.blue { --accent: var(--blue); }
+  .card.blue   { --accent: var(--blue); }
   .card.yellow { --accent: var(--yellow); }
+  .card.rose   { --accent: var(--rose); }
+  .card.mint   { --accent: var(--mint); }
+  .card.lilac  { --accent: var(--lilac); }
+  .card.purple { --accent: var(--purple); }
+
+  /* PWA 安裝 banner */
+  .install-banner {
+    background: linear-gradient(135deg, #c8e3f6, #d8c8ec);
+    color: #3a2a5e;
+    padding: 14px 22px;
+    border-radius: 18px;
+    display: none;
+    align-items: center; gap: 14px;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 16px rgba(120,140,200,.15);
+  }
+  .install-banner.show { display: flex; }
+  .install-banner button {
+    background: #fff; border: none; padding: 8px 18px;
+    border-radius: 999px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+    margin-left: auto;
+  }
+  .install-banner .close-x {
+    background: transparent; padding: 4px 10px;
+  }
 
   footer {
     text-align: center;
@@ -173,63 +278,142 @@
 
 <header>
   <h1>🌈 阿凱老師的教室小幫手</h1>
-  <p class="subtitle">五個小工具，陪老師和孩子一起過好每一天</p>
+  <p class="subtitle">陪老師和孩子一起過好每一天</p>
   <p class="school">桃園市龍潭區石門國民小學 · 鱻魚特色學園</p>
 </header>
 
 <main>
+
+  <!-- PWA 安裝引導 -->
+  <div class="install-banner" id="installBanner">
+    📲 <span><strong>把這個網站當 App 用！</strong>點下面的按鈕可以把教室小幫手加到主畫面，下次打開更快也能離線使用。</span>
+    <button id="installBtn">安裝</button>
+    <button class="close-x" onclick="hideInstall()">✕</button>
+  </div>
+
+  <!-- 今日儀表板 -->
+  <div class="dashboard">
+    <div class="dash-head">
+      <div class="dash-title">📅 今日狀態</div>
+      <div class="dash-date" id="dashDate"></div>
+      <a class="dash-class" id="dashClass" href="roster.html">👥 設定班級</a>
+    </div>
+    <div class="dash-grid">
+      <a class="stat-card emo" href="emotion.html">
+        <div class="ico">😊</div>
+        <div class="lbl">今日情緒打卡</div>
+        <div class="val"><span id="emoStat">0</span><small id="emoTotal"> / 30 人</small></div>
+      </a>
+      <a class="stat-card todo" href="todo.html">
+        <div class="ico">📝</div>
+        <div class="lbl">代辦事項</div>
+        <div class="val"><span id="todoStat">0</span><small id="todoBreak"></small></div>
+      </a>
+      <a class="stat-card card" href="cards.html">
+        <div class="ico">🌈</div>
+        <div class="lbl">今日能量卡</div>
+        <div class="quote" id="cardStat">載入中…</div>
+      </a>
+      <a class="stat-card atn" href="attendance.html">
+        <div class="ico">📋</div>
+        <div class="lbl">今日出席</div>
+        <div class="val"><span id="atnStat">—</span></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 五大核心工具 -->
+  <h2 class="section-title">📚 五大核心工具</h2>
   <div class="grid">
     <a class="card pink" href="emotion.html">
       <span class="emoji">😊</span>
       <h2>情緒打卡牆</h2>
-      <p>1～30 號學生，選號碼、按表情，今天的心情立刻貼上牆。</p>
-      <span class="badge">適合每日晨間活動</span>
+      <p>選號碼 → 按表情，今天的心情立刻貼上牆。</p>
+      <span class="badge">每日晨間活動</span>
     </a>
 
     <a class="card green" href="todo.html">
       <span class="emoji">📝</span>
       <h2>班級 To-Do List</h2>
-      <p>緊急 · 進行中 · 準備區三欄，拖曳搬家、自動存檔。</p>
+      <p>紅黃綠三欄拖曳，自動存檔、可匯出備份。</p>
       <span class="badge">紅黃綠三色任務牆</span>
     </a>
 
     <a class="card rainbow" href="cards.html">
       <span class="emoji">🌈</span>
       <h2>彩虹能量卡</h2>
-      <p>阿德勒風格鼓勵小語，每天抽一張當作今日心錨。</p>
-      <span class="badge">100 句溫柔陪伴</span>
+      <p>103 句阿德勒風小語，每天的心錨。</p>
+      <span class="badge">今日心錨已就位</span>
     </a>
 
     <a class="card blue" href="attendance.html">
       <span class="emoji">📋</span>
       <h2>學生出勤記錄表</h2>
-      <p>設人數產號碼、選月份自動扣週末，可標遲到請假並下載。</p>
-      <span class="badge">下載 PDF / 列印</span>
+      <p>自動扣週末、列印 PDF、匯出 CSV 給教務處。</p>
+      <span class="badge">PDF / CSV 雙匯出</span>
     </a>
 
     <a class="card yellow" href="marquee.html">
       <span class="emoji">📢</span>
       <h2>跑馬燈通知</h2>
-      <p>投影機 / 白板顯示重要通知、課堂重點、優秀表揚。</p>
-      <span class="badge">速度顏色可調</span>
+      <p>投影機顯示、時鐘 + 倒數計時都內建。</p>
+      <span class="badge">投影專用模式</span>
+    </a>
+  </div>
+
+  <!-- 三個新工具 -->
+  <h2 class="section-title">🎁 課堂活動工具</h2>
+  <div class="grid">
+    <a class="card rose" href="picker.html">
+      <span class="emoji">🎯</span>
+      <h2>隨機抽號</h2>
+      <p>公平的點人答題，可排除已抽過的同學。</p>
+      <span class="badge">點人 / 抽獎</span>
+    </a>
+
+    <a class="card mint" href="timer.html">
+      <span class="emoji">⏱️</span>
+      <h2>教室計時器</h2>
+      <p>大字幕倒數，討論、考試、休息都好用。</p>
+      <span class="badge">空白鍵開始</span>
+    </a>
+
+    <a class="card lilac" href="grouper.html">
+      <span class="emoji">👥</span>
+      <h2>隨機分組</h2>
+      <p>洗牌後分 N 組，可印名牌、複製文字版。</p>
+      <span class="badge">小組討論必備</span>
+    </a>
+  </div>
+
+  <!-- 設定 / 說明 -->
+  <h2 class="section-title">⚙️ 設定與說明</h2>
+  <div class="grid">
+    <a class="card purple" href="roster.html">
+      <span class="emoji">👥</span>
+      <h2>班級名單設定</h2>
+      <p>設定一次，五個工具都會用到這份名單。</p>
+      <span class="badge">建議第一次使用先設定</span>
     </a>
 
     <a class="card" style="--accent:#f8c8a0;background:#fff;" href="#about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});return false;">
       <span class="emoji">💡</span>
       <h2>使用小提醒</h2>
-      <p>所有資料都存在這台電腦的瀏覽器，換電腦不會自動帶過去喔。</p>
+      <p>資料怎麼存？怎麼備份？怎麼裝成 App？</p>
       <span class="badge">點我看更多</span>
     </a>
   </div>
 
-  <section id="about" style="margin-top:60px;background:rgba(255,255,255,.7);border-radius:24px;padding:28px 32px;backdrop-filter:blur(6px);">
+  <section id="about" style="margin-top:50px;background:rgba(255,255,255,.7);border-radius:24px;padding:28px 32px;backdrop-filter:blur(6px);">
     <h2 style="margin-top:0;color:#5a4a6e;">💡 使用小提醒</h2>
     <ul style="line-height:1.9;color:#5a5a6e;font-size:15px;">
-      <li>本工具完全在你的瀏覽器裡跑，<strong>不需要登入</strong>、<strong>不會把資料上傳</strong>。</li>
-      <li>儲存資料用的是瀏覽器的 <code>localStorage</code> — 同一台電腦同一個瀏覽器才看得到。</li>
-      <li>清除瀏覽器資料、用無痕視窗、或換電腦，舊記錄不會自動帶過去。</li>
-      <li>出勤記錄表可以下載 PDF，建議每個月留檔備份一次。</li>
-      <li>適合用投影機 / 觸控大屏 / 平板操作，畫面已針對大尺寸最佳化。</li>
+      <li><strong>第一次使用建議先到「班級名單設定」</strong>，輸入班級名稱和學生姓名，之後所有工具會自動帶入。</li>
+      <li>本工具完全在你的瀏覽器裡跑，<strong>不需要登入、不會把資料上傳</strong>。</li>
+      <li>資料用瀏覽器 <code>localStorage</code> 存 — 同一台電腦同一個瀏覽器才看得到。</li>
+      <li>清瀏覽器資料、用無痕視窗、或換電腦，舊記錄不會自動帶過去。</li>
+      <li>支援 PWA：可以「加到主畫面」當成 App 用，<strong>離線也能開</strong>。</li>
+      <li>出勤表建議每月匯出 PDF + CSV 各一份做備份。</li>
+      <li>適合用投影機 / 觸控大屏 / iPad 操作，畫面已最佳化。</li>
     </ul>
   </section>
 </main>
@@ -239,8 +423,135 @@
   <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a>
   · 桃園市龍潭區石門國民小學
   <br>
-  <span style="font-size:11px;color:#aa9abe;">© 2026 · 為孩子做的小工具，自由使用 ✨</span>
+  <span style="font-size:11px;color:#aa9abe;">© 2026 · v2.0 · 為孩子做的小工具，自由使用 ✨</span>
 </footer>
+
+<script src="roster.js"></script>
+<script>
+// ===== PWA 註冊 =====
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+// ===== 安裝引導 =====
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (localStorage.getItem('akai_install_dismissed') !== '1') {
+    document.getElementById('installBanner').classList.add('show');
+  }
+});
+document.getElementById('installBtn').onclick = async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+};
+function hideInstall() {
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('akai_install_dismissed', '1');
+}
+
+// ===== 儀表板：讀各工具的 localStorage =====
+function todayKey() { return new Date().toISOString().slice(0,10); }
+function readJSON(key) {
+  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+
+function renderDashboard() {
+  const d = new Date();
+  const wk = ['日','一','二','三','四','五','六'];
+  document.getElementById('dashDate').textContent =
+    `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (星期${wk[d.getDay()]})`;
+
+  // 班級
+  const r = AkaiRoster.load();
+  const dashClass = document.getElementById('dashClass');
+  if (r.className) {
+    dashClass.textContent = `🏫 ${r.className}`;
+    dashClass.href = 'roster.html';
+  } else {
+    dashClass.textContent = `👥 設定班級名單`;
+  }
+  const total = r.count || 30;
+
+  // 情緒
+  const emo = readJSON('akai_emotion_v1');
+  const todayEmo = emo?.records?.[todayKey()] || {};
+  const emoCnt = Object.keys(todayEmo).length;
+  document.getElementById('emoStat').textContent = emoCnt;
+  document.getElementById('emoTotal').textContent = ` / ${total} 人`;
+
+  // To-Do
+  const todo = readJSON('akai_todo_v1');
+  if (todo) {
+    const red = (todo.red || []).length;
+    const yellow = (todo.yellow || []).length;
+    const green = (todo.green || []).length;
+    document.getElementById('todoStat').textContent = (red + yellow + green);
+    document.getElementById('todoBreak').textContent = ` 項（🔴${red} 🟡${yellow} 🟢${green}）`;
+  }
+
+  // 今日能量卡（用同樣的 hash）
+  loadTodayCard();
+
+  // 出勤
+  const atn = readJSON('akai_attendance_v1');
+  const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const sheet = atn?.sheets?.[ym];
+  if (sheet) {
+    const dKey = `${ym}-${String(d.getDate()).padStart(2,'0')}`;
+    const today = sheet.marks?.[dKey] || {};
+    const cnt = Object.entries(today).reduce((acc, [_, v]) => {
+      if (v === 'present' || v === 'late') return acc + 1;
+      return acc;
+    }, 0);
+    const wk = d.getDay();
+    if (wk === 0 || wk === 6) {
+      document.getElementById('atnStat').textContent = '週末';
+    } else {
+      document.getElementById('atnStat').innerHTML = `${cnt}<small> / ${sheet.count || total} 人</small>`;
+    }
+  } else {
+    document.getElementById('atnStat').textContent = '尚未記錄';
+  }
+}
+
+// 今日能量卡（同步 cards.html 邏輯，避免依賴整個 deck，這裡內建精選 10 句）
+const QUICK_QUOTES = [
+  '遇到再怎麼難過的事，也要說對的話。',
+  '沒有壞的孩子，只有氣餒的孩子。',
+  '用我的穩定面對孩子的不穩定。',
+  '今天的風再大，我也能選擇穩穩站好。',
+  '心安定，孩子才安定。',
+  '我先穩，孩子才會慢慢穩。',
+  '小小的前進，也是一種勝利。',
+  '今天的我，已經比昨天更靠近理想一點。',
+  '每個孩子都值得再一次機會。',
+  '我願意給自己更多溫柔。',
+  '保持一顆不被情緒、雜務干擾的心，是教師的溫柔底氣。',
+  '安靜一下，力量就會回來。',
+  '孩子的眼淚不是麻煩，是理解的入口。',
+  '我把焦點放在孩子的力量，而非孩子的不足。',
+  '雨過後的彩虹，是給有耐心的人。',
+];
+
+function loadTodayCard() {
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  // 為了首頁更可靠，這裡先用簡短池，cards.html 內會用完整 103 句
+  const q = QUICK_QUOTES[seed % QUICK_QUOTES.length];
+  document.getElementById('cardStat').textContent = '「' + q + '」';
+}
+
+renderDashboard();
+window.addEventListener('focus', renderDashboard);
+window.addEventListener('storage', renderDashboard);
+</script>
 
 </body>
 </html>

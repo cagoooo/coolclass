@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📢 跑馬燈通知 · 阿凱老師的教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffc040">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -98,6 +101,47 @@
   }
   body.fullscreen .marquee-track {
     font-size: clamp(80px, 14vw, 200px);
+  }
+
+  /* 時鐘 + 倒數浮層 */
+  .overlay-top {
+    position: absolute;
+    top: 16px; left: 0; right: 0;
+    display: flex; justify-content: space-between;
+    padding: 0 28px;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .clock-widget, .countdown-widget {
+    background: rgba(0,0,0,.3);
+    color: rgba(255,255,255,.95);
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 2px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    display: none;
+  }
+  .clock-widget.on, .countdown-widget.on { display: inline-block; }
+  body.fullscreen .clock-widget,
+  body.fullscreen .countdown-widget {
+    font-size: clamp(28px, 4vw, 56px);
+    padding: 12px 24px;
+    border-radius: 20px;
+  }
+  body.fullscreen .overlay-top { top: 30px; padding: 0 50px; }
+  .countdown-widget.warn { background: rgba(220,80,40,.8); animation: pulse 1s infinite; }
+  .countdown-widget.done { background: rgba(80,180,120,.8); }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .countdown-widget .lbl {
+    font-size: .6em;
+    opacity: .8;
+    margin-right: 8px;
   }
 
   /* 控制台 */
@@ -250,6 +294,10 @@
 
 <div class="stage">
   <div class="marquee-box" id="marqueeBox" onclick="toggleFullscreen()">
+    <div class="overlay-top">
+      <div class="clock-widget" id="clockWidget">--:--</div>
+      <div class="countdown-widget" id="countdownWidget"><span class="lbl">距下課</span><span id="cdValue">--:--</span></div>
+    </div>
     <div class="marquee-track" id="marqueeTrack"></div>
   </div>
 </div>
@@ -311,6 +359,58 @@
     </div>
 
   </div>
+
+  <hr style="margin: 24px 0; border: none; border-top: 2px dashed #ffd060;">
+
+  <div class="panel-grid">
+    <div>
+      <h3>🕐 時鐘設定</h3>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <input type="checkbox" id="showClock"> 在跑馬燈左上顯示時鐘
+      </label>
+      <div class="setting-row">
+        <label>格式</label>
+        <select id="clockFormat">
+          <option value="HH:mm">24 小時（14:30）</option>
+          <option value="HH:mm:ss">24 小時帶秒（14:30:45）</option>
+          <option value="hh:mm">12 小時（02:30 PM）</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <h3>⏱️ 倒數計時</h3>
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <input type="checkbox" id="showCountdown"> 在跑馬燈右上顯示倒數
+      </label>
+      <div class="setting-row">
+        <label>標籤</label>
+        <input type="text" id="cdLabel" placeholder="距下課 / 考試結束 / 集合時間" value="距下課" style="flex:1;padding:8px 12px;border:2px solid #ffd060;border-radius:8px;font-family:inherit;font-size:14px;background:#fff;">
+      </div>
+      <div class="setting-row">
+        <label>目標時間</label>
+        <input type="time" id="cdTarget" style="flex:1;padding:8px 12px;border:2px solid #ffd060;border-radius:8px;font-family:inherit;font-size:14px;background:#fff;">
+        <button class="btn-save" style="padding:8px 16px;border-radius:8px;border:none;font-weight:700;cursor:pointer;font-family:inherit;" onclick="setCountdown()">套用</button>
+      </div>
+      <div class="setting-row" style="flex-wrap:wrap;gap:6px;">
+        <label>快速設定</label>
+        <button class="quick-cd" data-mins="5">+5 分</button>
+        <button class="quick-cd" data-mins="10">+10 分</button>
+        <button class="quick-cd" data-mins="20">+20 分</button>
+        <button class="quick-cd" data-mins="40">+40 分</button>
+        <button class="quick-cd" data-mins="0" onclick="clearCountdown()" style="background:#ffaaaa;">清除</button>
+      </div>
+      <style>
+        .quick-cd {
+          background: #fff8dc; border: 2px dashed #ffc040;
+          padding: 6px 12px; border-radius: 999px;
+          cursor: pointer; font-family: inherit; font-size: 13px;
+          color: #a06010; font-weight: 700;
+        }
+        .quick-cd:hover { background: #ffd060; color: #6a4a10; }
+      </style>
+    </div>
+  </div>
 </div>
 
 <footer>
@@ -318,6 +418,7 @@
   <br><span style="font-size:11px;color:#a08a60;">設計參考自陳名峰老師</span>
 </footer>
 
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 <script>
 const STORAGE_KEY = 'akai_marquee_v1';
 
@@ -358,6 +459,11 @@ function defaultState() {
     themeIdx: 0,
     bg: THEMES[0].bg,
     text: THEMES[0].text,
+    showClock: true,
+    clockFormat: 'HH:mm',
+    showCountdown: false,
+    cdLabel: '距下課',
+    cdTargetISO: null,
   };
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -545,9 +651,135 @@ function flash(text) {
   setTimeout(() => el.remove(), 1200);
 }
 
+// ===== 時鐘 + 倒數 =====
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function formatClock(d, fmt) {
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const s = d.getSeconds();
+  if (fmt === 'HH:mm:ss') return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (fmt === 'hh:mm') {
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hh = h % 12 || 12;
+    return `${pad(hh)}:${pad(m)} ${ampm}`;
+  }
+  return `${pad(h)}:${pad(m)}`;
+}
+
+function updateClock() {
+  const el = document.getElementById('clockWidget');
+  if (state.showClock) {
+    el.classList.add('on');
+    el.textContent = formatClock(new Date(), state.clockFormat || 'HH:mm');
+  } else {
+    el.classList.remove('on');
+  }
+}
+
+function updateCountdown() {
+  const el = document.getElementById('countdownWidget');
+  const val = document.getElementById('cdValue');
+  if (!state.showCountdown || !state.cdTargetISO) {
+    el.classList.remove('on', 'warn', 'done');
+    return;
+  }
+  el.classList.add('on');
+  el.querySelector('.lbl').textContent = state.cdLabel || '倒數';
+  const target = new Date(state.cdTargetISO).getTime();
+  const now = Date.now();
+  let diff = Math.floor((target - now) / 1000);
+  if (diff <= 0) {
+    val.textContent = '時間到！';
+    el.classList.add('done');
+    el.classList.remove('warn');
+    return;
+  }
+  el.classList.remove('done');
+  if (diff <= 60) el.classList.add('warn'); else el.classList.remove('warn');
+  const hh = Math.floor(diff / 3600);
+  const mm = Math.floor((diff % 3600) / 60);
+  const ss = diff % 60;
+  val.textContent = hh > 0 ? `${hh}:${pad(mm)}:${pad(ss)}` : `${pad(mm)}:${pad(ss)}`;
+}
+
+function tick() {
+  updateClock();
+  updateCountdown();
+}
+setInterval(tick, 1000);
+
+document.getElementById('showClock').onchange = (e) => {
+  state.showClock = e.target.checked;
+  saveState(); tick();
+};
+document.getElementById('clockFormat').onchange = (e) => {
+  state.clockFormat = e.target.value;
+  saveState(); tick();
+};
+document.getElementById('showCountdown').onchange = (e) => {
+  state.showCountdown = e.target.checked;
+  saveState(); tick();
+};
+document.getElementById('cdLabel').oninput = (e) => {
+  state.cdLabel = e.target.value;
+  saveState(); tick();
+};
+
+function setCountdown() {
+  const t = document.getElementById('cdTarget').value;
+  if (!t) { alert('請選一個目標時間'); return; }
+  const [h, m] = t.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  if (d.getTime() < Date.now()) d.setDate(d.getDate() + 1); // 過了就推到明天
+  state.cdTargetISO = d.toISOString();
+  state.showCountdown = true;
+  document.getElementById('showCountdown').checked = true;
+  saveState();
+  tick();
+  flash(`⏱️ 已設定倒數到 ${pad(h)}:${pad(m)}`);
+}
+
+function clearCountdown() {
+  state.cdTargetISO = null;
+  state.showCountdown = false;
+  document.getElementById('showCountdown').checked = false;
+  saveState();
+  tick();
+}
+
+document.querySelectorAll('.quick-cd[data-mins]').forEach(btn => {
+  btn.onclick = () => {
+    const mins = parseInt(btn.dataset.mins);
+    if (mins <= 0) return;
+    const d = new Date(Date.now() + mins * 60000);
+    state.cdTargetISO = d.toISOString();
+    state.showCountdown = true;
+    document.getElementById('showCountdown').checked = true;
+    document.getElementById('cdTarget').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    saveState();
+    tick();
+    flash(`⏱️ 倒數 ${mins} 分鐘開始`);
+  };
+});
+
+function loadClockSettings() {
+  document.getElementById('showClock').checked = !!state.showClock;
+  document.getElementById('clockFormat').value = state.clockFormat || 'HH:mm';
+  document.getElementById('showCountdown').checked = !!state.showCountdown;
+  document.getElementById('cdLabel').value = state.cdLabel || '距下課';
+  if (state.cdTargetISO) {
+    const d = new Date(state.cdTargetISO);
+    document.getElementById('cdTarget').value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+}
+
 renderMessages();
 renderTrack();
 renderSettings();
+loadClockSettings();
+tick();
 </script>
 
 </body>

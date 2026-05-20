@@ -1,0 +1,47 @@
+{
+  "name": "阿凱老師的教室小幫手",
+  "short_name": "教室小幫手",
+  "description": "情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、隨機抽號、計時器、隨機分組",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#ff9ab0",
+  "background_color": "#fff7ee",
+  "lang": "zh-Hant",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "情緒打卡牆",
+      "short_name": "打卡",
+      "url": "./emotion.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "今日能量卡",
+      "short_name": "能量卡",
+      "url": "./cards.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "計時器",
+      "short_name": "計時",
+      "url": "./timer.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "隨機抽號",
+      "short_name": "抽號",
+      "url": "./picker.html",
+      "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}

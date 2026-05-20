@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🌈 彩虹能量卡 · 阿凱老師的教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#c8a8e6">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -38,6 +41,56 @@
     text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(220,200,255,.5);
   }
   header .sub { color: #8a7a9e; margin-top: 8px; font-size: 14px; }
+
+  /* 今日卡片區 */
+  .today-section {
+    max-width: 900px; margin: 30px auto 10px;
+    padding: 0 20px;
+  }
+  .today-card {
+    background: linear-gradient(135deg, #fff 0%, #fef5fa 100%);
+    border-radius: 28px;
+    padding: 24px 28px;
+    box-shadow: 0 12px 28px rgba(180,140,200,.18);
+    border: 3px solid #f0d8ec;
+    position: relative;
+    overflow: hidden;
+  }
+  .today-card::before {
+    content: '🌅';
+    position: absolute;
+    top: -20px; right: -10px;
+    font-size: 90px;
+    opacity: .1;
+  }
+  .today-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #ffd1dc, #ffe5b8);
+    color: #6a3a5e;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    box-shadow: 0 2px 8px rgba(255,180,200,.4);
+  }
+  .today-quote {
+    margin-top: 14px;
+    font-size: clamp(20px, 3vw, 26px);
+    font-weight: 700;
+    line-height: 1.7;
+    color: #4a2a5e;
+  }
+  .today-meta {
+    margin-top: 14px;
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 13px; color: #8a6a9e;
+  }
+  .today-meta span {
+    background: rgba(255,255,255,.7);
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
 
   /* 主卡片 */
   .stage {
@@ -222,6 +275,18 @@
   <p class="sub">每天抽一張，作為今天的心錨 ✨</p>
 </header>
 
+<div class="today-section">
+  <div class="today-card">
+    <span class="today-label">✨ 今日心錨</span>
+    <div class="today-quote" id="todayQuote">載入中…</div>
+    <div class="today-meta">
+      <span id="todayDate"></span>
+      <span id="todayCat"></span>
+      <span id="todayKeyword"></span>
+    </div>
+  </div>
+</div>
+
 <div class="filters" id="filters"></div>
 
 <div class="stage">
@@ -264,6 +329,7 @@
   Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
 </footer>
 
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 <script>
 // 三句指定固定句（c=fixed）
 const FIXED = [
@@ -555,6 +621,23 @@ document.getElementById('cardInner').addEventListener('click', drawCard);
 document.getElementById('drawBtn').addEventListener('click', drawCard);
 document.getElementById('favBtn').addEventListener('click', toggleFav);
 
+// 今日卡片：依日期哈希決定，當天打開都同一張
+function renderTodayCard() {
+  const d = new Date();
+  const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  const wk = ['日','一','二','三','四','五','六'][d.getDay()];
+  // 簡單 hash：年×10000 + 月×100 + 日 → 取餘
+  const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  const idx = seed % DECK.length;
+  const card = DECK[idx];
+  const cat = CATS[card.cat];
+  document.getElementById('todayQuote').textContent = '「' + card.quote + '」';
+  document.getElementById('todayDate').textContent = `📅 ${dateStr}（星期${wk}）`;
+  document.getElementById('todayCat').textContent = `🎨 ${cat.label}`;
+  document.getElementById('todayKeyword').textContent = `🔑 ${card.keyword}`;
+}
+
+renderTodayCard();
 renderFilters();
 renderWall();
 </script>

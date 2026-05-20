@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📋 學生出勤記錄表 · 阿凱老師的教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6aa8d4">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -136,8 +139,20 @@
   table.sheet tbody th {
     background: #f5fafd;
     font-weight: 900;
-    width: 70px;
+    width: 96px;
     color: #2a4a6e;
+    font-size: 13px;
+  }
+  table.sheet tbody th .stu-name {
+    display: block; font-weight: 700; font-size: 12px; color: #5a6a8e;
+    margin-top: 2px;
+  }
+  table.sheet tbody th .stu-num {
+    display: inline-block;
+    background: #c8d4ec; color: #2a4a6e;
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
   }
   table.sheet td.weekend-cell { background: #fdf5f5; cursor: default; }
   table.sheet td.weekend-cell .mark { color: #c0a0a0; }
@@ -235,12 +250,12 @@
 
 <div class="toolbar">
   <div class="field">
-    <label>📚 班級名稱</label>
-    <input type="text" id="className" placeholder="例：五年甲班">
+    <label>📚 班級名稱（從共用名單）</label>
+    <input type="text" id="className" placeholder="（請到「班級名單」設定）" readonly style="background:#f4f8ff;cursor:not-allowed;">
   </div>
   <div class="field">
-    <label>👥 學生人數</label>
-    <input type="number" id="studentCount" min="1" max="50" value="30">
+    <label>👥 學生人數（從共用名單）</label>
+    <input type="number" id="studentCount" min="1" max="60" value="30" readonly style="background:#f4f8ff;cursor:not-allowed;">
   </div>
   <div class="field">
     <label>📅 月份</label>
@@ -248,13 +263,14 @@
   </div>
   <div class="field">
     <div class="btn-group">
-      <button class="btn primary" onclick="apply()">🔍 載入 / 重新整理</button>
-      <button class="btn success" onclick="saveSheet()">💾 存檔</button>
+      <a class="btn primary" style="text-decoration:none;display:inline-block;text-align:center;" href="roster.html">👥 編輯班級名單</a>
+      <button class="btn success" onclick="apply()">🔍 載入</button>
     </div>
   </div>
   <div class="field">
     <div class="btn-group">
       <button class="btn warn" onclick="window.print()">🖨️ 列印 / 存 PDF</button>
+      <button class="btn ghost" onclick="exportCSV()">📊 匯出 CSV</button>
       <button class="btn ghost" onclick="exportJSON()">📤 匯出 JSON</button>
       <button class="btn danger" onclick="resetMonth()">🔄 清空此月</button>
     </div>
@@ -292,6 +308,8 @@
   Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
 </footer>
 
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
+<script src="roster.js"></script>
 <script>
 const STORAGE_KEY = 'akai_attendance_v1';
 const WKDAYS = ['日','一','二','三','四','五','六'];
@@ -317,10 +335,11 @@ function saveStore() { localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 function init() {
   const now = new Date();
   const monthInput = document.getElementById('monthPick');
-  // 載入上次設定
   const last = store.settings;
-  document.getElementById('className').value = last.className || '';
-  document.getElementById('studentCount').value = last.count || 30;
+  const r = AkaiRoster.load();
+  // 同步 roster 到顯示欄
+  document.getElementById('className').value = r.className || '（未設定）';
+  document.getElementById('studentCount').value = r.count || 30;
   monthInput.value = last.month || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   apply();
 }
@@ -328,15 +347,18 @@ function init() {
 function sheetKey(year, month) { return `${year}-${String(month).padStart(2,'0')}`; }
 
 function apply() {
-  const className = document.getElementById('className').value.trim();
-  const count = parseInt(document.getElementById('studentCount').value) || 30;
+  const r = AkaiRoster.load();
+  const className = r.className || '';
+  const count = r.count || 30;
+  document.getElementById('className').value = className || '（未設定）';
+  document.getElementById('studentCount').value = count;
   const monthValue = document.getElementById('monthPick').value;
   if (!monthValue) { alert('請選一個月份'); return; }
   const [yStr, mStr] = monthValue.split('-');
   const year = parseInt(yStr);
   const month = parseInt(mStr);
 
-  store.settings = { className, count, month: monthValue };
+  store.settings = { month: monthValue };
   saveStore();
 
   const key = sheetKey(year, month);
@@ -408,7 +430,12 @@ function render() {
   for (let s = 1; s <= count; s++) {
     const tr = document.createElement('tr');
     const sh = document.createElement('th');
-    sh.textContent = `${s} 號`;
+    const stuName = AkaiRoster.getName(s);
+    if (stuName) {
+      sh.innerHTML = `<span class="stu-num">${s} 號</span><span class="stu-name">${escapeHtml(stuName)}</span>`;
+    } else {
+      sh.innerHTML = `<span class="stu-num">${s} 號</span>`;
+    }
     tr.appendChild(sh);
 
     let late = 0, leave = 0, absent = 0;
@@ -530,6 +557,10 @@ function resetMonth() {
   render();
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function exportJSON() {
   if (!current) return;
   const sheet = store.sheets[current.key];
@@ -539,6 +570,7 @@ function exportJSON() {
     year: current.year,
     month: current.month,
     marks: sheet.marks,
+    roster: AkaiRoster.load(),
     exportedAt: new Date().toISOString(),
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -548,6 +580,78 @@ function exportJSON() {
   a.download = `出勤_${sheet.className || '班級'}_${current.year}-${String(current.month).padStart(2,'0')}.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  if (!current) return;
+  const sheet = store.sheets[current.key];
+  const days = daysInMonth(current.year, current.month);
+  let upDayCount = 0;
+  const colDates = [];
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(current.year, current.month - 1, d);
+    const wk = dt.getDay();
+    colDates.push({ d, wk, isWeekend: wk === 0 || wk === 6 });
+    if (wk !== 0 && wk !== 6) upDayCount++;
+  }
+
+  // 第 1 區：每位學生每天的出席標記（橫向長表）
+  const rows = [];
+  const header = ['座號','姓名'];
+  colDates.forEach(c => header.push(`${c.d}日(${'日一二三四五六'[c.wk]})`));
+  header.push('應到', '出席', '遲到', '請假', '缺席', '出席率');
+  rows.push(header);
+
+  const symMap = { present: '出', late: '遲', leave: '假', absent: '缺' };
+  let cntLate = 0, cntLeave = 0, cntAbsent = 0;
+
+  for (let s = 1; s <= sheet.count; s++) {
+    const row = [s, AkaiRoster.getName(s) || ''];
+    let late = 0, leave = 0, absent = 0, present = 0;
+    colDates.forEach(c => {
+      if (c.isWeekend) { row.push(''); return; }
+      const dKey = `${current.year}-${String(current.month).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`;
+      const mark = (sheet.marks[dKey] && sheet.marks[dKey][s]) || '';
+      row.push(symMap[mark] || '');
+      if (mark === 'late') late++;
+      else if (mark === 'leave') leave++;
+      else if (mark === 'absent') absent++;
+      else if (mark === 'present') present++;
+    });
+    const accounted = present + late + leave + absent;
+    const rate = upDayCount > 0 ? ((present + late) / upDayCount * 100).toFixed(1) + '%' : '—';
+    row.push(upDayCount, present, late, leave, absent, rate);
+    cntLate += late; cntLeave += leave; cntAbsent += absent;
+    rows.push(row);
+  }
+
+  // 第 2 區：班級總計
+  rows.push([]);
+  rows.push(['班級總計']);
+  rows.push(['班級名稱', sheet.className || '']);
+  rows.push(['月份', `${current.year}-${String(current.month).padStart(2,'0')}`]);
+  rows.push(['上學日數', upDayCount]);
+  rows.push(['遲到總次數', cntLate]);
+  rows.push(['請假總次數', cntLeave]);
+  rows.push(['缺席總次數', cntAbsent]);
+  rows.push(['匯出時間', new Date().toLocaleString('zh-TW')]);
+
+  // CSV 編碼（加 BOM 讓 Excel 認 UTF-8）
+  const csv = rows.map(r => r.map(cell => {
+    const s = String(cell ?? '');
+    if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }).join(',')).join('\r\n');
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safe = (sheet.className || '班級').replace(/[\/\\:*?"<>|]/g, '_');
+  a.href = url;
+  a.download = `出勤_${safe}_${current.year}-${String(current.month).padStart(2,'0')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  flash('✓ CSV 已下載（Excel 可直接打開）');
 }
 
 function flash(text) {
@@ -562,6 +666,12 @@ function flash(text) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1200);
 }
+
+// 偵測 roster 變動
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1' && current) apply();
+});
+window.addEventListener('focus', () => { if (current) apply(); });
 
 init();
 </script>
