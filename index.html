@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌈 阿凱老師的教室小幫手</title>
+<meta name="description" content="石門國小阿凱老師自製 — 情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈通知">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pink: #ffd1dc;
+    --orange: #ffe0b3;
+    --yellow: #fff5b3;
+    --green: #c8f0d0;
+    --blue: #c5e3f6;
+    --purple: #e2d3f4;
+    --ink: #4a4a4a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', 'Fredoka', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(255,209,220,.55), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(255,245,179,.6), transparent 45%),
+      radial-gradient(circle at 80% 85%, rgba(200,240,208,.6), transparent 45%),
+      radial-gradient(circle at 10% 85%, rgba(226,211,244,.55), transparent 45%),
+      linear-gradient(135deg, #fff7ee 0%, #f0f7ff 100%);
+    overflow-x: hidden;
+  }
+  /* 飄浮裝飾 */
+  .floaty {
+    position: fixed;
+    font-size: 32px;
+    opacity: .55;
+    pointer-events: none;
+    animation: float 8s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-20px) rotate(8deg); }
+  }
+  header {
+    text-align: center;
+    padding: 50px 20px 30px;
+    position: relative;
+    z-index: 1;
+  }
+  header h1 {
+    margin: 0;
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 900;
+    color: #5a4a6e;
+    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(255,209,220,.5);
+    letter-spacing: 2px;
+  }
+  header .subtitle {
+    margin-top: 14px;
+    font-size: clamp(14px, 2vw, 18px);
+    color: #7a6a8e;
+  }
+  header .school {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #9a8aae;
+  }
+  main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 20px 24px 60px;
+    position: relative;
+    z-index: 1;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    background: #fff;
+    border-radius: 28px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 10px 30px rgba(120,100,140,.12), 0 2px 6px rgba(120,100,140,.06);
+    border: 3px solid #fff;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent, var(--pink));
+    opacity: .18;
+    z-index: 0;
+  }
+  .card > * { position: relative; z-index: 1; }
+  .card:hover {
+    transform: translateY(-6px) rotate(-.5deg);
+    box-shadow: 0 18px 40px rgba(120,100,140,.18);
+    border-color: var(--accent);
+  }
+  .card .emoji {
+    font-size: 64px;
+    line-height: 1;
+    margin-bottom: 14px;
+    display: inline-block;
+    transition: transform .3s;
+  }
+  .card:hover .emoji { transform: scale(1.1) rotate(-8deg); }
+  .card h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 900;
+    color: #3a2a4e;
+  }
+  .card p {
+    margin: 0 0 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #6a5a7e;
+  }
+  .card .badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #fff;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #6a5a7e;
+    border: 2px dashed rgba(0,0,0,.08);
+  }
+  .card.pink { --accent: var(--pink); }
+  .card.green { --accent: var(--green); }
+  .card.rainbow { --accent: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); }
+  .card.rainbow::before { background: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); opacity: .25; }
+  .card.blue { --accent: var(--blue); }
+  .card.yellow { --accent: var(--yellow); }
+
+  footer {
+    text-align: center;
+    padding: 24px 20px 40px;
+    font-size: 13px;
+    color: #8a7a9e;
+    position: relative;
+    z-index: 1;
+  }
+  footer a {
+    color: #6a4a8e;
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 2px dotted #c5a8e6;
+  }
+  footer a:hover { color: #4a2a6e; }
+  footer .heart { color: #e85a7a; }
+</style>
+</head>
+<body>
+
+<span class="floaty" style="top:8%;left:6%;animation-delay:0s;">🌸</span>
+<span class="floaty" style="top:20%;right:8%;animation-delay:1s;">☁️</span>
+<span class="floaty" style="bottom:30%;left:10%;animation-delay:2s;">⭐</span>
+<span class="floaty" style="bottom:15%;right:12%;animation-delay:3s;">🌈</span>
+<span class="floaty" style="top:50%;right:4%;animation-delay:4s;">🎈</span>
+
+<header>
+  <h1>🌈 阿凱老師的教室小幫手</h1>
+  <p class="subtitle">五個小工具，陪老師和孩子一起過好每一天</p>
+  <p class="school">桃園市龍潭區石門國民小學 · 鱻魚特色學園</p>
+</header>
+
+<main>
+  <div class="grid">
+    <a class="card pink" href="emotion.html">
+      <span class="emoji">😊</span>
+      <h2>情緒打卡牆</h2>
+      <p>1～30 號學生，選號碼、按表情，今天的心情立刻貼上牆。</p>
+      <span class="badge">適合每日晨間活動</span>
+    </a>
+
+    <a class="card green" href="todo.html">
+      <span class="emoji">📝</span>
+      <h2>班級 To-Do List</h2>
+      <p>緊急 · 進行中 · 準備區三欄，拖曳搬家、自動存檔。</p>
+      <span class="badge">紅黃綠三色任務牆</span>
+    </a>
+
+    <a class="card rainbow" href="cards.html">
+      <span class="emoji">🌈</span>
+      <h2>彩虹能量卡</h2>
+      <p>阿德勒風格鼓勵小語，每天抽一張當作今日心錨。</p>
+      <span class="badge">100 句溫柔陪伴</span>
+    </a>
+
+    <a class="card blue" href="attendance.html">
+      <span class="emoji">📋</span>
+      <h2>學生出勤記錄表</h2>
+      <p>設人數產號碼、選月份自動扣週末，可標遲到請假並下載。</p>
+      <span class="badge">下載 PDF / 列印</span>
+    </a>
+
+    <a class="card yellow" href="marquee.html">
+      <span class="emoji">📢</span>
+      <h2>跑馬燈通知</h2>
+      <p>投影機 / 白板顯示重要通知、課堂重點、優秀表揚。</p>
+      <span class="badge">速度顏色可調</span>
+    </a>
+
+    <a class="card" style="--accent:#f8c8a0;background:#fff;" href="#about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});return false;">
+      <span class="emoji">💡</span>
+      <h2>使用小提醒</h2>
+      <p>所有資料都存在這台電腦的瀏覽器，換電腦不會自動帶過去喔。</p>
+      <span class="badge">點我看更多</span>
+    </a>
+  </div>
+
+  <section id="about" style="margin-top:60px;background:rgba(255,255,255,.7);border-radius:24px;padding:28px 32px;backdrop-filter:blur(6px);">
+    <h2 style="margin-top:0;color:#5a4a6e;">💡 使用小提醒</h2>
+    <ul style="line-height:1.9;color:#5a5a6e;font-size:15px;">
+      <li>本工具完全在你的瀏覽器裡跑，<strong>不需要登入</strong>、<strong>不會把資料上傳</strong>。</li>
+      <li>儲存資料用的是瀏覽器的 <code>localStorage</code> — 同一台電腦同一個瀏覽器才看得到。</li>
+      <li>清除瀏覽器資料、用無痕視窗、或換電腦，舊記錄不會自動帶過去。</li>
+      <li>出勤記錄表可以下載 PDF，建議每個月留檔備份一次。</li>
+      <li>適合用投影機 / 觸控大屏 / 平板操作，畫面已針對大尺寸最佳化。</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  Made with <span class="heart">❤️</span> by
+  <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a>
+  · 桃園市龍潭區石門國民小學
+  <br>
+  <span style="font-size:11px;color:#aa9abe;">© 2026 · 為孩子做的小工具，自由使用 ✨</span>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📋 學生出勤記錄表 · 阿凱老師的教室小幫手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    color: #2a3a4e;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(180,220,240,.5), transparent 50%),
+      radial-gradient(circle at 85% 90%, rgba(200,240,220,.5), transparent 50%),
+      linear-gradient(180deg, #f0f8ff 0%, #f5fffa 100%);
+  }
+  .home-btn {
+    position: fixed; top: 16px; left: 16px;
+    background: #fff; border: 3px solid #a8d4ec; color: #3a6a8e;
+    padding: 10px 18px; border-radius: 999px; font-weight: 700;
+    text-decoration: none; font-size: 14px;
+    box-shadow: 0 4px 12px rgba(150,200,230,.25); z-index: 100;
+    transition: transform .2s;
+  }
+  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
+
+  header {
+    text-align: center; padding: 50px 20px 14px;
+  }
+  header h1 {
+    margin: 0; font-size: clamp(26px, 5vw, 40px); color: #2a4a6e;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  header .sub { color: #5a7a9e; margin-top: 8px; font-size: 14px; }
+
+  .toolbar {
+    max-width: 1300px; margin: 14px auto;
+    background: rgba(255,255,255,.85);
+    border-radius: 24px;
+    padding: 18px 22px;
+    box-shadow: 0 8px 20px rgba(80,140,180,.1);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    align-items: end;
+  }
+  .field label {
+    display: block; font-size: 12px; color: #5a7a9e; font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #c5e3f6;
+    border-radius: 12px;
+    font-size: 15px;
+    font-family: inherit;
+    background: #fff;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: #6aa8d4;
+  }
+
+  .btn-group {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 10px 16px; border-radius: 999px; border: none;
+    font-weight: 700; cursor: pointer; font-family: inherit;
+    font-size: 14px; transition: transform .2s;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn.primary { background: #6aa8d4; color: #fff; }
+  .btn.success { background: #80c890; color: #fff; }
+  .btn.warn    { background: #e0a04a; color: #fff; }
+  .btn.danger  { background: #d06070; color: #fff; }
+  .btn.ghost   { background: #fff; color: #6aa8d4; border: 2px solid #c5e3f6; }
+
+  /* 標示說明 */
+  .legend {
+    max-width: 1300px; margin: 12px auto;
+    padding: 0 22px;
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-size: 13px; color: #5a7a9e;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-chip {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 900; color: #fff;
+  }
+
+  /* 表格 */
+  .sheet-wrap {
+    max-width: 1300px; margin: 14px auto 60px;
+    background: #fff;
+    border-radius: 24px;
+    padding: 22px;
+    box-shadow: 0 10px 28px rgba(80,140,180,.12);
+    overflow-x: auto;
+  }
+  .sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .sheet-title { font-size: 20px; font-weight: 900; color: #2a4a6e; }
+  .sheet-stats { color: #5a7a9e; font-size: 13px; }
+
+  table.sheet {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14px;
+    table-layout: fixed;
+  }
+  table.sheet th, table.sheet td {
+    border: 1px solid #d8e6f0;
+    padding: 4px 2px;
+    text-align: center;
+    height: 36px;
+  }
+  table.sheet thead th {
+    background: #e6f2fa;
+    color: #2a4a6e;
+    font-weight: 900;
+    position: sticky; top: 0;
+    z-index: 1;
+  }
+  table.sheet thead th.weekend { background: #fae8e8; color: #a04040; }
+  table.sheet thead th.sunday { background: #f8d8d8; color: #a04040; }
+  table.sheet thead th.holiday-mark { color: #c04040; }
+  table.sheet thead .wkday { font-size: 11px; font-weight: 500; opacity: .7; }
+  table.sheet tbody th {
+    background: #f5fafd;
+    font-weight: 900;
+    width: 70px;
+    color: #2a4a6e;
+  }
+  table.sheet td.weekend-cell { background: #fdf5f5; cursor: default; }
+  table.sheet td.weekend-cell .mark { color: #c0a0a0; }
+  table.sheet td {
+    cursor: pointer;
+    transition: background .15s;
+  }
+  table.sheet td:not(.weekend-cell):hover { background: #fff8dc; }
+  table.sheet td .mark {
+    display: inline-block;
+    min-width: 22px; min-height: 22px;
+    line-height: 22px;
+    border-radius: 6px;
+    font-weight: 900;
+    font-size: 14px;
+  }
+  .m-present .mark { color: #80c890; }
+  .m-late .mark    { background: #ffd060; color: #fff; }
+  .m-leave .mark   { background: #c8a8e6; color: #fff; }
+  .m-absent .mark  { background: #ff8080; color: #fff; }
+  .m-empty .mark   { color: #c8d4dc; }
+
+  /* 列印樣式 */
+  @media print {
+    body {
+      background: #fff !important;
+    }
+    .home-btn, .toolbar, .btn-group, header .sub,
+    .legend, .sheet-stats { display: none !important; }
+    header { padding: 10px 0 4px; }
+    header h1 { font-size: 20px; text-shadow: none; }
+    .sheet-wrap {
+      box-shadow: none; padding: 0; margin: 0;
+      border-radius: 0;
+    }
+    table.sheet { font-size: 11px; }
+    table.sheet th, table.sheet td { height: 24px; padding: 2px; }
+    @page {
+      size: A4 landscape;
+      margin: 12mm 10mm;
+    }
+  }
+
+  /* 行動裝置 */
+  @media (max-width: 700px) {
+    .toolbar { padding: 14px; }
+    table.sheet { font-size: 12px; }
+    table.sheet th, table.sheet td { height: 30px; }
+  }
+
+  footer {
+    text-align: center; padding: 20px; font-size: 13px; color: #6a8aae;
+  }
+  footer a { color: #2a4a6e; font-weight: 700; }
+  @media print { footer { display: none; } }
+
+  /* 標示選擇彈窗 */
+  .picker {
+    position: fixed;
+    background: #fff;
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.2);
+    display: none;
+    gap: 4px;
+    z-index: 200;
+    flex-direction: row;
+  }
+  .picker.show { display: flex; }
+  .picker button {
+    width: 44px; height: 44px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 18px;
+    font-family: inherit;
+  }
+  .picker button:hover { transform: scale(1.1); }
+  .pk-present { background: #d8f0d8; color: #4a8a5e; }
+  .pk-late    { background: #ffe5b8; color: #c08040; }
+  .pk-leave   { background: #e8d8f8; color: #6a4a8e; }
+  .pk-absent  { background: #ffd0d0; color: #c04040; }
+  .pk-clear   { background: #f0f0f0; color: #888; }
+</style>
+</head>
+<body>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<header>
+  <h1>📋 學生出勤記錄表</h1>
+  <p class="sub">設定人數 → 選月份 → 點格子標記出勤狀態 → 列印 / 下載 PDF</p>
+</header>
+
+<div class="toolbar">
+  <div class="field">
+    <label>📚 班級名稱</label>
+    <input type="text" id="className" placeholder="例：五年甲班">
+  </div>
+  <div class="field">
+    <label>👥 學生人數</label>
+    <input type="number" id="studentCount" min="1" max="50" value="30">
+  </div>
+  <div class="field">
+    <label>📅 月份</label>
+    <input type="month" id="monthPick">
+  </div>
+  <div class="field">
+    <div class="btn-group">
+      <button class="btn primary" onclick="apply()">🔍 載入 / 重新整理</button>
+      <button class="btn success" onclick="saveSheet()">💾 存檔</button>
+    </div>
+  </div>
+  <div class="field">
+    <div class="btn-group">
+      <button class="btn warn" onclick="window.print()">🖨️ 列印 / 存 PDF</button>
+      <button class="btn ghost" onclick="exportJSON()">📤 匯出 JSON</button>
+      <button class="btn danger" onclick="resetMonth()">🔄 清空此月</button>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <span class="legend-item"><span class="legend-chip" style="background:#d8f0d8;color:#4a8a5e;">✓</span>出席</span>
+  <span class="legend-item"><span class="legend-chip" style="background:#ffd060;">遲</span>遲到</span>
+  <span class="legend-item"><span class="legend-chip" style="background:#c8a8e6;">假</span>請假</span>
+  <span class="legend-item"><span class="legend-chip" style="background:#ff8080;">✕</span>缺席</span>
+  <span class="legend-item">　空白＝週末／未填　|　點格子可循環切換，長按出選單</span>
+</div>
+
+<div class="sheet-wrap">
+  <div class="sheet-head">
+    <div class="sheet-title" id="sheetTitle">請選擇月份後按「載入」</div>
+    <div class="sheet-stats" id="sheetStats"></div>
+  </div>
+  <table class="sheet" id="sheetTable">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div class="picker" id="picker">
+  <button class="pk-present" data-mark="present" title="出席">✓</button>
+  <button class="pk-late"    data-mark="late"    title="遲到">遲</button>
+  <button class="pk-leave"   data-mark="leave"   title="請假">假</button>
+  <button class="pk-absent"  data-mark="absent"  title="缺席">✕</button>
+  <button class="pk-clear"   data-mark="empty"   title="清除">⌫</button>
+</div>
+
+<footer>
+  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+</footer>
+
+<script>
+const STORAGE_KEY = 'akai_attendance_v1';
+const WKDAYS = ['日','一','二','三','四','五','六'];
+
+const MARK_MAP = {
+  empty:   { sym: '·', cls: 'm-empty' },
+  present: { sym: '✓', cls: 'm-present' },
+  late:    { sym: '遲', cls: 'm-late' },
+  leave:   { sym: '假', cls: 'm-leave' },
+  absent:  { sym: '✕', cls: 'm-absent' },
+};
+const CYCLE = ['empty','present','late','leave','absent'];
+
+let store = loadStore();
+let current = null; // { year, month, count, className, marks: { "y-m-d": { stuId: mark } } }
+
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { sheets: {}, settings: {} }; }
+  catch { return { sheets: {}, settings: {} }; }
+}
+function saveStore() { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
+
+function init() {
+  const now = new Date();
+  const monthInput = document.getElementById('monthPick');
+  // 載入上次設定
+  const last = store.settings;
+  document.getElementById('className').value = last.className || '';
+  document.getElementById('studentCount').value = last.count || 30;
+  monthInput.value = last.month || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  apply();
+}
+
+function sheetKey(year, month) { return `${year}-${String(month).padStart(2,'0')}`; }
+
+function apply() {
+  const className = document.getElementById('className').value.trim();
+  const count = parseInt(document.getElementById('studentCount').value) || 30;
+  const monthValue = document.getElementById('monthPick').value;
+  if (!monthValue) { alert('請選一個月份'); return; }
+  const [yStr, mStr] = monthValue.split('-');
+  const year = parseInt(yStr);
+  const month = parseInt(mStr);
+
+  store.settings = { className, count, month: monthValue };
+  saveStore();
+
+  const key = sheetKey(year, month);
+  if (!store.sheets[key]) {
+    store.sheets[key] = { className, count, marks: {} };
+  } else {
+    store.sheets[key].className = className;
+    store.sheets[key].count = count;
+  }
+  current = { year, month, key };
+  render();
+}
+
+function daysInMonth(year, month) {
+  return new Date(year, month, 0).getDate();
+}
+
+function render() {
+  if (!current) return;
+  const sheet = store.sheets[current.key];
+  const days = daysInMonth(current.year, current.month);
+  const count = sheet.count;
+
+  document.getElementById('sheetTitle').textContent =
+    `${sheet.className || '未命名班級'}　${current.year} 年 ${current.month} 月　出勤記錄`;
+
+  const thead = document.querySelector('#sheetTable thead');
+  const tbody = document.querySelector('#sheetTable tbody');
+  thead.innerHTML = '';
+  tbody.innerHTML = '';
+
+  // 表頭
+  const tr1 = document.createElement('tr');
+  tr1.innerHTML = '<th rowspan="2" style="width:64px;">座號</th>';
+  let upDayCount = 0;
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(current.year, current.month - 1, d);
+    const wk = dt.getDay();
+    const th = document.createElement('th');
+    th.textContent = d;
+    if (wk === 0) th.classList.add('sunday');
+    else if (wk === 6) th.classList.add('weekend');
+    else upDayCount++;
+    tr1.appendChild(th);
+  }
+  tr1.innerHTML += '<th rowspan="2" style="width:60px;">應到</th>';
+  tr1.innerHTML += '<th rowspan="2" style="width:48px;">遲</th>';
+  tr1.innerHTML += '<th rowspan="2" style="width:48px;">假</th>';
+  tr1.innerHTML += '<th rowspan="2" style="width:48px;">缺</th>';
+  thead.appendChild(tr1);
+
+  const tr2 = document.createElement('tr');
+  for (let d = 1; d <= days; d++) {
+    const dt = new Date(current.year, current.month - 1, d);
+    const wk = dt.getDay();
+    const th = document.createElement('th');
+    th.className = 'wkday';
+    th.textContent = WKDAYS[wk];
+    if (wk === 0) th.classList.add('sunday');
+    else if (wk === 6) th.classList.add('weekend');
+    tr2.appendChild(th);
+  }
+  thead.appendChild(tr2);
+
+  // 統計
+  let totalLate = 0, totalLeave = 0, totalAbsent = 0;
+
+  // 學生列
+  for (let s = 1; s <= count; s++) {
+    const tr = document.createElement('tr');
+    const sh = document.createElement('th');
+    sh.textContent = `${s} 號`;
+    tr.appendChild(sh);
+
+    let late = 0, leave = 0, absent = 0;
+
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(current.year, current.month - 1, d);
+      const wk = dt.getDay();
+      const td = document.createElement('td');
+      const dKey = `${current.year}-${String(current.month).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if (wk === 0 || wk === 6) {
+        td.classList.add('weekend-cell');
+        td.innerHTML = '<span class="mark">·</span>';
+      } else {
+        const mark = (sheet.marks[dKey] && sheet.marks[dKey][s]) || 'empty';
+        const cfg = MARK_MAP[mark];
+        td.classList.add(cfg.cls);
+        td.innerHTML = `<span class="mark">${cfg.sym}</span>`;
+        td.dataset.s = s;
+        td.dataset.d = dKey;
+        if (mark === 'late') late++;
+        if (mark === 'leave') leave++;
+        if (mark === 'absent') absent++;
+        // 點擊循環
+        td.addEventListener('click', onCellClick);
+        td.addEventListener('contextmenu', (e) => { e.preventDefault(); openPicker(e.clientX, e.clientY, s, dKey); });
+        let pressT;
+        td.addEventListener('touchstart', (e) => {
+          pressT = setTimeout(() => {
+            const r = td.getBoundingClientRect();
+            openPicker(r.left + 8, r.top + 8, s, dKey);
+          }, 500);
+        });
+        td.addEventListener('touchend', () => clearTimeout(pressT));
+        td.addEventListener('touchmove', () => clearTimeout(pressT));
+      }
+      tr.appendChild(td);
+    }
+
+    const tdUp = document.createElement('td');
+    tdUp.textContent = upDayCount;
+    tdUp.style.fontWeight = '700';
+    tr.appendChild(tdUp);
+    const mkTd = (n, cls) => {
+      const t = document.createElement('td');
+      t.textContent = n;
+      t.className = cls;
+      if (n > 0) {
+        t.innerHTML = `<span class="mark">${n}</span>`;
+      }
+      return t;
+    };
+    tr.appendChild(mkTd(late, 'm-late'));
+    tr.appendChild(mkTd(leave, 'm-leave'));
+    tr.appendChild(mkTd(absent, 'm-absent'));
+
+    totalLate += late;
+    totalLeave += leave;
+    totalAbsent += absent;
+
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById('sheetStats').textContent =
+    `上學日 ${upDayCount} 天　|　全班遲到 ${totalLate} 次　請假 ${totalLeave} 次　缺席 ${totalAbsent} 次`;
+}
+
+function onCellClick(e) {
+  const td = e.currentTarget;
+  const s = parseInt(td.dataset.s);
+  const dKey = td.dataset.d;
+  const sheet = store.sheets[current.key];
+  if (!sheet.marks[dKey]) sheet.marks[dKey] = {};
+  const cur = sheet.marks[dKey][s] || 'empty';
+  const next = CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length];
+  if (next === 'empty') delete sheet.marks[dKey][s];
+  else sheet.marks[dKey][s] = next;
+  saveStore();
+  render();
+}
+
+function openPicker(x, y, s, dKey) {
+  const pk = document.getElementById('picker');
+  pk.dataset.s = s;
+  pk.dataset.d = dKey;
+  pk.style.left = Math.min(x, window.innerWidth - 250) + 'px';
+  pk.style.top = Math.min(y, window.innerHeight - 60) + 'px';
+  pk.classList.add('show');
+}
+document.querySelectorAll('#picker button').forEach(btn => {
+  btn.onclick = () => {
+    const pk = document.getElementById('picker');
+    const s = parseInt(pk.dataset.s);
+    const dKey = pk.dataset.d;
+    const mark = btn.dataset.mark;
+    const sheet = store.sheets[current.key];
+    if (!sheet.marks[dKey]) sheet.marks[dKey] = {};
+    if (mark === 'empty') delete sheet.marks[dKey][s];
+    else sheet.marks[dKey][s] = mark;
+    saveStore();
+    pk.classList.remove('show');
+    render();
+  };
+});
+document.addEventListener('click', (e) => {
+  const pk = document.getElementById('picker');
+  if (!pk.contains(e.target) && !e.target.closest('td')) pk.classList.remove('show');
+});
+
+function saveSheet() {
+  saveStore();
+  flash('✓ 已存檔');
+}
+
+function resetMonth() {
+  if (!current) return;
+  if (!confirm(`要清空 ${current.year}/${current.month} 的所有記號嗎？（其他月份不會受影響）`)) return;
+  store.sheets[current.key].marks = {};
+  saveStore();
+  render();
+}
+
+function exportJSON() {
+  if (!current) return;
+  const sheet = store.sheets[current.key];
+  const data = {
+    className: sheet.className,
+    count: sheet.count,
+    year: current.year,
+    month: current.month,
+    marks: sheet.marks,
+    exportedAt: new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `出勤_${sheet.className || '班級'}_${current.year}-${String(current.month).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function flash(text) {
+  const el = document.createElement('div');
+  el.textContent = text;
+  el.style.cssText = `
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: #80c890; color: #fff; padding: 12px 24px;
+    border-radius: 999px; font-weight: 700; z-index: 300;
+    box-shadow: 0 8px 24px rgba(80,180,120,.4); font-size: 15px;
+  `;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+init();
+</script>
+
+</body>
+</html>
