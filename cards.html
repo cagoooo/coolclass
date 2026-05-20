@@ -522,24 +522,45 @@ function pickRandom() {
   return pick;
 }
 
+let lastDrawTime = 0;
+
 function drawCard() {
+  // 防止重複點擊（含動畫期間誤觸）
+  const now = Date.now();
+  if (now - lastDrawTime < 600) return;
+  lastDrawTime = now;
+
   const next = pickRandom();
   if (!next) return;
-  // 翻回卡背 → 換內容 → 翻面
   const inner = document.getElementById('cardInner');
-  if (flipped) {
-    inner.classList.remove('flipped');
-    setTimeout(() => {
-      currentCard = next;
-      paintCard();
-      inner.classList.add('flipped');
-      flipped = true;
-    }, 400);
-  } else {
+  const front = document.getElementById('cardFront');
+
+  if (!flipped) {
+    // 第一次抽：使用翻轉動畫
     currentCard = next;
     paintCard();
     inner.classList.add('flipped');
     flipped = true;
+  } else {
+    // 已翻過：用淡入淡出換內容，不翻回卡背
+    const quoteEl = document.getElementById('quote');
+    const kwEl = document.getElementById('keyword');
+    const catEl = document.getElementById('category');
+    const seqEl = document.getElementById('seq');
+    const tail = front.querySelector('.tail');
+    [quoteEl, kwEl, catEl, seqEl, tail].forEach(el => {
+      if (!el) return;
+      el.style.transition = 'opacity 0.25s ease';
+      el.style.opacity = '0';
+    });
+    setTimeout(() => {
+      currentCard = next;
+      paintCard();
+      [quoteEl, kwEl, catEl, seqEl, tail].forEach(el => {
+        if (!el) return;
+        el.style.opacity = '1';
+      });
+    }, 250);
   }
   updateFavBtn();
 }
