@@ -426,14 +426,11 @@
   <span style="font-size:11px;color:#aa9abe;">© 2026 · v2.0 · 為孩子做的小工具，自由使用 ✨</span>
 </footer>
 
+<script src="sw-update.js" defer></script>
 <script src="roster.js"></script>
 <script>
-// ===== PWA 註冊 =====
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
+// ===== PWA 註冊：交給 sw-update.js =====
+// （見頁面底部 script 載入；含更新偵測 + banner）
 
 // ===== 安裝引導 =====
 let deferredPrompt = null;
