@@ -3,192 +3,193 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>👥 隨機分組 · 教室小幫手</title>
+<title>隨機分組 · 教室小幫手</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#9a7ed4">
+<meta name="theme-color" content="#b070ff">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-    color: #2a3a4e;
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(220,200,250,.5), transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(200,230,250,.5), transparent 50%),
-      linear-gradient(135deg, #fbf5ff 0%, #f0f8ff 100%);
-  }
-  .home-btn {
-    position: fixed; top: 16px; left: 16px;
-    background: #fff; border: 3px solid #d8c8ec; color: #6a4a8e;
-    padding: 10px 18px; border-radius: 999px; font-weight: 700;
-    text-decoration: none; font-size: 14px;
-    box-shadow: 0 4px 12px rgba(180,160,220,.25); z-index: 100;
-    transition: transform .2s;
-  }
-  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
-
-  header { text-align: center; padding: 50px 20px 10px; }
-  header h1 {
-    margin: 0; font-size: clamp(28px, 5vw, 44px); color: #6a4a8e;
-    text-shadow: 2px 2px 0 #fff;
-  }
-  header .sub { color: #8a6a9e; margin-top: 6px; font-size: 14px; }
-
-  main { max-width: 1200px; margin: 0 auto; padding: 10px 20px 60px; }
-
-  .controls {
-    background: rgba(255,255,255,.85);
-    border-radius: 24px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    box-shadow: 0 6px 18px rgba(150,130,200,.12);
-  }
-  .ctrl-row {
-    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-  .ctrl-row label { font-weight: 700; color: #6a4a8e; font-size: 14px; }
-  .ctrl-row input[type="number"] {
-    width: 80px; padding: 10px 12px;
-    border: 2px solid #d8c8ec;
-    border-radius: 10px;
-    font-size: 16px;
-    font-family: inherit;
-    text-align: center;
-  }
-  .ctrl-row input:focus { outline: none; border-color: #9a7ed4; }
+  /* 模式切換 */
   .mode-pick {
-    display: flex; gap: 8px; flex-wrap: wrap;
+    display: flex; gap: 0;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 var(--ink);
   }
   .mode-pick button {
-    padding: 8px 14px;
-    border-radius: 999px;
-    border: 2px solid #d8c8ec;
+    padding: 9px 18px;
+    border: none;
     background: #fff;
     cursor: pointer;
     font-family: inherit;
     font-weight: 700;
-    color: #6a4a8e;
+    color: var(--ink);
     font-size: 13px;
   }
-  .mode-pick button.on {
-    background: #9a7ed4; border-color: #9a7ed4; color: #fff;
-  }
+  .mode-pick button + button { border-left: 3px solid var(--ink); }
+  .mode-pick button.on { background: var(--ink); color: var(--paper); }
 
-  .actions {
-    display: flex; gap: 12px; flex-wrap: wrap;
-    border-top: 2px dashed #d8c8ec; padding-top: 14px;
+  .ctrl-row {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    margin-bottom: 12px;
   }
-  .big-btn {
-    padding: 12px 24px;
+  .ctrl-row label { font-weight: 700; color: var(--ink); font-size: 14px; }
+
+  .switch {
+    display: inline-flex; align-items: center; gap: 10px;
+    cursor: pointer; font-weight: 700; font-size: 14px;
+  }
+  .switch input { display: none; }
+  .switch .knob {
+    width: 44px; height: 24px;
+    background: #fff;
+    border: 3px solid var(--ink);
     border-radius: 999px;
-    border: none;
-    font-weight: 700;
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 15px;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .switch .knob::after {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: var(--ink);
+    border-radius: 50%;
     transition: transform .2s;
   }
-  .big-btn:hover { transform: translateY(-2px); }
-  .btn-shuffle { background: linear-gradient(135deg, #c8a8e6, #9a7ed4); color: #fff; }
-  .btn-print { background: #ffc890; color: #fff; }
-  .btn-save { background: #80c890; color: #fff; }
-  .btn-copy { background: #fff; color: #6a4a8e; border: 2px solid #d8c8ec; }
+  .switch input:checked + .knob { background: var(--g); }
+  .switch input:checked + .knob::after { transform: translateX(20px); }
 
-  /* 分組結果 */
+  /* 分組卡片 */
   .groups {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
   }
   .group-card {
     background: #fff;
-    border-radius: 22px;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-lg);
     padding: 18px 20px;
-    box-shadow: 0 8px 20px rgba(150,130,200,.12);
-    border: 3px solid;
+    box-shadow: var(--shadow);
     animation: slideUp .4s cubic-bezier(.34,1.56,.64,1) backwards;
     position: relative;
   }
   @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to   { transform: translateY(0); opacity: 1; }
+    from { transform: translateY(20px) scale(.9); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
   }
-  .group-card h3 {
-    margin: 0 0 12px;
-    font-size: 18px;
-    font-weight: 900;
-    display: flex; align-items: center; gap: 8px;
+  .group-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 3px dashed var(--ink);
   }
-  .group-card h3 .num-tag {
-    background: currentColor;
-    color: #fff;
-    width: 32px; height: 32px;
+  .group-head .num-tag {
+    width: 44px; height: 44px;
     border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 14px;
+    background: var(--ink);
+    color: var(--g-color, var(--y));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 22px;
+    flex-shrink: 0;
   }
-  .group-card .members {
+  .group-head .title {
+    font-weight: 900;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+  .group-head .title small {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .members {
     display: flex; flex-direction: column; gap: 8px;
   }
   .member {
-    background: rgba(0,0,0,.04);
-    border-radius: 12px;
+    background: var(--g-bg, var(--y));
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
     padding: 8px 12px;
     font-size: 15px;
+    font-weight: 700;
     display: flex; align-items: center; gap: 10px;
+    box-shadow: 2px 2px 0 var(--ink);
   }
   .member .num {
-    background: #fff;
+    background: var(--ink);
+    color: var(--g-color, var(--y));
     border-radius: 999px;
     padding: 2px 10px;
     font-size: 12px;
-    font-weight: 700;
-    color: currentColor;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
   }
   .member.leader::after {
     content: '👑';
     margin-left: auto;
+    font-size: 16px;
   }
 
-  .empty-tip {
-    text-align: center; padding: 60px 20px;
-    color: #8a7aa0; font-size: 16px;
-  }
-
-  /* 列印 */
   @media print {
     body { background: #fff !important; }
-    .home-btn, .controls, header .sub, footer { display: none !important; }
-    header { padding: 10px 0; }
-    header h1 { font-size: 22px; text-shadow: none; }
-    .group-card { box-shadow: none !important; break-inside: avoid; animation: none; }
+    .home-btn, .block, .btn-bar, .page-hero, footer.f, .bg-deco { display: none !important; }
+    .group-card { box-shadow: none !important; break-inside: avoid; animation: none; border-width: 2px; }
+    .groups { gap: 8mm; grid-template-columns: repeat(3, 1fr); }
     @page { size: A4; margin: 10mm; }
   }
-
-  footer {
-    text-align: center; padding: 20px; font-size: 13px; color: #8a6a9e;
-  }
-  footer a { color: #6a4a8e; font-weight: 700; }
 </style>
+<script src="tweaks.js"></script>
 </head>
 <body>
 
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-p"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+  <span class="squig squig-2"></span>
+</div>
+
 <a class="home-btn" href="index.html">← 回主頁</a>
 
-<header>
-  <h1>👥 隨機分組</h1>
-  <p class="sub">小組討論、實驗、闖關活動的最佳幫手</p>
-  <p id="classInfo" style="color:#8a6a9e;font-size:13px;margin-top:6px;"></p>
-</header>
+<div class="wrap">
 
-<main>
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">GROUPS · 隨機分組</span>
+      <h1>洗牌、<em>分組</em>、印名牌，<br>三秒搞定。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— · 30 人</span>
+        <span class="badge">可印 A4 名牌</span>
+        <span class="badge">可複製文字版</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="heroGroups">—</span>
+      <span class="sml">組 · 已分</span>
+    </div>
+  </section>
 
-  <div class="controls">
+  <!-- 設定 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⚙</div>
+      <h2>分組設定</h2>
+    </div>
     <div class="ctrl-row">
       <label>分組方式：</label>
       <div class="mode-pick" id="modePick">
@@ -198,45 +199,65 @@
     </div>
     <div class="ctrl-row">
       <label id="paramLabel">組數：</label>
-      <input type="number" id="paramN" min="2" max="30" value="5">
-      <label class="opt-row" style="display:inline-flex;align-items:center;gap:6px;">
-        <input type="checkbox" id="pickLeader"> 自動選組長 👑
+      <input type="number" class="input" id="paramN" min="2" max="30" value="5" style="width:100px;">
+      <label class="switch" style="margin-left:8px;">
+        <input type="checkbox" id="pickLeader">
+        <span class="knob"></span>
+        自動選組長 👑
       </label>
     </div>
-    <div class="actions">
-      <button class="big-btn btn-shuffle" onclick="shuffle()">🎲 開始分組！</button>
-      <button class="big-btn btn-save" onclick="saveAsPreset()">⭐ 收藏這份分組</button>
-      <button class="big-btn btn-copy" onclick="copyText()">📋 複製文字版</button>
-      <button class="big-btn btn-print" onclick="window.print()">🖨️ 列印名牌</button>
-      <a class="big-btn btn-copy" style="text-decoration:none;display:inline-block;text-align:center;" href="roster.html">👥 編輯班級名單</a>
+    <div class="btn-bar" style="border-top:2px dashed var(--ink);padding-top:16px;margin-top:12px;">
+      <button class="btn primary lg" onclick="shuffle()">🎲 開始分組！</button>
+      <button class="btn b" onclick="copyText()">📋 複製文字版</button>
+      <button class="btn y" onclick="window.print()">🖨️ 列印 A4 名牌</button>
+      <a class="btn" href="roster.html" style="margin-left:auto;">👥 編輯班級名單</a>
     </div>
-  </div>
+  </section>
 
   <div id="result" class="groups">
-    <div class="empty-tip">按上面的「🎲 開始分組！」開始 ✨</div>
+    <div class="empty" style="grid-column:1/-1;"><b>還沒分組</b>按上面的「🎲 開始分組！」開始 ✨</div>
   </div>
 
-</main>
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 “Crayon Pop”</div>
+  </footer>
+</div>
 
-<footer>
-  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
-</footer>
+<div class="toast" id="toast">已複製</div>
 
-<script src="sw-update.js" defer></script>
 <script src="roster.js"></script>
+<script src="sw-update.js" defer></script>
+<script>
+if (!window.AkaiRoster) {
+  const KEY = 'akai_roster_v1';
+  window.AkaiRoster = {
+    load() {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (!raw) return { className: '', count: 30, names: {} };
+        const o = JSON.parse(raw);
+        return { className: o.className || '', count: parseInt(o.count) || 30, names: o.names || {} };
+      } catch { return { className: '', count: 30, names: {} }; }
+    },
+    getName(n) { return this.load().names[String(n)] || ''; }
+  };
+}
+</script>
+
 <script>
 const STORAGE_KEY = 'akai_grouper_v1';
 const COLORS = [
-  { c1: '#ff8aaa', c2: '#ffd1dc', name: '🌸 粉櫻' },
-  { c1: '#ffb060', c2: '#ffe5b8', name: '🍊 鮮橘' },
-  { c1: '#ffd040', c2: '#fff5b3', name: '🌻 暖陽' },
-  { c1: '#80c890', c2: '#c8f0d0', name: '🍃 薄荷' },
-  { c1: '#6ac0e0', c2: '#c5e3f6', name: '💧 海洋' },
-  { c1: '#9a7ed4', c2: '#e2d3f4', name: '💜 紫羅' },
-  { c1: '#e070a0', c2: '#ffc5dc', name: '🌷 玫紅' },
-  { c1: '#5aa080', c2: '#a8d8b8', name: '🌳 森綠' },
-  { c1: '#e0a040', c2: '#ffd890', name: '🍯 蜂蜜' },
-  { c1: '#7a8ad4', c2: '#bcc5e8', name: '🌌 星空' },
+  { bg: '#ffd6e7', color: '#ff97c5', name: '🌸 粉櫻' },
+  { bg: '#ffe1c8', color: '#ff9d4d', name: '🍊 鮮橘' },
+  { bg: '#fff4b8', color: '#ffd23f', name: '🌻 暖陽' },
+  { bg: '#d4f0c2', color: '#6bcb77', name: '🍃 薄荷' },
+  { bg: '#c8e5ff', color: '#4d96ff', name: '💧 海洋' },
+  { bg: '#e0cdff', color: '#b070ff', name: '💜 紫羅' },
+  { bg: '#ffc8d8', color: '#ff6b6b', name: '🌷 玫紅' },
+  { bg: '#b8e0d0', color: '#4ec5d8', name: '🌳 森綠' },
+  { bg: '#ffe4a8', color: '#ff9d4d', name: '🍯 蜂蜜' },
+  { bg: '#d0d8f0', color: '#5a6dcc', name: '🌌 星空' },
 ];
 
 let state = loadState();
@@ -265,12 +286,8 @@ function renderControls() {
   document.getElementById('pickLeader').checked = state.pickLeader;
 
   const r = AkaiRoster.load();
-  const info = document.getElementById('classInfo');
-  if (r.className) {
-    info.innerHTML = `🏫 ${r.className} · 共 ${r.count} 位學生`;
-  } else {
-    info.innerHTML = `👥 共 ${r.count || 30} 位學生 · <a href="roster.html" style="color:#6a4a8e;">設定班級名單</a>`;
-  }
+  const badge = document.getElementById('classBadge');
+  badge.textContent = r.className ? `🏫 ${r.className} · ${r.count} 人` : `👥 ${r.count || 30} 人 · 未設定班級`;
 }
 
 document.querySelectorAll('#modePick button').forEach(b => {
@@ -295,7 +312,6 @@ function shuffle() {
   const all = [];
   for (let i = 1; i <= n; i++) all.push({ num: i, name: AkaiRoster.getName(i) });
 
-  // Fisher–Yates 洗牌
   for (let i = all.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [all[i], all[j]] = [all[j], all[i]];
@@ -309,15 +325,10 @@ function shuffle() {
   }
 
   groups = Array.from({ length: numGroups }, () => []);
-  all.forEach((stu, i) => {
-    groups[i % numGroups].push(stu);
-  });
+  all.forEach((stu, i) => groups[i % numGroups].push(stu));
 
-  // 標記組長
   if (state.pickLeader) {
-    groups.forEach(g => {
-      if (g.length > 0) g[0].leader = true;
-    });
+    groups.forEach(g => { if (g.length > 0) g[0].leader = true; });
   }
 
   state.lastGroups = groups;
@@ -327,8 +338,9 @@ function shuffle() {
 
 function render() {
   const wrap = document.getElementById('result');
+  document.getElementById('heroGroups').textContent = groups && groups.length > 0 ? groups.length : '—';
   if (!groups || groups.length === 0) {
-    wrap.innerHTML = '<div class="empty-tip">按上面的「🎲 開始分組！」開始 ✨</div>';
+    wrap.innerHTML = '<div class="empty" style="grid-column:1/-1;"><b>還沒分組</b>按上面的「🎲 開始分組！」開始 ✨</div>';
     return;
   }
   wrap.innerHTML = '';
@@ -336,12 +348,14 @@ function render() {
     const c = COLORS[i % COLORS.length];
     const card = document.createElement('div');
     card.className = 'group-card';
-    card.style.borderColor = c.c1;
-    card.style.color = c.c1;
-    card.style.background = `linear-gradient(135deg, #fff 0%, ${c.c2}40 100%)`;
+    card.style.setProperty('--g-bg', c.bg);
+    card.style.setProperty('--g-color', c.color);
     card.style.animationDelay = (i * 0.08) + 's';
     card.innerHTML = `
-      <h3><span class="num-tag">${i+1}</span><span>第 ${i+1} 組 · ${c.name}</span></h3>
+      <div class="group-head">
+        <div class="num-tag">${i+1}</div>
+        <div class="title">第 ${i+1} 組<small>${c.name} · ${g.length} 人</small></div>
+      </div>
       <div class="members"></div>
     `;
     const members = card.querySelector('.members');
@@ -349,7 +363,7 @@ function render() {
       const m = document.createElement('div');
       m.className = 'member' + (stu.leader ? ' leader' : '');
       const dispName = stu.name || `${stu.num} 號`;
-      m.innerHTML = `<span class="num">${stu.num}</span> <span style="color:#2a2a3e;font-weight:700;">${escapeHtml(dispName)}</span>`;
+      m.innerHTML = `<span class="num">${stu.num}</span> <span>${escapeHtml(dispName)}</span>`;
       members.appendChild(m);
     });
     wrap.appendChild(card);
@@ -376,10 +390,7 @@ function copyText() {
     lines.push('');
   });
   const text = lines.join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    flash('✓ 已複製到剪貼簿');
-  }, () => {
-    // fallback
+  navigator.clipboard.writeText(text).then(() => flash('✓ 已複製到剪貼簿'), () => {
     const ta = document.createElement('textarea');
     ta.value = text;
     document.body.appendChild(ta);
@@ -389,30 +400,15 @@ function copyText() {
   });
 }
 
-function saveAsPreset() {
-  if (!groups || groups.length === 0) { alert('還沒分組喔'); return; }
-  state.lastGroups = groups;
-  saveState();
-  flash('⭐ 已收藏這份分組');
-}
-
 function flash(text) {
-  const el = document.createElement('div');
-  el.textContent = text;
-  el.style.cssText = `
-    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-    background: #9a7ed4; color: #fff; padding: 12px 24px;
-    border-radius: 999px; font-weight: 700; z-index: 9999;
-    box-shadow: 0 8px 24px rgba(154,126,212,.4); font-size: 15px;
-  `;
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1200);
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._flashT);
+  window._flashT = setTimeout(() => t.classList.remove('show'), 1400);
 }
 
-// 還原上次分組
-if (state.lastGroups && state.lastGroups.length > 0) {
-  groups = state.lastGroups;
-}
+if (state.lastGroups && state.lastGroups.length > 0) groups = state.lastGroups;
 
 window.addEventListener('storage', (e) => {
   if (e.key === 'akai_roster_v1') renderControls();

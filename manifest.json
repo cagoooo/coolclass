@@ -1,13 +1,13 @@
 {
-  "name": "教室小幫手",
+  "name": "教室小幫手 — 老師的每日課堂工具",
   "short_name": "教室小幫手",
-  "description": "給老師的免費班級工具：情緒打卡、待辦、能量卡、出勤、跑馬燈、抽號、計時、分組",
+  "description": "情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、隨機抽號、計時器、隨機分組",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#ff9ab0",
-  "background_color": "#fff7ee",
+  "theme_color": "#ff6b6b",
+  "background_color": "#fff8e8",
   "lang": "zh-Hant",
   "categories": ["education", "productivity"],
   "icons": [

@@ -3,106 +3,129 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌈 彩虹能量卡 · 教室小幫手</title>
+<title>彩虹能量卡 · 教室小幫手</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#c8a8e6">
+<meta name="theme-color" content="#b070ff">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-    color: #4a4a4a;
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(255,200,220,.5), transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255,230,180,.5), transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(180,230,200,.5), transparent 50%),
-      radial-gradient(circle at 20% 80%, rgba(180,210,240,.5), transparent 50%),
-      linear-gradient(135deg, #fff5f8 0%, #f5f8ff 100%);
-  }
-  .home-btn {
-    position: fixed; top: 16px; left: 16px;
-    background: #fff; border: 3px solid #d8c8ec; color: #6a4a8e;
-    padding: 10px 18px; border-radius: 999px; font-weight: 700;
-    text-decoration: none; font-size: 14px;
-    box-shadow: 0 4px 12px rgba(180,160,220,.25); z-index: 100;
-    transition: transform .2s;
-  }
-  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
-
-  header {
-    text-align: center; padding: 50px 20px 16px;
-  }
-  header h1 {
-    margin: 0; font-size: clamp(28px, 5vw, 42px); color: #5a4a8e;
-    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(220,200,255,.5);
-  }
-  header .sub { color: #8a7a9e; margin-top: 8px; font-size: 14px; }
-
-  /* 今日卡片區 */
-  .today-section {
-    max-width: 900px; margin: 30px auto 10px;
-    padding: 0 20px;
-  }
-  .today-card {
-    background: linear-gradient(135deg, #fff 0%, #fef5fa 100%);
-    border-radius: 28px;
-    padding: 24px 28px;
-    box-shadow: 0 12px 28px rgba(180,140,200,.18);
-    border: 3px solid #f0d8ec;
+  /* 今日心錨大字版 */
+  .today-mantra {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: var(--rad-lg);
+    padding: 32px 36px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-lg);
     position: relative;
     overflow: hidden;
   }
-  .today-card::before {
-    content: '🌅';
+  .today-mantra::before {
+    content: '';
     position: absolute;
-    top: -20px; right: -10px;
-    font-size: 90px;
-    opacity: .1;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 220deg,
+      var(--r) 0deg 60deg,
+      var(--orange) 60deg 120deg,
+      var(--y) 120deg 180deg,
+      var(--g) 180deg 240deg,
+      var(--b) 240deg 300deg,
+      var(--p) 300deg 360deg
+    );
+    opacity: .18;
+    top: -100px; right: -80px;
   }
-  .today-label {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: linear-gradient(135deg, #ffd1dc, #ffe5b8);
-    color: #6a3a5e;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 12px;
+  .today-mantra::after {
+    content: '“';
+    position: absolute;
+    font-family: 'Noto Serif TC', serif;
     font-weight: 900;
-    letter-spacing: 2px;
-    box-shadow: 0 2px 8px rgba(255,180,200,.4);
+    font-size: 240px;
+    color: var(--y);
+    opacity: .12;
+    line-height: 1;
+    top: -20px; left: 12px;
   }
-  .today-quote {
-    margin-top: 14px;
-    font-size: clamp(20px, 3vw, 26px);
+  .today-mantra .label {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--y);
+    color: var(--ink);
+    padding: 4px 14px;
+    border-radius: 999px;
     font-weight: 700;
-    line-height: 1.7;
-    color: #4a2a5e;
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
   }
-  .today-meta {
-    margin-top: 14px;
-    display: flex; gap: 14px; flex-wrap: wrap;
-    font-size: 13px; color: #8a6a9e;
+  .today-mantra .quote {
+    position: relative;
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: clamp(22px, 3.6vw, 32px);
+    line-height: 1.55;
+    margin: 0;
+    color: var(--paper);
+    letter-spacing: 1px;
   }
-  .today-meta span {
-    background: rgba(255,255,255,.7);
+  .today-mantra .meta {
+    position: relative;
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .today-mantra .meta span {
+    background: rgba(255,255,255,.1);
+    border: 2px solid var(--paper);
+    color: var(--paper);
     padding: 4px 12px;
     border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
   }
 
-  /* 主卡片 */
+  /* 篩選 */
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin: 0 0 24px;
+    justify-content: center;
+  }
+  .filter-btn {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    padding: 7px 16px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .filter-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .filter-btn.on {
+    background: var(--ink); color: var(--paper);
+  }
+
+  /* 卡片舞台 */
   .stage {
-    max-width: 600px; margin: 30px auto 20px;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 0 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    text-align: center;
   }
   .card-shell {
-    width: 100%; max-width: 460px;
+    width: 100%;
     aspect-ratio: 3/4;
     perspective: 1200px;
-    margin-bottom: 24px;
+    margin-bottom: 22px;
     position: relative;
   }
   .card-inner {
@@ -110,379 +133,318 @@
     position: relative;
     transition: transform .8s cubic-bezier(.4, .2, .2, 1);
     transform-style: preserve-3d;
+    cursor: pointer;
   }
   .card-inner.flipped { transform: rotateY(180deg); }
   .card-face {
     position: absolute; inset: 0;
     backface-visibility: hidden;
-    border-radius: 32px;
+    border: 4px solid var(--ink);
+    border-radius: 28px;
     overflow: hidden;
-    box-shadow: 0 20px 50px rgba(120,100,160,.25), 0 4px 14px rgba(120,100,160,.15);
+    box-shadow: 8px 8px 0 var(--ink);
     display: flex; flex-direction: column;
-    padding: 36px 32px;
+    padding: 32px 28px;
   }
   .card-back {
     transform: rotateY(180deg);
-    background:
-      radial-gradient(circle at 30% 30%, rgba(255,255,255,.5), transparent 60%),
-      linear-gradient(135deg, #ffd1dc 0%, #ffe5b8 25%, #fff5b3 45%, #c8f0d0 65%, #c5e3f6 85%, #e2d3f4 100%);
+    background: var(--ink);
+    color: var(--paper);
     align-items: center; justify-content: center;
     text-align: center;
+    position: relative;
   }
-  .card-back .emoji { font-size: 80px; margin-bottom: 12px; }
-  .card-back .hint {
-    color: #fff;
+  .card-back::before {
+    content: '';
+    position: absolute;
+    inset: 16px;
+    border: 3px dashed var(--paper);
+    border-radius: 16px;
+    opacity: .4;
+  }
+  .card-back .rainbow-ring {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(
+      var(--r) 0 60deg,
+      var(--orange) 60deg 120deg,
+      var(--y) 120deg 180deg,
+      var(--g) 180deg 240deg,
+      var(--b) 240deg 300deg,
+      var(--p) 300deg 360deg
+    );
+    position: relative;
+    margin-bottom: 18px;
+  }
+  .card-back .rainbow-ring::after {
+    content: '?';
+    position: absolute;
+    inset: 14px;
+    background: var(--ink);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
     font-weight: 900;
-    font-size: 28px;
-    text-shadow: 2px 2px 0 rgba(0,0,0,.1);
+    font-size: 50px;
+    color: var(--y);
+  }
+  .card-back .hint {
+    font-weight: 900; font-size: 26px;
     letter-spacing: 4px;
+    color: var(--paper);
   }
   .card-back .sub-hint {
-    color: rgba(255,255,255,.85); margin-top: 6px; font-size: 14px;
+    margin-top: 6px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--y);
     letter-spacing: 2px;
   }
 
   .card-front {
-    background:
-      radial-gradient(circle at 50% 10%, rgba(255,255,255,.7), transparent 60%),
-      linear-gradient(180deg, var(--c1, #ffd1dc) 0%, var(--c2, #c5e3f6) 100%);
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,.15);
+    background: var(--card-bg, var(--y));
+    color: var(--card-fg, var(--ink));
     text-align: center;
+    position: relative;
   }
-  .card-front .keyword {
-    font-size: 18px; font-weight: 700; letter-spacing: 8px;
-    margin-bottom: 6px; opacity: .9;
+  .card-front .seq {
+    position: absolute; top: 16px; right: 22px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 14px;
+    font-weight: 700;
+    opacity: .7;
+    letter-spacing: 1px;
   }
   .card-front .category {
-    font-size: 12px; letter-spacing: 4px;
-    background: rgba(255,255,255,.3);
     display: inline-block;
+    background: var(--ink);
+    color: var(--paper);
     padding: 4px 14px;
     border-radius: 999px;
-    margin-bottom: 18px;
-    backdrop-filter: blur(4px);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .card-front .keyword {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin-bottom: 10px;
   }
   .card-front .quote {
     flex: 1;
     display: flex; align-items: center; justify-content: center;
-    font-size: clamp(20px, 4vw, 28px);
+    font-family: 'Noto Serif TC', serif;
     font-weight: 700;
+    font-size: clamp(20px, 3.2vw, 25px);
     line-height: 1.7;
-    padding: 10px 4px;
-    text-align: center;
+    padding: 8px 4px;
   }
   .card-front .tail {
-    font-size: 13px; opacity: .85; line-height: 1.6;
-    border-top: 1px dashed rgba(255,255,255,.5);
-    padding-top: 14px;
+    font-family: 'Fraunces', serif;
     font-style: italic;
+    font-size: 13px;
+    border-top: 2px dashed currentColor;
+    padding-top: 12px;
+    opacity: .85;
   }
-  .card-front .seq {
-    position: absolute; top: 16px; right: 20px;
-    font-size: 12px; opacity: .7; letter-spacing: 2px;
-  }
-
-  /* 控制鈕 */
-  .actions {
-    display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-  }
-  .act-btn {
-    padding: 14px 28px; border-radius: 999px; border: none;
-    font-weight: 700; font-size: 16px; cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 6px 16px rgba(0,0,0,.12);
-    transition: all .2s;
-  }
-  .act-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 22px rgba(0,0,0,.15); }
-  .draw { background: linear-gradient(135deg, #ff9ab0, #ffc890); color: #fff; }
-  .fav { background: #fff; color: #c8568a; border: 2px solid #ffc8d4; }
-  .fav.saved { background: #ffd1dc; color: #fff; }
-
-  /* 類別篩選 */
-  .filters {
-    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-    margin: 20px auto; max-width: 700px; padding: 0 20px;
-  }
-  .filter-btn {
-    padding: 8px 16px; border-radius: 999px;
-    border: 2px solid #ddd; background: #fff; cursor: pointer;
-    font-family: inherit; font-size: 13px; font-weight: 700;
-    color: #888; transition: all .2s;
-  }
-  .filter-btn.on {
-    background: #6a4a8e; border-color: #6a4a8e; color: #fff;
-  }
-  .filter-btn:hover { transform: translateY(-2px); }
 
   /* 能量牆 */
-  .wall-section {
-    max-width: 1200px; margin: 50px auto 80px;
-    background: rgba(255,255,255,.7);
-    border-radius: 28px;
-    padding: 28px 32px;
-    backdrop-filter: blur(8px);
-    margin-left: 20px; margin-right: 20px;
-  }
-  .wall-head {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
-  }
-  .wall-head h2 { margin: 0; color: #5a4a8e; font-size: 22px; }
-  .wall-head .clear-btn {
-    background: #ffe0e0; color: #c04040; border: none;
-    padding: 6px 14px; border-radius: 999px; cursor: pointer;
-    font-family: inherit; font-weight: 700; font-size: 13px;
-  }
   .wall-grid {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 14px;
   }
   .mini-card {
-    border-radius: 16px; padding: 14px 16px;
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,.15);
-    box-shadow: 0 6px 14px rgba(0,0,0,.1);
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 14px 16px;
+    box-shadow: 4px 4px 0 var(--ink);
     position: relative;
-    min-height: 120px;
+    min-height: 130px;
     display: flex; flex-direction: column; justify-content: space-between;
+    background: var(--mini-bg, var(--y));
+    color: var(--mini-fg, var(--ink));
+    transition: transform .15s, box-shadow .15s;
   }
-  .mini-card .mini-keyword { font-size: 13px; letter-spacing: 3px; opacity: .9; }
-  .mini-card .mini-quote { font-size: 14px; line-height: 1.5; font-weight: 700; margin-top: 8px; }
+  .mini-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .mini-card .mini-keyword {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+  .mini-card .mini-quote {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 15px;
+    line-height: 1.55;
+    font-weight: 700;
+    margin-top: 8px;
+  }
   .mini-card .mini-del {
     position: absolute; top: 6px; right: 8px;
-    background: rgba(255,255,255,.35); border: none;
-    width: 24px; height: 24px; border-radius: 50%;
-    cursor: pointer; color: #fff; font-weight: 700;
-    line-height: 22px; font-size: 12px;
+    background: var(--ink); color: #fff;
+    border: none; cursor: pointer;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    font-size: 12px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
   }
-  .empty-wall {
-    text-align: center; padding: 20px; color: #aaa; font-size: 14px;
-  }
-
-  footer {
-    text-align: center; padding: 20px; font-size: 13px; color: #8a7a9e;
-  }
-  footer a { color: #6a4a8e; font-weight: 700; }
+  .mini-card .mini-del:hover { background: var(--r); }
 </style>
+<script src="tweaks.js"></script>
 </head>
 <body>
 
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-p"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+  <span class="squig squig-2"></span>
+</div>
+
 <a class="home-btn" href="index.html">← 回主頁</a>
 
-<header>
-  <h1>🌈 彩虹能量卡</h1>
-  <p class="sub">每天抽一張，作為今天的心錨 ✨</p>
-</header>
+<div class="wrap narrow">
 
-<div class="today-section">
-  <div class="today-card">
-    <span class="today-label">✨ 今日心錨</span>
-    <div class="today-quote" id="todayQuote">載入中…</div>
-    <div class="today-meta">
-      <span id="todayDate"></span>
-      <span id="todayCat"></span>
-      <span id="todayKeyword"></span>
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">DAILY ANCHOR · 心錨</span>
+      <h1>每天<em>一張卡</em>，<br>給今天的自己。</h1>
+      <p class="sub">
+        103 句阿德勒風小語。<b>「今日心錨」每天固定一張</b>，當天打開都是同一句；下面可以再抽 / 收藏喜歡的。
+      </p>
     </div>
-  </div>
-</div>
+    <div class="right-aux">
+      <span class="big" id="totalCards">103</span>
+      <span class="sml">張總卡庫</span>
+    </div>
+  </section>
 
-<div class="filters" id="filters"></div>
+  <!-- 今日心錨 -->
+  <section class="today-mantra">
+    <span class="label">✨ 今日心錨</span>
+    <p class="quote" id="todayQuote">載入中…</p>
+    <div class="meta">
+      <span id="todayDate">—</span>
+      <span id="todayCat">—</span>
+      <span id="todayKeyword">—</span>
+    </div>
+  </section>
 
-<div class="stage">
-  <div class="card-shell">
-    <div class="card-inner" id="cardInner">
-      <!-- 卡背：未翻開 -->
-      <div class="card-face card-back">
-        <div class="emoji">🌈</div>
-        <div class="hint">點我抽卡</div>
-        <div class="sub-hint">RAINBOW ENERGY CARD</div>
+  <!-- 篩選 + 抽卡 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">＋</div>
+      <h2>再抽一張</h2>
+      <span class="tail">點卡片或下方按鈕</span>
+    </div>
+
+    <div class="filters" id="filters"></div>
+
+    <div class="stage">
+      <div class="card-shell">
+        <div class="card-inner" id="cardInner">
+          <div class="card-face card-back">
+            <div class="rainbow-ring"></div>
+            <div class="hint">點我抽卡</div>
+            <div class="sub-hint">RAINBOW ENERGY · 103</div>
+          </div>
+          <div class="card-face card-front" id="cardFront">
+            <div class="seq" id="seq"></div>
+            <div class="category" id="category">—</div>
+            <div class="keyword" id="keyword">—</div>
+            <div class="quote" id="quote">點下面的「抽卡」按鈕，開始今天的旅程 ✨</div>
+            <div class="tail">願今天的你，比昨天再靠近幸福一步。</div>
+          </div>
+        </div>
       </div>
-      <!-- 卡面：抽到的內容 -->
-      <div class="card-face card-front" id="cardFront" style="--c1:#ffd1dc;--c2:#c5e3f6;">
-        <div class="seq" id="seq"></div>
-        <div class="category" id="category"></div>
-        <div class="keyword" id="keyword"></div>
-        <div class="quote" id="quote">點下面的「抽卡」按鈕，開始今天的旅程 ✨</div>
-        <div class="tail">願今天的你，比昨天再靠近幸福一步。</div>
+
+      <div class="btn-bar center">
+        <button class="btn primary lg" id="drawBtn">🎴 抽一張卡</button>
+        <button class="btn y" id="favBtn">🌟 收藏</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="actions">
-    <button class="act-btn draw" id="drawBtn">🎴 抽一張卡</button>
-    <button class="act-btn fav" id="favBtn">🌟 收藏到能量牆</button>
-  </div>
+  <!-- 能量牆 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">★</div>
+      <h2>我的能量牆</h2>
+      <span class="tail"><span id="favCount">0</span> 張收藏</span>
+    </div>
+    <div class="wall-grid" id="wallGrid">
+      <div class="empty"><b>還沒收藏任何卡片</b>抽到喜歡的就點「收藏」吧 ✨</div>
+    </div>
+    <div class="btn-bar center" style="margin-top:18px;">
+      <button class="btn r" onclick="clearWall()">🧹 清空能量牆</button>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 “Crayon Pop”</div>
+  </footer>
 </div>
 
-<div class="wall-section">
-  <div class="wall-head">
-    <h2>🌟 我的能量牆（<span id="favCount">0</span> 張）</h2>
-    <button class="clear-btn" onclick="clearWall()">清空</button>
-  </div>
-  <div class="wall-grid" id="wallGrid">
-    <div class="empty-wall">還沒收藏任何卡片，抽到喜歡的就點「收藏」吧 ✨</div>
-  </div>
-</div>
-
-<footer>
-  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
-</footer>
+<div class="toast" id="toast">已收藏</div>
 
 <script src="sw-update.js" defer></script>
 <script>
-// 三句指定固定句（c=fixed）
 const FIXED = [
-  { quote: '遇到再怎麼難過的事，也要說對的話。',           keyword: '溫柔', cat: 'fixed' },
-  { quote: '沒有壞的孩子，只有氣餒的孩子。',               keyword: '理解', cat: 'fixed' },
-  { quote: '用我的穩定面對孩子的不穩定。',                   keyword: '穩定', cat: 'fixed' },
+  { quote: '遇到再怎麼難過的事，也要說對的話。', keyword: '溫柔', cat: 'fixed' },
+  { quote: '沒有壞的孩子，只有氣餒的孩子。',     keyword: '理解', cat: 'fixed' },
+  { quote: '用我的穩定面對孩子的不穩定。',         keyword: '穩定', cat: 'fixed' },
 ];
 
 const CATS = {
-  fixed:    { label: '老師心錨',   c1: '#ffd1dc', c2: '#ffe5b8', kwPool: ['溫柔','理解','穩定','信念','陪伴'] },
-  steady:   { label: '心態安定',   c1: '#c5e3f6', c2: '#a8d4ec', kwPool: ['平靜','穩定','安心','沉著','清明','澄澈','安住','從容','寧靜','安然'] },
-  child:    { label: '陪伴孩子',   c1: '#ffe5b8', c2: '#ffc890', kwPool: ['理解','傾聽','耐心','陪伴','看見','回應','溫柔','支持','鼓勵','同行'] },
-  self:     { label: '自我鼓勵',   c1: '#c8f0d0', c2: '#a8d8b0', kwPool: ['勇氣','成長','善待','信任','前進','值得','堅持','溫暖','希望','力量'] },
-  belief:   { label: '教育信念',   c1: '#e2d3f4', c2: '#c8b0e4', kwPool: ['信念','陪伴','溫柔','可能','差異','力量','灌溉','示範','看見','學習'] },
-  healing:  { label: '溫柔療癒',   c1: '#ffd1e8', c2: '#ffb8d4', kwPool: ['療癒','溫柔','安然','輕盈','照亮','希望','慢活','寧靜','溫暖','安放'] },
+  fixed:   { label: '經典心錨', bg: 'var(--y)',    fg: 'var(--ink)', kwPool: ['溫柔','理解','穩定','信念','陪伴'] },
+  steady:  { label: '心態安定', bg: 'var(--b)',    fg: '#fff',       kwPool: ['平靜','穩定','安心','沉著','清明','澄澈','安住','從容','寧靜','安然'] },
+  child:   { label: '陪伴孩子', bg: 'var(--orange)', fg: '#fff',     kwPool: ['理解','傾聽','耐心','陪伴','看見','回應','溫柔','支持','鼓勵','同行'] },
+  self:    { label: '自我鼓勵', bg: 'var(--g)',    fg: '#1a3e22',    kwPool: ['勇氣','成長','善待','信任','前進','值得','堅持','溫暖','希望','力量'] },
+  belief:  { label: '教育信念', bg: 'var(--p)',    fg: '#fff',       kwPool: ['信念','陪伴','溫柔','可能','差異','力量','灌溉','示範','看見','學習'] },
+  healing: { label: '溫柔療癒', bg: 'var(--pink)', fg: 'var(--ink)', kwPool: ['療癒','溫柔','安然','輕盈','照亮','希望','慢活','寧靜','溫暖','安放'] },
 };
 
-// 一、心態安定款
 const STEADY = [
-  '隨時擦亮自己的心，不讓忙碌遮住光。',
-  '用心態去戰勝心情，用穩定去陪伴世界。',
-  '保持一顆不被情緒、雜務干擾的心，是教師的溫柔底氣。',
-  '從接納的溫柔中，長出前進的勇氣。',
-  '今天的風再大，我也能選擇穩穩站好。',
-  '我不必完美，只要願意再向前一步。',
-  '安靜一下，力量就會回來。',
-  '我選擇用平靜迎接挑戰，而不是用焦慮迎接今天。',
-  '心慢下來，世界就不那麼急了。',
-  '我能決定今天的節奏。',
-  '我可以為自己按下暫停，再重新呼吸。',
-  '我的情緒不需要被壓抑，只需要被看見。',
-  '我真正需要的，只是一點點內心的空白。',
-  '我給自己一個微笑，事情就會變得不一樣。',
-  '心安定，孩子才安定。',
-  '坐穩自己的椅子，再陪孩子走路。',
-  '我願意用理解化開心裡的結。',
-  '讓自己更柔軟，而不是更堅硬。',
-  '溫柔是一種選擇，也是一種力量。',
-  '平靜是一種能力，而我正在練習它。',
+  '隨時擦亮自己的心，不讓忙碌遮住光。','用心態去戰勝心情，用穩定去陪伴世界。','保持一顆不被情緒、雜務干擾的心，是教師的溫柔底氣。','從接納的溫柔中，長出前進的勇氣。','今天的風再大，我也能選擇穩穩站好。','我不必完美，只要願意再向前一步。','安靜一下，力量就會回來。','我選擇用平靜迎接挑戰，而不是用焦慮迎接今天。','心慢下來，世界就不那麼急了。','我能決定今天的節奏。','我可以為自己按下暫停，再重新呼吸。','我的情緒不需要被壓抑，只需要被看見。','我真正需要的，只是一點點內心的空白。','我給自己一個微笑，事情就會變得不一樣。','心安定，孩子才安定。','坐穩自己的椅子，再陪孩子走路。','我願意用理解化開心裡的結。','讓自己更柔軟，而不是更堅硬。','溫柔是一種選擇，也是一種力量。','平靜是一種能力，而我正在練習它。',
 ];
-
-// 二、陪伴孩子款
 const CHILD = [
-  '孩子的混亂不是故意，是他在尋找方法。',
-  '我願意在孩子的低谷裡，成為那盞不滅的小燈。',
-  '孩子的每一句抱怨，都藏著一個需要。',
-  '他不是不懂事，他只是不會表達。',
-  '今天的叛逆，是明天的探索力。',
-  '我站在孩子的立場想一想，就看見更多了。',
-  '我願意為孩子提供情緒的緩衝區，而不是放大器。',
-  '孩子的委屈值得被聽見，而不是被否定。',
-  '鼓勵是一種陪伴，不是讚美的替代品。',
-  '孩子跌倒的瞬間，教師先蹲下，而不是先糾正。',
-  '他的哭鬧，是在說「我很需要你」。',
-  '孩子的眼淚不是麻煩，是理解的入口。',
-  '孩子不是難帶，他只是需要更多的安全感。',
-  '我願意為孩子示範：失敗不等於結束。',
-  '我說的每句話，都能成為孩子的力量來源。',
-  '孩子的慢，是在用自己的節奏成長。',
-  '需要被理解的，可能不是行為，而是背後的心。',
-  '幫孩子找到方法，比責備來得有效。',
-  '每個孩子都值得再一次機會。',
-  '我先穩，孩子才會慢慢穩。',
+  '孩子的混亂不是故意，是他在尋找方法。','我願意在孩子的低谷裡，成為那盞不滅的小燈。','孩子的每一句抱怨，都藏著一個需要。','他不是不懂事，他只是不會表達。','今天的叛逆，是明天的探索力。','我站在孩子的立場想一想，就看見更多了。','我願意為孩子提供情緒的緩衝區，而不是放大器。','孩子的委屈值得被聽見，而不是被否定。','鼓勵是一種陪伴，不是讚美的替代品。','孩子跌倒的瞬間，教師先蹲下，而不是先糾正。','他的哭鬧，是在說「我很需要你」。','孩子的眼淚不是麻煩，是理解的入口。','孩子不是難帶，他只是需要更多的安全感。','我願意為孩子示範：失敗不等於結束。','我說的每句話，都能成為孩子的力量來源。','孩子的慢，是在用自己的節奏成長。','需要被理解的，可能不是行為，而是背後的心。','幫孩子找到方法，比責備來得有效。','每個孩子都值得再一次機會。','我先穩，孩子才會慢慢穩。',
 ];
-
-// 三、教師自我鼓勵款
 const SELF = [
-  '我正在成為更好的自己，不需要急。',
-  '今天的我，已經比昨天更靠近理想一點。',
-  '我的努力不會白費，只是需要時間。',
-  '我可以選擇善待自己，而不是苛責自己。',
-  '我值得被理解，也值得休息。',
-  '我是一位正在進步的老師，不是完美的老師。',
-  '保持學習，就是最美的示範。',
-  '每一次堅持，都是一種力量。',
-  '我能做到的，比我以為的更多。',
-  '我不是一個人，我有同行者。',
-  '小小的前進，也是一種勝利。',
-  '好好照顧自己，是對孩子更深的愛。',
-  '我所付出的一切，都在孩子心裡留下痕跡。',
-  '我值得為自己喝采。',
-  '我願意在忙碌裡找回自己。',
-  '我正在慢慢變成我想遇見的那種老師。',
-  '我不需要「撐住」，我可以「照顧」自己。',
-  '我擁有的比我以為的多。',
-  '我願意給自己更多溫柔。',
-  '今天的我值得被肯定。',
+  '我正在成為更好的自己，不需要急。','今天的我，已經比昨天更靠近理想一點。','我的努力不會白費，只是需要時間。','我可以選擇善待自己，而不是苛責自己。','我值得被理解，也值得休息。','我是一位正在進步的老師，不是完美的老師。','保持學習，就是最美的示範。','每一次堅持，都是一種力量。','我能做到的，比我以為的更多。','我不是一個人，我有同行者。','小小的前進，也是一種勝利。','好好照顧自己，是對孩子更深的愛。','我所付出的一切，都在孩子心裡留下痕跡。','我值得為自己喝采。','我願意在忙碌裡找回自己。','我正在慢慢變成我想遇見的那種老師。','我不需要「撐住」，我可以「照顧」自己。','我擁有的比我以為的多。','我願意給自己更多溫柔。','今天的我值得被肯定。',
 ];
-
-// 四、教育信念款
 const BELIEF = [
-  '教育是一場看不見終點的旅程，但每一步都有意義。',
-  '孩子的成長，不需要急著開花。',
-  '我相信孩子，也相信自己的引導。',
-  '每堂課都是重新開始的機會。',
-  '我不只裝備知識，我在陪孩子成為自己。',
-  '影響孩子的不是教材，而是我的語氣。',
-  '鼓勵永遠比比較來得有效。',
-  '問對問題，比給對答案更重要。',
-  '我希望孩子學會的，是力量，而不是順從。',
-  '安全感是所有學習的起點。',
-  '教室是孩子成長的練習場，不是評分場。',
-  '孩子的差異，是教育的禮物。',
-  '每一次回頭看孩子，都讓他更靠近我。',
-  '教育不是控制，而是陪伴。',
-  '孩子如何看自己，比成績更重要。',
-  '我願意用鼓勵點亮孩子的可能。',
-  '影響往往悄悄發生，不用急著看見結果。',
-  '我選擇相信每個孩子都願意做好。',
-  '我把焦點放在孩子的力量，而非孩子的不足。',
-  '用溫柔灌溉，孩子就會生長。',
+  '教育是一場看不見終點的旅程，但每一步都有意義。','孩子的成長，不需要急著開花。','我相信孩子，也相信自己的引導。','每堂課都是重新開始的機會。','我不只裝備知識，我在陪孩子成為自己。','影響孩子的不是教材，而是我的語氣。','鼓勵永遠比比較來得有效。','問對問題，比給對答案更重要。','我希望孩子學會的，是力量，而不是順從。','安全感是所有學習的起點。','教室是孩子成長的練習場，不是評分場。','孩子的差異，是教育的禮物。','每一次回頭看孩子，都讓他更靠近我。','教育不是控制，而是陪伴。','孩子如何看自己，比成績更重要。','我願意用鼓勵點亮孩子的可能。','影響往往悄悄發生，不用急著看見結果。','我選擇相信每個孩子都願意做好。','我把焦點放在孩子的力量，而非孩子的不足。','用溫柔灌溉，孩子就會生長。',
 ];
-
-// 五、溫柔療癒款
 const HEALING = [
-  '我值得被安放，而不是被推動。',
-  '靜下來，就聽得見自己的需要。',
-  '心裡亮一點，世界也亮一點。',
-  '今天的陽光很好，也願我的心被照亮。',
-  '一點點暖意，就能走很遠。',
-  '我把心裡的灰塵拍一拍，重新開始。',
-  '難過並不代表我不夠堅強。',
-  '我給自己的每一個擁抱，都算數。',
-  '我願意把心放軟，而不是放棄。',
-  '我正在學習以更輕柔的方式生活。',
-  '我的努力值得被自己看見。',
-  '心被照顧了，力量自然生長。',
-  '雨過後的彩虹，是給有耐心的人。',
-  '每一天都能重新開始一次。',
-  '人生不必快，但要穩穩地走。',
-  '我讓自己慢下來，世界也變得溫柔。',
-  '心裡有希望，就不會迷路。',
-  '我願意為自己點一盞燈。',
-  '世界可能很吵，但我可以很安靜。',
-  '我值得在自己的生命裡，被溫柔地對待。',
+  '我值得被安放，而不是被推動。','靜下來，就聽得見自己的需要。','心裡亮一點，世界也亮一點。','今天的陽光很好，也願我的心被照亮。','一點點暖意，就能走很遠。','我把心裡的灰塵拍一拍，重新開始。','難過並不代表我不夠堅強。','我給自己的每一個擁抱，都算數。','我願意把心放軟，而不是放棄。','我正在學習以更輕柔的方式生活。','我的努力值得被自己看見。','心被照顧了，力量自然生長。','雨過後的彩虹，是給有耐心的人。','每一天都能重新開始一次。','人生不必快，但要穩穩地走。','我讓自己慢下來，世界也變得溫柔。','心裡有希望，就不會迷路。','我願意為自己點一盞燈。','世界可能很吵，但我可以很安靜。','我值得在自己的生命裡，被溫柔地對待。',
 ];
 
-// 組成完整卡庫
 function buildDeck() {
   const deck = [];
   FIXED.forEach(c => deck.push({ ...c }));
-  const push = (arr, catKey) => arr.forEach((q, i) => {
-    const pool = CATS[catKey].kwPool;
-    deck.push({ quote: q, keyword: pool[i % pool.length], cat: catKey });
+  const push = (arr, key) => arr.forEach((q, i) => {
+    const pool = CATS[key].kwPool;
+    deck.push({ quote: q, keyword: pool[i % pool.length], cat: key });
   });
-  push(STEADY, 'steady');
-  push(CHILD,  'child');
-  push(SELF,   'self');
-  push(BELIEF, 'belief');
-  push(HEALING,'healing');
+  push(STEADY,'steady'); push(CHILD,'child'); push(SELF,'self'); push(BELIEF,'belief'); push(HEALING,'healing');
   return deck;
 }
 const DECK = buildDeck();
+document.getElementById('totalCards').textContent = DECK.length;
 
 const STORAGE_KEY = 'akai_cards_v1';
 let favs = loadFavs();
@@ -490,10 +452,7 @@ let currentFilter = 'all';
 let currentCard = null;
 let flipped = false;
 
-function loadFavs() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
-}
+function loadFavs() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; } }
 function saveFavs() { localStorage.setItem(STORAGE_KEY, JSON.stringify(favs)); }
 
 function renderFilters() {
@@ -512,9 +471,7 @@ function renderFilters() {
 function pickRandom() {
   const pool = currentFilter === 'all' ? DECK : DECK.filter(d => d.cat === currentFilter);
   if (pool.length === 0) return null;
-  // 避免連續抽到同一張
-  let pick;
-  let tries = 0;
+  let pick, tries = 0;
   do {
     pick = pool[Math.floor(Math.random() * pool.length)];
     tries++;
@@ -523,9 +480,7 @@ function pickRandom() {
 }
 
 let lastDrawTime = 0;
-
 function drawCard() {
-  // 防止重複點擊（含動畫期間誤觸）
   const now = Date.now();
   if (now - lastDrawTime < 600) return;
   lastDrawTime = now;
@@ -533,33 +488,20 @@ function drawCard() {
   const next = pickRandom();
   if (!next) return;
   const inner = document.getElementById('cardInner');
-  const front = document.getElementById('cardFront');
 
   if (!flipped) {
-    // 第一次抽：使用翻轉動畫
     currentCard = next;
     paintCard();
     inner.classList.add('flipped');
     flipped = true;
   } else {
-    // 已翻過：用淡入淡出換內容，不翻回卡背
-    const quoteEl = document.getElementById('quote');
-    const kwEl = document.getElementById('keyword');
-    const catEl = document.getElementById('category');
-    const seqEl = document.getElementById('seq');
-    const tail = front.querySelector('.tail');
-    [quoteEl, kwEl, catEl, seqEl, tail].forEach(el => {
-      if (!el) return;
-      el.style.transition = 'opacity 0.25s ease';
-      el.style.opacity = '0';
-    });
+    const front = document.getElementById('cardFront');
+    front.style.transition = 'opacity 0.25s ease';
+    front.style.opacity = '0';
     setTimeout(() => {
       currentCard = next;
       paintCard();
-      [quoteEl, kwEl, catEl, seqEl, tail].forEach(el => {
-        if (!el) return;
-        el.style.opacity = '1';
-      });
+      front.style.opacity = '1';
     }, 250);
   }
   updateFavBtn();
@@ -569,22 +511,19 @@ function paintCard() {
   if (!currentCard) return;
   const cat = CATS[currentCard.cat];
   const front = document.getElementById('cardFront');
-  front.style.setProperty('--c1', cat.c1);
-  front.style.setProperty('--c2', cat.c2);
+  front.style.setProperty('--card-bg', cat.bg);
+  front.style.setProperty('--card-fg', cat.fg);
   document.getElementById('keyword').textContent = currentCard.keyword;
   document.getElementById('category').textContent = cat.label;
-  document.getElementById('quote').textContent = currentCard.quote;
-  document.getElementById('seq').textContent = `No. ${String(DECK.indexOf(currentCard) + 1).padStart(3, '0')}`;
+  document.getElementById('quote').textContent = '「' + currentCard.quote + '」';
+  document.getElementById('seq').textContent = `No.${String(DECK.indexOf(currentCard) + 1).padStart(3, '0')}`;
 }
 
 function toggleFav() {
   if (!currentCard) return;
-  const exists = favs.findIndex(f => f.quote === currentCard.quote);
-  if (exists >= 0) {
-    favs.splice(exists, 1);
-  } else {
-    favs.unshift({ ...currentCard, ts: Date.now() });
-  }
+  const idx = favs.findIndex(f => f.quote === currentCard.quote);
+  if (idx >= 0) { favs.splice(idx, 1); flash('已取消收藏'); }
+  else { favs.unshift({ ...currentCard, ts: Date.now() }); flash('✨ 已收藏'); }
   saveFavs();
   updateFavBtn();
   renderWall();
@@ -593,20 +532,28 @@ function toggleFav() {
 function updateFavBtn() {
   const btn = document.getElementById('favBtn');
   if (!currentCard) {
-    btn.textContent = '🌟 收藏到能量牆';
-    btn.classList.remove('saved');
+    btn.textContent = '🌟 收藏';
+    btn.classList.remove('p');
+    btn.classList.add('y');
     return;
   }
   const saved = favs.some(f => f.quote === currentCard.quote);
-  btn.textContent = saved ? '⭐ 已收藏（再點取消）' : '🌟 收藏到能量牆';
-  btn.classList.toggle('saved', saved);
+  if (saved) {
+    btn.textContent = '⭐ 已收藏（再點取消）';
+    btn.classList.remove('y');
+    btn.classList.add('p');
+  } else {
+    btn.textContent = '🌟 收藏';
+    btn.classList.remove('p');
+    btn.classList.add('y');
+  }
 }
 
 function renderWall() {
   const grid = document.getElementById('wallGrid');
   document.getElementById('favCount').textContent = favs.length;
   if (favs.length === 0) {
-    grid.innerHTML = '<div class="empty-wall">還沒收藏任何卡片，抽到喜歡的就點「收藏」吧 ✨</div>';
+    grid.innerHTML = '<div class="empty"><b>還沒收藏任何卡片</b>抽到喜歡的就點「收藏」吧 ✨</div>';
     return;
   }
   grid.innerHTML = '';
@@ -614,7 +561,8 @@ function renderWall() {
     const cat = CATS[f.cat] || CATS.fixed;
     const div = document.createElement('div');
     div.className = 'mini-card';
-    div.style.background = `linear-gradient(135deg, ${cat.c1}, ${cat.c2})`;
+    div.style.setProperty('--mini-bg', cat.bg);
+    div.style.setProperty('--mini-fg', cat.fg);
     div.innerHTML = `
       <button class="mini-del" title="移除">✕</button>
       <div class="mini-keyword">${f.keyword} · ${cat.label}</div>
@@ -631,31 +579,32 @@ function renderWall() {
 function clearWall() {
   if (favs.length === 0) return;
   if (!confirm('要清空整面能量牆嗎？')) return;
-  favs = [];
-  saveFavs();
-  renderWall();
-  updateFavBtn();
+  favs = []; saveFavs(); renderWall(); updateFavBtn();
 }
 
-// 點卡片也能翻
 document.getElementById('cardInner').addEventListener('click', drawCard);
 document.getElementById('drawBtn').addEventListener('click', drawCard);
 document.getElementById('favBtn').addEventListener('click', toggleFav);
 
-// 今日卡片：依日期哈希決定，當天打開都同一張
 function renderTodayCard() {
   const d = new Date();
-  const dateStr = `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+  const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
   const wk = ['日','一','二','三','四','五','六'][d.getDay()];
-  // 簡單 hash：年×10000 + 月×100 + 日 → 取餘
   const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
-  const idx = seed % DECK.length;
-  const card = DECK[idx];
+  const card = DECK[seed % DECK.length];
   const cat = CATS[card.cat];
   document.getElementById('todayQuote').textContent = '「' + card.quote + '」';
-  document.getElementById('todayDate').textContent = `📅 ${dateStr}（星期${wk}）`;
+  document.getElementById('todayDate').textContent = `📅 ${d.getFullYear()}.${dateStr} 星期${wk}`;
   document.getElementById('todayCat').textContent = `🎨 ${cat.label}`;
-  document.getElementById('todayKeyword').textContent = `🔑 ${card.keyword}`;
+  document.getElementById('todayKeyword').textContent = `✨ ${card.keyword}`;
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._flashT);
+  window._flashT = setTimeout(() => t.classList.remove('show'), 1200);
 }
 
 renderTodayCard();

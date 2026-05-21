@@ -3,436 +3,983 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌈 教室小幫手｜班級即時打卡 · 待辦 · 出勤 · 抽號 · 計時 · 分組</title>
-<meta name="description" content="給老師的免費班級工具：情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、隨機抽號、計時器、隨機分組。免註冊、可離線、可裝成 App。">
+<title>教室小幫手 — 老師的每日課堂工具</title>
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║ 部署到 Coolclass/ 時，請打開檔案最底下兩行 script src 註解 ║
+  ║ （roster.js + sw-update.js），並可移除中間的 fallback 區塊。║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+<meta name="description" content="老師的每日課堂工具 — 情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、隨機抽號、教室計時器、隨機分組。免登入、可離線、PWA 安裝。">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff9ab0">
+<meta name="theme-color" content="#ff6b6b">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --pink: #ffd1dc;
-    --orange: #ffe0b3;
-    --yellow: #fff5b3;
-    --green: #c8f0d0;
-    --blue: #c5e3f6;
-    --purple: #e2d3f4;
-    --rose: #ffc8d8;
-    --mint: #c8f0e0;
-    --lilac: #d8c8ec;
-    --ink: #4a4a4a;
+    --ink:    #2a1f4a;   /* 主深紫墨色 */
+    --paper:  #fff8e8;   /* 暖奶油紙底 */
+    --r:      #ff6b6b;   /* 紅 */
+    --y:      #ffd23f;   /* 黃 */
+    --g:      #6bcb77;   /* 綠 */
+    --b:      #4d96ff;   /* 藍 */
+    --p:      #b070ff;   /* 紫 */
+    --pink:   #ff97c5;   /* 粉 */
+    --orange: #ff9d4d;   /* 橘 */
+
+    --ink-soft: #44345e;
+    --muted:    #6a5a8e;
   }
+
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
+  html { background: var(--paper); }
   body {
-    font-family: 'Noto Sans TC', 'Fredoka', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
     color: var(--ink);
+    background: var(--paper);
     min-height: 100vh;
-    background:
-      radial-gradient(circle at 15% 10%, rgba(255,209,220,.55), transparent 45%),
-      radial-gradient(circle at 85% 15%, rgba(255,245,179,.6), transparent 45%),
-      radial-gradient(circle at 80% 85%, rgba(200,240,208,.6), transparent 45%),
-      radial-gradient(circle at 10% 85%, rgba(226,211,244,.55), transparent 45%),
-      linear-gradient(135deg, #fff7ee 0%, #f0f7ff 100%);
     overflow-x: hidden;
   }
-  .floaty {
+
+  a { color: inherit; text-decoration: none; }
+
+  /* ====================================================== */
+  /* 背景大圓形 + 點點裝飾                                  */
+  /* ====================================================== */
+  .bg-deco {
     position: fixed;
-    font-size: 32px;
-    opacity: .55;
+    inset: 0;
     pointer-events: none;
-    animation: float 8s ease-in-out infinite;
     z-index: 0;
+    overflow: hidden;
   }
-  @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(0); }
-    50% { transform: translateY(-20px) rotate(8deg); }
+  .bg-deco .blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: .55;
   }
-  header {
-    text-align: center;
-    padding: 40px 20px 16px;
-    position: relative;
-    z-index: 1;
+  .bg-deco .blob-y {
+    width: 480px; height: 480px;
+    top: -180px; right: -160px;
+    background: var(--y);
   }
-  header h1 {
-    margin: 0;
-    font-size: clamp(28px, 5vw, 48px);
-    font-weight: 900;
-    color: #5a4a6e;
-    text-shadow: 2px 2px 0 #fff, 4px 4px 0 rgba(255,209,220,.5);
-    letter-spacing: 2px;
+  .bg-deco .blob-b {
+    width: 380px; height: 380px;
+    bottom: -160px; left: -140px;
+    background: var(--b);
+    opacity: .35;
   }
-  header .subtitle {
-    margin-top: 14px;
-    font-size: clamp(14px, 2vw, 18px);
-    color: #7a6a8e;
+  .bg-deco .blob-p {
+    width: 260px; height: 260px;
+    top: 38%; right: -120px;
+    background: var(--p);
+    opacity: .22;
   }
-  header .school {
-    margin-top: 6px;
-    font-size: 13px;
-    color: #9a8aae;
+  .bg-deco .dots {
+    position: absolute;
+    width: 140px; height: 140px;
+    background: radial-gradient(var(--ink) 1.8px, transparent 2.2px) 0 0 / 14px 14px;
+    opacity: .25;
   }
+  .bg-deco .dots-1 { top: 380px; left: 30px; }
+  .bg-deco .dots-2 { bottom: 80px; right: 70px; }
+  .bg-deco .squig {
+    position: absolute;
+    width: 90px; height: 16px;
+    background:
+      linear-gradient(135deg, transparent 49%, var(--ink) 49% 51%, transparent 51%) 0 0/10px 10px,
+      linear-gradient(45deg, transparent 49%, var(--ink) 49% 51%, transparent 51%) 0 0/10px 10px;
+    opacity: .35;
+  }
+  .bg-deco .squig-1 { top: 200px; left: 8%; transform: rotate(-10deg); }
+  .bg-deco .squig-2 { top: 60%; right: 6%; transform: rotate(15deg); }
 
-  main {
-    max-width: 1300px;
+  /* ====================================================== */
+  /* 頁面寬度容器                                           */
+  /* ====================================================== */
+  .wrap {
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 12px 24px 60px;
+    padding: 28px 32px 80px;
     position: relative;
     z-index: 1;
   }
 
-  /* === 今日儀表板 === */
-  .dashboard {
-    background: rgba(255,255,255,.78);
-    border-radius: 28px;
-    padding: 22px 28px;
-    margin-bottom: 30px;
-    box-shadow: 0 8px 24px rgba(150,130,200,.1);
-    backdrop-filter: blur(8px);
-    border: 3px solid #fff;
+  /* ====================================================== */
+  /* 頂部品牌列                                            */
+  /* ====================================================== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
   }
-  .dash-head {
-    display: flex; justify-content: space-between; align-items: center;
-    flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
-  }
-  .dash-title {
-    font-weight: 900; color: #5a4a6e; font-size: 20px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .dash-date {
-    color: #8a7a9e; font-size: 14px; font-weight: 700;
-  }
-  .dash-class {
-    background: linear-gradient(135deg, #ffd1dc, #c5e3f6);
-    color: #5a4a8e;
-    padding: 5px 14px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-  }
-  .dash-class:hover { transform: translateY(-1px); }
-
-  .dash-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  .brand {
+    display: flex;
     gap: 14px;
+    align-items: center;
   }
-  .stat-card {
-    background: #fff;
-    border-radius: 18px;
-    padding: 16px 18px;
-    border-left: 5px solid;
-    box-shadow: 0 4px 12px rgba(0,0,0,.05);
-    text-decoration: none;
-    color: inherit;
-    transition: transform .2s;
+  .brand .mark {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--y);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-style: italic;
+    font-size: 34px;
+    letter-spacing: -2px;
+    box-shadow: 5px 5px 0 var(--r);
+    flex-shrink: 0;
   }
-  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 18px rgba(0,0,0,.1); }
-  .stat-card .ico { font-size: 26px; }
-  .stat-card .lbl { font-size: 12px; color: #888; font-weight: 700; margin-top: 4px; }
-  .stat-card .val {
-    font-size: 24px; font-weight: 900;
-    color: #3a2a4e; margin-top: 2px;
-    font-variant-numeric: tabular-nums;
+  .brand .name {
+    line-height: 1.15;
   }
-  .stat-card .val small { font-size: 14px; font-weight: 700; color: #888; }
-  .stat-card .quote {
-    font-size: 13px; color: #5a4a6e; font-weight: 700;
-    line-height: 1.4; margin-top: 4px;
+  .brand .name h1 {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(22px, 2.6vw, 28px);
+    letter-spacing: 0;
+    color: var(--ink);
   }
-  .stat-card.emo  { border-color: #ff9ab0; }
-  .stat-card.todo { border-color: #80c890; }
-  .stat-card.card { border-color: #c8a8e6; }
-  .stat-card.atn  { border-color: #6aa8d4; }
+  .brand .name .meta {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .brand .name .meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .brand .name .meta b {
+    color: var(--ink);
+    font-weight: 700;
+  }
 
-  /* === 工具卡 === */
-  .section-title {
-    color: #5a4a6e; font-size: 22px; font-weight: 900;
-    margin: 18px 0 14px;
-    display: flex; align-items: center; gap: 10px;
+  .roster-pill {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    border: 3px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--y);
+    transition: transform .15s, box-shadow .15s;
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer;
   }
-  .grid {
+  .roster-pill:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--y);
+  }
+
+  /* ====================================================== */
+  /* PWA 安裝橫幅                                          */
+  /* ====================================================== */
+  .install {
+    display: none;
+    align-items: center;
+    gap: 16px;
+    background: var(--y);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 14px 18px;
+    margin-bottom: 22px;
+    box-shadow: 5px 5px 0 var(--ink);
+    font-size: 14px;
+  }
+  .install.show { display: flex; }
+  .install .icn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--ink); color: var(--y);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .install .msg { flex: 1; color: var(--ink); }
+  .install .msg b { display:block; margin-bottom: 2px; }
+  .install button {
+    font-family: inherit;
+    font-weight: 700;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    padding: 8px 16px;
+    cursor: pointer;
+    background: var(--ink); color: var(--paper);
+    font-size: 13px;
+  }
+  .install button.ghost {
+    background: transparent;
+    color: var(--ink);
+    border-color: transparent;
+    padding: 6px 8px;
+  }
+
+  /* ====================================================== */
+  /* 今日 HERO 區塊                                        */
+  /* ====================================================== */
+  .today {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 28px;
+    padding: 28px 30px;
+    margin-bottom: 22px;
+    box-shadow: 7px 7px 0 var(--p);
+    position: relative;
+    overflow: hidden;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px;
+    grid-template-columns: 1fr 180px;
+    gap: 28px;
+    align-items: center;
   }
-  .card {
-    display: block;
-    text-decoration: none;
-    color: inherit;
+  .today::after {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(var(--y) 2px, transparent 2.5px) 0 0/12px 12px;
+    opacity: .12;
+    bottom: -60px; left: -40px;
+  }
+  .today .tag {
+    display: inline-block;
+    background: var(--y);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .today h2 {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(26px, 3.4vw, 36px);
+    line-height: 1.18;
+    letter-spacing: -.5px;
+    color: var(--paper);
+  }
+  .today h2 .date {
+    color: var(--y);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+  }
+  .today .quote {
+    margin: 14px 0 0;
+    font-size: 14px;
+    color: #d8d2ec;
+    line-height: 1.6;
+    max-width: 540px;
+  }
+  .today .quote b {
+    color: var(--paper);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 700;
+  }
+  .today .quote .badge {
+    display: inline-block;
+    background: var(--r);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-right: 6px;
+    transform: rotate(-2deg);
+  }
+
+  .today .ring {
+    position: relative;
+    width: 180px; height: 180px;
+    justify-self: center;
+  }
+  .today .ring svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .today .ring .track { stroke: #44345e; stroke-width: 14; fill: none; }
+  .today .ring .fill  { stroke: var(--g); stroke-width: 14; fill: none; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+  .today .ring .inside {
+    position: absolute;
+    inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .today .ring .num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 48px;
+    color: var(--y);
+    line-height: 1;
+  }
+  .today .ring .lbl {
+    font-size: 12px;
+    color: #c8c2dc;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+
+  /* ====================================================== */
+  /* 今日數據四連卡                                        */
+  /* ====================================================== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+  .stat {
+    border: 3px solid var(--ink);
+    border-radius: 22px;
+    padding: 16px 18px;
+    box-shadow: 5px 5px 0 var(--ink);
+    display: flex; flex-direction: column;
+    gap: 6px;
+    color: var(--ink);
     background: #fff;
-    border-radius: 24px;
-    padding: 24px 22px 20px;
-    box-shadow: 0 8px 24px rgba(120,100,140,.1), 0 2px 6px rgba(120,100,140,.04);
-    border: 3px solid #fff;
-    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    min-height: 130px;
+    transition: transform .15s, box-shadow .15s;
     position: relative;
     overflow: hidden;
   }
-  .card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--accent, var(--pink));
-    opacity: .18;
-    z-index: 0;
+  .stat:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--ink);
   }
-  .card > * { position: relative; z-index: 1; }
-  .card:hover {
-    transform: translateY(-6px) rotate(-.5deg);
-    box-shadow: 0 16px 36px rgba(120,100,140,.18);
-    border-color: var(--accent);
+  .stat .lbl {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: .75;
   }
-  .card .emoji {
-    font-size: 56px;
-    line-height: 1;
-    margin-bottom: 10px;
-    display: inline-block;
-    transition: transform .3s;
-  }
-  .card:hover .emoji { transform: scale(1.1) rotate(-8deg); }
-  .card h2 {
-    margin: 0 0 6px;
-    font-size: 22px;
+  .stat .val {
+    font-family: 'Fraunces', serif;
     font-weight: 900;
-    color: #3a2a4e;
+    font-style: italic;
+    font-size: 38px;
+    line-height: 1;
+    color: var(--ink);
+    margin-top: auto;
   }
-  .card p {
+  .stat .val small {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 2px;
+  }
+  .stat .quote {
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.45;
+    margin-top: auto;
+    font-style: normal;
+  }
+  .stat.emo  { background: var(--pink); }
+  .stat.todo { background: var(--g); }
+  .stat.card { background: var(--y); }
+  .stat.atn  { background: var(--b); color: #fff; }
+  .stat.atn .lbl { color: #fff; opacity: .9; }
+  .stat.atn .val { color: #fff; }
+
+  /* ====================================================== */
+  /* 區段標題                                              */
+  /* ====================================================== */
+  .sec-title {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0 0 18px;
+  }
+  .sec-title .num {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--y);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .sec-title h2 {
+    margin: 0;
+    font-weight: 900;
+    font-size: 24px;
+    color: var(--ink);
+    letter-spacing: 0;
+  }
+  .sec-title h2 small {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .sec-title .line {
+    flex: 1;
+    height: 3px;
+    background:
+      linear-gradient(90deg, var(--ink) 0 50%, transparent 50%) 0 0/12px 100%;
+    opacity: .5;
+  }
+
+  /* ====================================================== */
+  /* 工具磚塊                                              */
+  /* ====================================================== */
+  .tools {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 44px;
+  }
+  .tools.core {
+    grid-template-columns: repeat(5, 1fr);
+  }
+  .tools.classroom {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .tools.setup {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tool {
+    position: relative;
+    border: 3px solid var(--ink);
+    border-radius: 24px;
+    padding: 20px 18px 20px;
+    color: var(--ink);
+    background: #fff;
+    box-shadow: 5px 5px 0 var(--ink);
+    transition: transform .18s, box-shadow .18s;
+    display: flex; flex-direction: column;
+    min-height: 220px;
+    overflow: hidden;
+  }
+  .tool:hover {
+    transform: translate(-3px, -3px) rotate(-.6deg);
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+  .tool .num-tag {
+    align-self: flex-start;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 14px;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .tool h3 {
+    margin: 0 0 8px;
+    font-weight: 900;
+    font-size: clamp(18px, 1.5vw, 22px);
+    line-height: 1.2;
+    letter-spacing: -.3px;
+  }
+  .tool p {
     margin: 0 0 14px;
     font-size: 13px;
-    line-height: 1.6;
-    color: #6a5a7e;
+    line-height: 1.55;
+    opacity: .8;
   }
-  .card .badge {
-    display: inline-block;
-    padding: 5px 12px;
-    background: #fff;
+  .tool .ft {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .tool .chip {
+    background: rgba(255,255,255,.65);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    padding: 4px 10px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 700;
-    color: #6a5a7e;
-    border: 2px dashed rgba(0,0,0,.08);
   }
-  .card.pink   { --accent: var(--pink); }
-  .card.green  { --accent: var(--green); }
-  .card.rainbow { --accent: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); }
-  .card.rainbow::before { background: linear-gradient(135deg, #ffd1dc, #fff5b3, #c8f0d0, #c5e3f6, #e2d3f4); opacity: .25; }
-  .card.blue   { --accent: var(--blue); }
-  .card.yellow { --accent: var(--yellow); }
-  .card.rose   { --accent: var(--rose); }
-  .card.mint   { --accent: var(--mint); }
-  .card.lilac  { --accent: var(--lilac); }
-  .card.purple { --accent: var(--purple); }
+  .tool .arr {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: transform .2s;
+  }
+  .tool:hover .arr { transform: translateX(2px) rotate(-12deg); }
 
-  /* PWA 安裝 banner */
-  .install-banner {
-    background: linear-gradient(135deg, #c8e3f6, #d8c8ec);
-    color: #3a2a5e;
-    padding: 14px 22px;
-    border-radius: 18px;
-    display: none;
-    align-items: center; gap: 14px;
-    margin-bottom: 20px;
-    box-shadow: 0 6px 16px rgba(120,140,200,.15);
-  }
-  .install-banner.show { display: flex; }
-  .install-banner button {
-    background: #fff; border: none; padding: 8px 18px;
-    border-radius: 999px; font-weight: 700;
-    cursor: pointer; font-family: inherit;
-    margin-left: auto;
-  }
-  .install-banner .close-x {
-    background: transparent; padding: 4px 10px;
-  }
+  /* 工具配色：底色 + 深色字 / 反白字 */
+  .tool.red    { background: var(--r); color: #fff; }
+  .tool.red .chip   { background: rgba(255,255,255,.2); color: #fff; border-color: #fff; }
+  .tool.red .num-tag{ background: #fff; color: var(--r); }
+  .tool.red .arr    { background: #fff; color: var(--r); }
+  .tool.red p       { opacity: .92; }
 
-  footer {
-    text-align: center;
-    padding: 24px 20px 40px;
-    font-size: 13px;
-    color: #8a7a9e;
+  .tool.green  { background: var(--g); color: #1a3e22; }
+  .tool.green .num-tag, .tool.green .arr { background: #1a3e22; color: var(--g); }
+
+  .tool.yellow { background: var(--y); color: var(--ink); }
+  .tool.yellow .num-tag, .tool.yellow .arr { background: var(--ink); color: var(--y); }
+
+  .tool.blue   { background: var(--b); color: #fff; }
+  .tool.blue .chip   { background: rgba(255,255,255,.2); color: #fff; border-color: #fff; }
+  .tool.blue .num-tag{ background: #fff; color: var(--b); }
+  .tool.blue .arr    { background: #fff; color: var(--b); }
+  .tool.blue p       { opacity: .92; }
+
+  .tool.pink   { background: var(--pink); color: var(--ink); }
+  .tool.pink .num-tag, .tool.pink .arr { background: var(--ink); color: var(--pink); }
+
+  .tool.purple { background: var(--p); color: #fff; }
+  .tool.purple .chip   { background: rgba(255,255,255,.2); color: #fff; border-color: #fff; }
+  .tool.purple .num-tag{ background: #fff; color: var(--p); }
+  .tool.purple .arr    { background: #fff; color: var(--p); }
+  .tool.purple p       { opacity: .92; }
+
+  .tool.orange { background: var(--orange); color: #fff; }
+  .tool.orange .chip   { background: rgba(255,255,255,.2); color: #fff; border-color: #fff; }
+  .tool.orange .num-tag{ background: #fff; color: var(--orange); }
+  .tool.orange .arr    { background: #fff; color: var(--orange); }
+  .tool.orange p       { opacity: .92; }
+
+  .tool.cream  { background: #fff; color: var(--ink); }
+
+  /* 大型「彩虹卡」：跨欄 + 彩色描邊裝飾 */
+  .tool.rainbow {
+    background: var(--ink);
+    color: var(--paper);
+    grid-column: span 1;
     position: relative;
-    z-index: 1;
   }
-  footer a {
-    color: #6a4a8e;
-    text-decoration: none;
+  .tool.rainbow::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 18px;
+    background:
+      conic-gradient(
+        from 180deg,
+        var(--r) 0deg 60deg,
+        var(--orange) 60deg 120deg,
+        var(--y) 120deg 180deg,
+        var(--g) 180deg 240deg,
+        var(--b) 240deg 300deg,
+        var(--p) 300deg 360deg
+      );
+    opacity: .18;
+    z-index: 0;
+  }
+  .tool.rainbow > * { position: relative; z-index: 1; }
+  .tool.rainbow .num-tag { background: var(--y); color: var(--ink); }
+  .tool.rainbow .arr     { background: var(--y); color: var(--ink); }
+  .tool.rainbow .chip    { background: rgba(255,255,255,.15); color: var(--paper); border-color: var(--paper); }
+
+  /* ====================================================== */
+  /* 使用小提醒                                            */
+  /* ====================================================== */
+  .tips {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 26px;
+    padding: 28px 32px;
+    box-shadow: 6px 6px 0 var(--ink);
+    margin-top: 32px;
+  }
+  .tips h2 {
+    margin: 0 0 16px;
+    font-weight: 900;
+    font-size: 22px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .tips h2::before {
+    content: '!';
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--y);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 20px;
+  }
+  .tips ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 24px;
+  }
+  .tips li {
+    padding: 8px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    display: flex;
+    gap: 10px;
+    border-top: 2px dashed #d8d2ec;
+  }
+  .tips li:nth-child(1), .tips li:nth-child(2) { border-top: none; }
+  .tips li b { color: var(--ink); }
+  .tips li::before {
+    content: '✓';
+    color: var(--g);
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  /* ====================================================== */
+  /* Footer                                                */
+  /* ====================================================== */
+  footer.f {
+    margin-top: 60px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  footer.f a {
+    color: var(--ink);
     font-weight: 700;
-    border-bottom: 2px dotted #c5a8e6;
+    border-bottom: 2px solid var(--y);
   }
-  footer a:hover { color: #4a2a6e; }
-  footer .heart { color: #e85a7a; }
+  footer.f .ver {
+    margin-top: 6px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #aa9abe;
+  }
+
+  /* ====================================================== */
+  /* RWD                                                   */
+  /* ====================================================== */
+  @media (max-width: 1024px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .tools.core { grid-template-columns: repeat(3, 1fr); }
+    .today { grid-template-columns: 1fr; text-align: left; }
+    .today .ring { justify-self: start; width: 140px; height: 140px; }
+    .today .ring .num { font-size: 38px; }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 20px 18px 60px; }
+    .topbar { gap: 12px; }
+    .brand .mark { width: 52px; height: 52px; font-size: 26px; }
+    .stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .stat { min-height: 110px; padding: 14px; }
+    .stat .val { font-size: 30px; }
+    .tools.core, .tools.classroom, .tools.setup { grid-template-columns: 1fr 1fr; }
+    .tool { min-height: 180px; padding: 16px; }
+    .tips ul { grid-template-columns: 1fr; }
+    .tips li:nth-child(2) { border-top: 2px dashed #d8d2ec; }
+    .today h2 { font-size: 24px; }
+    .sec-title h2 { font-size: 20px; }
+  }
+  @media (max-width: 480px) {
+    .tools.core, .tools.classroom, .tools.setup { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* 禁用瀏覽器預設動畫過快 */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
 </style>
+<!-- 共用主題系統（dark mode / accent / deco / flat 由 tweaks.js 控制） -->
+<link rel="stylesheet" href="crayon.css">
+<script src="tweaks.js"></script>
+<script src="onboarding.js" defer></script>
 </head>
 <body>
 
-<span class="floaty" style="top:8%;left:6%;animation-delay:0s;">🌸</span>
-<span class="floaty" style="top:20%;right:8%;animation-delay:1s;">☁️</span>
-<span class="floaty" style="bottom:30%;left:10%;animation-delay:2s;">⭐</span>
-<span class="floaty" style="bottom:15%;right:12%;animation-delay:3s;">🌈</span>
-<span class="floaty" style="top:50%;right:4%;animation-delay:4s;">🎈</span>
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-b"></span>
+  <span class="blob blob-p"></span>
+  <span class="dots dots-1"></span>
+  <span class="dots dots-2"></span>
+  <span class="squig squig-1"></span>
+  <span class="squig squig-2"></span>
+</div>
 
-<header>
-  <h1>🌈 教室小幫手</h1>
-  <p class="subtitle">陪老師和孩子一起過好每一天</p>
-  <p class="school">免費 · 免註冊 · 可離線 · 歡迎所有老師使用 ✨</p>
-</header>
+<div class="wrap">
 
-<main>
+  <!-- ===== 頂部品牌列 ===== -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="mark">凱</div>
+      <div class="name">
+        <h1>教室小幫手 <small style="font-family:'Fraunces',serif;font-style:italic;font-weight:500;font-size:14px;color:var(--muted);margin-left:6px;">classroom kit</small></h1>
+        <div class="meta">
+          <span>陪老師和孩子，<b>一起過好每一天</b></span>
+          <span>·</span>
+          <span>免登入 · <b>離線可用</b> · 可裝成 App</span>
+        </div>
+      </div>
+    </div>
+    <a class="roster-pill" id="rosterPill" href="roster.html">
+      <span>👥</span>
+      <span id="rosterText">設定班級名單</span>
+    </a>
+  </div>
 
-  <!-- PWA 安裝引導 -->
-  <div class="install-banner" id="installBanner">
-    📲 <span><strong>把這個網站當 App 用！</strong>點下面的按鈕可以把教室小幫手加到主畫面，下次打開更快也能離線使用。</span>
+  <!-- ===== PWA 安裝橫幅 ===== -->
+  <div class="install" id="installBanner">
+    <div class="icn">📲</div>
+    <div class="msg">
+      <b>把這個網站當 App 用！</b>
+      加到主畫面，下次打開更快、也能離線使用。
+    </div>
     <button id="installBtn">安裝</button>
-    <button class="close-x" onclick="hideInstall()">✕</button>
+    <button class="ghost" onclick="hideInstall()">✕</button>
   </div>
 
-  <!-- 今日儀表板 -->
-  <div class="dashboard">
-    <div class="dash-head">
-      <div class="dash-title">📅 今日狀態</div>
-      <div class="dash-date" id="dashDate"></div>
-      <a class="dash-class" id="dashClass" href="roster.html">👥 設定班級</a>
+  <!-- ===== 今日 HERO ===== -->
+  <section class="today">
+    <div>
+      <span class="tag" id="todayTag">TODAY · 今日</span>
+      <h2>
+        今天是 <span class="date" id="todayDate">5月21日</span>，<br>
+        <span id="todayWeekday">星期四</span>的早晨。
+      </h2>
+      <p class="quote">
+        <span class="badge">今日心錨</span>
+        <b id="todayQuote">「小小的前進，也是一種勝利。」</b>
+      </p>
     </div>
-    <div class="dash-grid">
-      <a class="stat-card emo" href="emotion.html">
-        <div class="ico">😊</div>
-        <div class="lbl">今日情緒打卡</div>
-        <div class="val"><span id="emoStat">0</span><small id="emoTotal"> / 30 人</small></div>
-      </a>
-      <a class="stat-card todo" href="todo.html">
-        <div class="ico">📝</div>
-        <div class="lbl">代辦事項</div>
-        <div class="val"><span id="todoStat">0</span><small id="todoBreak"></small></div>
-      </a>
-      <a class="stat-card card" href="cards.html">
-        <div class="ico">🌈</div>
-        <div class="lbl">今日能量卡</div>
-        <div class="quote" id="cardStat">載入中…</div>
-      </a>
-      <a class="stat-card atn" href="attendance.html">
-        <div class="ico">📋</div>
-        <div class="lbl">今日出席</div>
-        <div class="val"><span id="atnStat">—</span></div>
-      </a>
+    <div class="ring" aria-label="今日出席">
+      <svg viewBox="0 0 100 100">
+        <circle class="track" cx="50" cy="50" r="42" />
+        <circle class="fill"  cx="50" cy="50" r="42"
+          stroke-dasharray="263.9" stroke-dashoffset="263.9" id="ringFill" />
+      </svg>
+      <div class="inside">
+        <span class="num" id="ringNum">—</span>
+        <span class="lbl" id="ringLbl">今日出席</span>
+      </div>
     </div>
+  </section>
+
+  <!-- ===== 今日數據四連卡 ===== -->
+  <div class="stats">
+    <a class="stat emo" href="emotion.html">
+      <span class="lbl">情緒打卡 EMOTION</span>
+      <span class="val"><span id="emoStat">0</span><small id="emoTotal"> / 30 人</small></span>
+    </a>
+    <a class="stat todo" href="todo.html">
+      <span class="lbl">代辦事項 TO-DO</span>
+      <span class="val"><span id="todoStat">0</span><small id="todoBreak"> 項</small></span>
+    </a>
+    <a class="stat card" href="cards.html">
+      <span class="lbl">今日能量卡 CARD</span>
+      <span class="quote" id="cardStat">「載入中…」</span>
+    </a>
+    <a class="stat atn" href="attendance.html">
+      <span class="lbl">今日出席 ATTEND</span>
+      <span class="val" id="atnVal">—</span>
+    </a>
   </div>
 
-  <!-- 五大核心工具 -->
-  <h2 class="section-title">📚 五大核心工具</h2>
-  <div class="grid">
-    <a class="card pink" href="emotion.html">
-      <span class="emoji">😊</span>
-      <h2>情緒打卡牆</h2>
+  <!-- ===== 五大核心工具 ===== -->
+  <div class="sec-title">
+    <div class="num">A</div>
+    <h2>
+      五大核心工具
+      <small>five tools you use every day</small>
+    </h2>
+    <div class="line"></div>
+  </div>
+  <div class="tools core">
+    <a class="tool red" href="emotion.html">
+      <span class="num-tag">01</span>
+      <h3>情緒打卡牆</h3>
       <p>選號碼 → 按表情，今天的心情立刻貼上牆。</p>
-      <span class="badge">每日晨間活動</span>
+      <div class="ft">
+        <span class="chip">每日晨間</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card green" href="todo.html">
-      <span class="emoji">📝</span>
-      <h2>班級 To-Do List</h2>
+    <a class="tool green" href="todo.html">
+      <span class="num-tag">02</span>
+      <h3>班級 To-Do</h3>
       <p>紅黃綠三欄拖曳，自動存檔、可匯出備份。</p>
-      <span class="badge">紅黃綠三色任務牆</span>
+      <div class="ft">
+        <span class="chip">三色任務</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card rainbow" href="cards.html">
-      <span class="emoji">🌈</span>
-      <h2>彩虹能量卡</h2>
+    <a class="tool rainbow" href="cards.html">
+      <span class="num-tag">03</span>
+      <h3>彩虹能量卡</h3>
       <p>103 句阿德勒風小語，每天的心錨。</p>
-      <span class="badge">今日心錨已就位</span>
+      <div class="ft">
+        <span class="chip">今日心錨</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card blue" href="attendance.html">
-      <span class="emoji">📋</span>
-      <h2>學生出勤記錄表</h2>
+    <a class="tool blue" href="attendance.html">
+      <span class="num-tag">04</span>
+      <h3>出勤記錄表</h3>
       <p>自動扣週末、列印 PDF、匯出 CSV 給教務處。</p>
-      <span class="badge">PDF / CSV 雙匯出</span>
+      <div class="ft">
+        <span class="chip">PDF / CSV</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card yellow" href="marquee.html">
-      <span class="emoji">📢</span>
-      <h2>跑馬燈通知</h2>
+    <a class="tool yellow" href="marquee.html">
+      <span class="num-tag">05</span>
+      <h3>跑馬燈通知</h3>
       <p>投影機顯示、時鐘 + 倒數計時都內建。</p>
-      <span class="badge">投影專用模式</span>
+      <div class="ft">
+        <span class="chip">投影專用</span>
+        <span class="arr">→</span>
+      </div>
     </a>
   </div>
 
-  <!-- 三個新工具 -->
-  <h2 class="section-title">🎁 課堂活動工具</h2>
-  <div class="grid">
-    <a class="card rose" href="picker.html">
-      <span class="emoji">🎯</span>
-      <h2>隨機抽號</h2>
+  <!-- ===== 三個課堂活動工具 ===== -->
+  <div class="sec-title">
+    <div class="num">B</div>
+    <h2>
+      課堂活動工具
+      <small>three classroom helpers, on demand</small>
+    </h2>
+    <div class="line"></div>
+  </div>
+  <div class="tools classroom">
+    <a class="tool pink" href="picker.html">
+      <span class="num-tag">06</span>
+      <h3>隨機抽號</h3>
       <p>公平的點人答題，可排除已抽過的同學。</p>
-      <span class="badge">點人 / 抽獎</span>
+      <div class="ft">
+        <span class="chip">點人 / 抽獎</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card mint" href="timer.html">
-      <span class="emoji">⏱️</span>
-      <h2>教室計時器</h2>
+    <a class="tool orange" href="timer.html">
+      <span class="num-tag">07</span>
+      <h3>教室計時器</h3>
       <p>大字幕倒數，討論、考試、休息都好用。</p>
-      <span class="badge">空白鍵開始</span>
+      <div class="ft">
+        <span class="chip">空白鍵開始</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card lilac" href="grouper.html">
-      <span class="emoji">👥</span>
-      <h2>隨機分組</h2>
+    <a class="tool purple" href="grouper.html">
+      <span class="num-tag">08</span>
+      <h3>隨機分組</h3>
       <p>洗牌後分 N 組，可印名牌、複製文字版。</p>
-      <span class="badge">小組討論必備</span>
+      <div class="ft">
+        <span class="chip">小組討論</span>
+        <span class="arr">→</span>
+      </div>
     </a>
   </div>
 
-  <!-- 設定 / 說明 -->
-  <h2 class="section-title">⚙️ 設定與說明</h2>
-  <div class="grid">
-    <a class="card purple" href="roster.html">
-      <span class="emoji">👥</span>
-      <h2>班級名單設定</h2>
-      <p>設定一次，五個工具都會用到這份名單。</p>
-      <span class="badge">建議第一次使用先設定</span>
+  <!-- ===== 設定 ===== -->
+  <div class="sec-title">
+    <div class="num">C</div>
+    <h2>
+      設定與說明
+      <small>setup &amp; how-to-use</small>
+    </h2>
+    <div class="line"></div>
+  </div>
+  <div class="tools setup">
+    <a class="tool cream" href="roster.html">
+      <span class="num-tag" style="background:var(--ink);color:var(--y);">＊</span>
+      <h3>班級名單設定</h3>
+      <p>設定一次，五個工具都會用到這份名單。建議第一次使用先設定。</p>
+      <div class="ft">
+        <span class="chip">先做這個</span>
+        <span class="arr">→</span>
+      </div>
     </a>
-
-    <a class="card" style="--accent:#f8c8a0;background:#fff;" href="#about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});return false;">
-      <span class="emoji">💡</span>
-      <h2>使用小提醒</h2>
-      <p>資料怎麼存？怎麼備份？怎麼裝成 App？</p>
-      <span class="badge">點我看更多</span>
+    <a class="tool cream" href="#about" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'});return false;">
+      <span class="num-tag" style="background:var(--ink);color:var(--y);">？</span>
+      <h3>使用小提醒</h3>
+      <p>資料怎麼存？怎麼備份？怎麼裝成 App？跳到下方說明。</p>
+      <div class="ft">
+        <span class="chip">看說明</span>
+        <span class="arr">↓</span>
+      </div>
     </a>
   </div>
 
-  <section id="about" style="margin-top:50px;background:rgba(255,255,255,.7);border-radius:24px;padding:28px 32px;backdrop-filter:blur(6px);">
-    <h2 style="margin-top:0;color:#5a4a6e;">💡 使用小提醒</h2>
-    <ul style="line-height:1.9;color:#5a5a6e;font-size:15px;">
-      <li><strong>第一次使用建議先到「班級名單設定」</strong>，輸入班級名稱和學生姓名，之後所有工具會自動帶入。</li>
-      <li>本工具完全在你的瀏覽器裡跑，<strong>不需要登入、不會把資料上傳</strong>。</li>
+  <!-- ===== 使用提醒 ===== -->
+  <section class="tips" id="about">
+    <h2>使用小提醒</h2>
+    <ul>
+      <li><b>第一次使用先到「班級名單設定」</b>，輸入班級名稱和學生姓名，之後所有工具會自動帶入。</li>
+      <li>本工具完全在你的瀏覽器裡跑，<b>不需要登入、不會把資料上傳</b>。</li>
       <li>資料用瀏覽器 <code>localStorage</code> 存 — 同一台電腦同一個瀏覽器才看得到。</li>
       <li>清瀏覽器資料、用無痕視窗、或換電腦，舊記錄不會自動帶過去。</li>
-      <li>支援 PWA：可以「加到主畫面」當成 App 用，<strong>離線也能開</strong>。</li>
+      <li>支援 PWA：可以「加到主畫面」當成 App 用，<b>離線也能開</b>。</li>
       <li>出勤表建議每月匯出 PDF + CSV 各一份做備份。</li>
       <li>適合用投影機 / 觸控大屏 / iPad 操作，畫面已最佳化。</li>
+      <li>所有頁面左上角都有「← 回主頁」按鈕，避免迷路。</li>
     </ul>
+    <div style="margin-top:18px;padding-top:16px;border-top:2px dashed var(--ink);display:flex;gap:10px;flex-wrap:wrap;">
+      <button onclick="window.AkaiOnboarding && window.AkaiOnboarding.open()" style="background:var(--y);color:var(--ink);border:3px solid var(--ink);border-radius:999px;padding:8px 18px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);">📖 再看一次使用引導</button>
+      <span style="color:var(--muted);font-size:13px;align-self:center;">想換個顏色？右下角的 🎨 浮鈕可以調整主色 / 深色模式 / 關閉裝飾。</span>
+    </div>
   </section>
-</main>
 
-<footer>
-  Made with <span class="heart">❤️</span> by
-  <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a>
-  · 桃園市龍潭區石門國民小學
-  <br>
-  <span style="font-size:11px;color:#aa9abe;">© 2026 · v2.0 · 為孩子做的小工具，自由使用 ✨</span>
-</footer>
+  <footer class="f">
+    Made with ♥ by
+    <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a>
+    · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3.0 “Crayon Pop” · 為孩子做的小工具，自由使用 ✨</div>
+  </footer>
 
-<script src="sw-update.js" defer></script>
+</div>
+
+<!-- 部署時請保留下列兩行（已在 Coolclass/ 內）；預覽環境的 fallback 寫在下方 -->
 <script src="roster.js"></script>
+<script src="sw-update.js" defer></script>
 <script>
-// ===== PWA 註冊：交給 sw-update.js =====
-// （見頁面底部 script 載入；含更新偵測 + banner）
+/* 預覽環境 fallback：deploy 到 Coolclass/ 後請把上面兩行打開、移除這段 */
+if (!window.AkaiRoster) {
+  window.AkaiRoster = {
+    load() {
+      try {
+        const raw = localStorage.getItem('akai_roster_v1');
+        if (!raw) return { className: '', count: 30, names: {} };
+        const o = JSON.parse(raw);
+        return { className: o.className || '', count: parseInt(o.count) || 30, names: o.names || {} };
+      } catch { return { className: '', count: 30, names: {} }; }
+    }
+  };
+}
+</script>
 
-// ===== 安裝引導 =====
+<script>
+/* ===========================================================
+   首頁腳本：今日儀表板、PWA 安裝、班級名單顯示
+   localStorage 鍵名沿用 v2：akai_*_v1
+   =========================================================== */
+
+// ---- 安裝引導 ----
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -453,72 +1000,13 @@ function hideInstall() {
   localStorage.setItem('akai_install_dismissed', '1');
 }
 
-// ===== 儀表板：讀各工具的 localStorage =====
+// ---- 工具 ----
 function todayKey() { return new Date().toISOString().slice(0,10); }
-function readJSON(key) {
-  try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; } catch { return null; }
+function readJSON(k) {
+  try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; }
 }
 
-function renderDashboard() {
-  const d = new Date();
-  const wk = ['日','一','二','三','四','五','六'];
-  document.getElementById('dashDate').textContent =
-    `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (星期${wk[d.getDay()]})`;
-
-  // 班級
-  const r = AkaiRoster.load();
-  const dashClass = document.getElementById('dashClass');
-  if (r.className) {
-    dashClass.textContent = `🏫 ${r.className}`;
-    dashClass.href = 'roster.html';
-  } else {
-    dashClass.textContent = `👥 設定班級名單`;
-  }
-  const total = r.count || 30;
-
-  // 情緒
-  const emo = readJSON('akai_emotion_v1');
-  const todayEmo = emo?.records?.[todayKey()] || {};
-  const emoCnt = Object.keys(todayEmo).length;
-  document.getElementById('emoStat').textContent = emoCnt;
-  document.getElementById('emoTotal').textContent = ` / ${total} 人`;
-
-  // To-Do
-  const todo = readJSON('akai_todo_v1');
-  if (todo) {
-    const red = (todo.red || []).length;
-    const yellow = (todo.yellow || []).length;
-    const green = (todo.green || []).length;
-    document.getElementById('todoStat').textContent = (red + yellow + green);
-    document.getElementById('todoBreak').textContent = ` 項（🔴${red} 🟡${yellow} 🟢${green}）`;
-  }
-
-  // 今日能量卡（用同樣的 hash）
-  loadTodayCard();
-
-  // 出勤
-  const atn = readJSON('akai_attendance_v1');
-  const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-  const sheet = atn?.sheets?.[ym];
-  if (sheet) {
-    const dKey = `${ym}-${String(d.getDate()).padStart(2,'0')}`;
-    const today = sheet.marks?.[dKey] || {};
-    const cnt = Object.entries(today).reduce((acc, [_, v]) => {
-      if (v === 'present' || v === 'late') return acc + 1;
-      return acc;
-    }, 0);
-    const wk = d.getDay();
-    if (wk === 0 || wk === 6) {
-      document.getElementById('atnStat').textContent = '週末';
-    } else {
-      document.getElementById('atnStat').innerHTML = `${cnt}<small> / ${sheet.count || total} 人</small>`;
-    }
-  } else {
-    document.getElementById('atnStat').textContent = '尚未記錄';
-  }
-}
-
-// 今日能量卡（同步 cards.html 邏輯，避免依賴整個 deck，這裡內建精選 10 句）
+// ---- 內建 103 句中精選池（fallback；cards.html 內有完整版） ----
 const QUICK_QUOTES = [
   '遇到再怎麼難過的事，也要說對的話。',
   '沒有壞的孩子，只有氣餒的孩子。',
@@ -537,17 +1025,95 @@ const QUICK_QUOTES = [
   '雨過後的彩虹，是給有耐心的人。',
 ];
 
-function loadTodayCard() {
+// ---- 主渲染 ----
+function render() {
   const d = new Date();
+  const wk = ['日','一','二','三','四','五','六'];
+  document.getElementById('todayDate').textContent =
+    `${d.getMonth()+1}月${d.getDate()}日`;
+  document.getElementById('todayWeekday').textContent = `星期${wk[d.getDay()]}`;
+
+  // 班級資訊（若有 roster.js）
+  let total = 30, className = '';
+  if (window.AkaiRoster && typeof AkaiRoster.load === 'function') {
+    const r = AkaiRoster.load();
+    total = r.count || 30;
+    className = r.className || '';
+  }
+  const rPill = document.getElementById('rosterText');
+  rPill.textContent = className ? `${className} · ${total} 人` : '設定班級名單';
+
+  // 今日心錨（種子 = 年月日，每天固定）
   const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
-  // 為了首頁更可靠，這裡先用簡短池，cards.html 內會用完整 103 句
   const q = QUICK_QUOTES[seed % QUICK_QUOTES.length];
+  document.getElementById('todayQuote').textContent = '「' + q + '」';
   document.getElementById('cardStat').textContent = '「' + q + '」';
+
+  // 情緒打卡
+  const emo = readJSON('akai_emotion_v1');
+  const today = emo?.records?.[todayKey()] || {};
+  const emoCnt = Object.keys(today).length;
+  document.getElementById('emoStat').textContent = emoCnt;
+  document.getElementById('emoTotal').textContent = ` / ${total} 人`;
+
+  // To-Do
+  const todo = readJSON('akai_todo_v1');
+  if (todo) {
+    const red = (todo.red || []).length;
+    const yel = (todo.yellow || []).length;
+    const grn = (todo.green || []).length;
+    document.getElementById('todoStat').textContent = (red + yel + grn);
+    document.getElementById('todoBreak').textContent = ` 項 · 🔴${red} 🟡${yel} 🟢${grn}`;
+  } else {
+    document.getElementById('todoStat').textContent = '0';
+    document.getElementById('todoBreak').textContent = ' 項';
+  }
+
+  // 出勤
+  const atn = readJSON('akai_attendance_v1');
+  const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  const sheet = atn?.sheets?.[ym];
+  let atnCnt = null, atnTotal = total, isWeekend = (d.getDay()===0 || d.getDay()===6);
+  const atnVal = document.getElementById('atnVal');
+  if (isWeekend) {
+    atnVal.innerHTML = `週末<small> 休息</small>`;
+  } else if (sheet) {
+    const dKey = `${ym}-${String(d.getDate()).padStart(2,'0')}`;
+    const todayMarks = sheet.marks?.[dKey] || {};
+    atnCnt = Object.entries(todayMarks).reduce((acc, [,v]) => {
+      if (v === 'present' || v === 'late') return acc + 1;
+      return acc;
+    }, 0);
+    atnTotal = sheet.count || total;
+    atnVal.innerHTML = `${atnCnt}<small> / ${atnTotal} 人</small>`;
+  } else {
+    atnVal.innerHTML = `—<small> 尚未記錄</small>`;
+  }
+
+  // 出席圓環
+  const ringNum = document.getElementById('ringNum');
+  const ringLbl = document.getElementById('ringLbl');
+  const ringFill = document.getElementById('ringFill');
+  const C = 2 * Math.PI * 42; // 約 263.9
+  if (isWeekend) {
+    ringNum.textContent = '休';
+    ringLbl.textContent = '週末';
+    ringFill.style.strokeDashoffset = C;
+  } else if (atnCnt !== null) {
+    const pct = atnTotal > 0 ? atnCnt / atnTotal : 0;
+    ringNum.textContent = atnCnt;
+    ringLbl.textContent = `/ ${atnTotal} 人到`;
+    ringFill.style.strokeDashoffset = C - C * pct;
+  } else {
+    ringNum.textContent = '—';
+    ringLbl.textContent = '尚未記錄';
+    ringFill.style.strokeDashoffset = C;
+  }
 }
 
-renderDashboard();
-window.addEventListener('focus', renderDashboard);
-window.addEventListener('storage', renderDashboard);
+render();
+window.addEventListener('focus', render);
+window.addEventListener('storage', render);
 </script>
 
 </body>

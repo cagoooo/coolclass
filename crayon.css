@@ -1,0 +1,1101 @@
+/* ============================================================
+   crayon.css — 教室小幫手 v3 共用設計系統
+   蠟筆塗鴉風：粗黑邊 + 實心偏移投影 + 飽和原色
+   ============================================================ */
+
+:root {
+  /* 主色票 */
+  --ink:     #2a1f4a;
+  --ink-2:   #44345e;
+  --paper:   #fff8e8;
+  --paper-2: #fff3d6;
+
+  --r:       #ff6b6b;
+  --y:       #ffd23f;
+  --g:       #6bcb77;
+  --b:       #4d96ff;
+  --p:       #b070ff;
+  --pink:    #ff97c5;
+  --orange:  #ff9d4d;
+  --cyan:    #4ec5d8;
+
+  /* 文字 */
+  --muted:   #6a5a8e;
+  --mute-2:  #aa9abe;
+
+  /* 形狀 */
+  --rad:     22px;
+  --rad-sm:  14px;
+  --rad-lg:  28px;
+  --bw:      3px;        /* border width */
+  --shadow:  5px 5px 0 var(--ink);
+  --shadow-lg: 7px 7px 0 var(--ink);
+  --shadow-color-y: 5px 5px 0 var(--y);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+html { background: var(--paper); }
+body {
+  font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.55;
+}
+a { color: inherit; text-decoration: none; }
+code { font-family: 'Space Grotesk', ui-monospace, monospace; font-size: .92em; background: var(--paper-2); padding: 1px 6px; border-radius: 6px; }
+
+/* ====================================================== */
+/* 背景裝飾                                              */
+/* ====================================================== */
+.bg-deco {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+}
+.bg-deco .blob { position: absolute; border-radius: 50%; opacity: .35; }
+.bg-deco .blob-y { width: 460px; height: 460px; top: -180px; right: -160px; background: var(--y); opacity: .5; }
+.bg-deco .blob-b { width: 360px; height: 360px; bottom: -150px; left: -130px; background: var(--b); opacity: .3; }
+.bg-deco .blob-p { width: 240px; height: 240px; top: 38%; right: -110px; background: var(--p); opacity: .22; }
+.bg-deco .dots {
+  position: absolute; width: 130px; height: 130px;
+  background: radial-gradient(var(--ink) 1.8px, transparent 2.2px) 0 0 / 14px 14px;
+  opacity: .22;
+}
+.bg-deco .dots-1 { top: 360px; left: 20px; }
+.bg-deco .dots-2 { bottom: 60px; right: 60px; }
+.bg-deco .squig {
+  position: absolute; width: 80px; height: 14px;
+  background:
+    linear-gradient(135deg, transparent 49%, var(--ink) 49% 51%, transparent 51%) 0 0/10px 10px,
+    linear-gradient(45deg, transparent 49%, var(--ink) 49% 51%, transparent 51%) 0 0/10px 10px;
+  opacity: .35;
+}
+.bg-deco .squig-1 { top: 180px; left: 8%; transform: rotate(-10deg); }
+.bg-deco .squig-2 { top: 60%; right: 6%; transform: rotate(15deg); }
+
+/* ====================================================== */
+/* 頂部：回首頁鈕                                        */
+/* ====================================================== */
+.home-btn {
+  position: fixed;
+  top: 20px; left: 20px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  border: var(--bw) solid var(--ink);
+  box-shadow: 4px 4px 0 var(--y);
+  z-index: 100;
+  transition: transform .15s, box-shadow .15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.home-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--y);
+}
+
+/* ====================================================== */
+/* 容器                                                  */
+/* ====================================================== */
+.wrap {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 28px 32px 80px;
+  position: relative; z-index: 1;
+}
+.wrap.narrow { max-width: 980px; }
+.wrap.wide   { max-width: 1500px; }
+@media (max-width: 720px) {
+  .wrap { padding: 20px 18px 60px; }
+}
+
+/* ====================================================== */
+/* 頁面 hero                                            */
+/* ====================================================== */
+.page-hero {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: var(--rad-lg);
+  padding: 28px 30px;
+  margin: 56px 0 22px;
+  box-shadow: var(--shadow-lg);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 22px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.page-hero::after {
+  content: ''; position: absolute;
+  width: 200px; height: 200px; border-radius: 50%;
+  background: radial-gradient(var(--y) 2px, transparent 2.5px) 0 0/12px 12px;
+  opacity: .12; bottom: -60px; left: -40px;
+}
+.page-hero .eyebrow {
+  display: inline-block;
+  background: var(--y);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+}
+.page-hero h1 {
+  margin: 0;
+  font-weight: 900;
+  font-size: clamp(26px, 3.4vw, 36px);
+  line-height: 1.18;
+  letter-spacing: -.5px;
+  color: var(--paper);
+}
+.page-hero h1 em {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  color: var(--y);
+}
+.page-hero .sub {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: #d8d2ec;
+  line-height: 1.55;
+  max-width: 640px;
+}
+.page-hero .sub b { color: var(--paper); }
+.page-hero .badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.1);
+  color: var(--paper);
+  border: 2px solid var(--paper);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-right: 6px;
+  margin-top: 8px;
+}
+.page-hero .badge a { color: var(--y); margin-left: 4px; }
+.page-hero .right-aux {
+  text-align: right;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+}
+.page-hero .right-aux .big {
+  display: block;
+  font-weight: 900;
+  font-size: clamp(36px, 4vw, 54px);
+  line-height: 1;
+  color: var(--y);
+}
+.page-hero .right-aux .sml {
+  font-style: normal;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  color: #d8d2ec;
+  display: block;
+  margin-top: 4px;
+}
+@media (max-width: 720px) {
+  .page-hero {
+    grid-template-columns: 1fr;
+    padding: 22px 22px;
+    margin-top: 64px;
+  }
+  .page-hero .right-aux { text-align: left; }
+  .page-hero .right-aux .big { font-size: 36px; }
+}
+
+/* ====================================================== */
+/* Section block                                         */
+/* ====================================================== */
+.block {
+  background: #fff;
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--rad-lg);
+  padding: 22px 24px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow);
+}
+.block.tinted-y { background: var(--y); }
+.block.tinted-g { background: var(--g); }
+.block.tinted-b { background: var(--b); color: #fff; }
+.block.tinted-p { background: var(--p); color: #fff; }
+.block.tinted-pink { background: var(--pink); }
+.block.tinted-paper { background: var(--paper-2); }
+.block.tinted-ink { background: var(--ink); color: var(--paper); }
+
+.block-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.block-head .step {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--y);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 900;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.block-head h2 {
+  margin: 0;
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -.3px;
+}
+.block-head .tail {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ====================================================== */
+/* Steps                                                 */
+/* ====================================================== */
+.steps {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 22px;
+  flex-wrap: wrap;
+}
+.step-chip {
+  background: #fff;
+  border: var(--bw) solid var(--ink);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .15s;
+}
+.step-chip.active {
+  background: var(--y);
+  color: var(--ink);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.step-chip.done {
+  background: var(--g);
+  color: #1a3e22;
+}
+
+/* ====================================================== */
+/* 按鈕                                                  */
+/* ====================================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition: transform .15s, box-shadow .15s, background .15s;
+  text-decoration: none;
+}
+.btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: 4px 4px 0 var(--ink); }
+
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: #1a1230; }
+
+.btn.r { background: var(--r); color: #fff; }
+.btn.g { background: var(--g); color: #1a3e22; }
+.btn.b { background: var(--b); color: #fff; }
+.btn.y { background: var(--y); color: var(--ink); }
+.btn.p { background: var(--p); color: #fff; }
+.btn.pink { background: var(--pink); color: var(--ink); }
+.btn.orange { background: var(--orange); color: #fff; }
+
+.btn.lg { padding: 14px 28px; font-size: 16px; }
+.btn.xl { padding: 18px 36px; font-size: 18px; }
+.btn.sm { padding: 6px 14px; font-size: 13px; box-shadow: 3px 3px 0 var(--ink); }
+.btn.icon-only { padding: 10px 12px; }
+
+/* 按鈕列 */
+.btn-bar {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  margin: 16px 0;
+}
+.btn-bar.center { justify-content: center; }
+
+/* ====================================================== */
+/* 輸入                                                  */
+/* ====================================================== */
+.field {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 14px;
+}
+.field label {
+  font-weight: 700; font-size: 14px;
+  color: var(--ink);
+}
+.input, .textarea, .select {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--rad-sm);
+  padding: 10px 14px;
+  width: 100%;
+  outline: none;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+}
+.input:focus, .textarea:focus, .select:focus {
+  background: var(--y);
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.textarea { min-height: 80px; resize: vertical; }
+
+/* ====================================================== */
+/* Pill / Badge                                          */
+/* ====================================================== */
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.pill.ink { background: var(--ink); color: var(--paper); }
+.pill.y { background: var(--y); }
+.pill.g { background: var(--g); color: #1a3e22; }
+.pill.r { background: var(--r); color: #fff; }
+.pill.b { background: var(--b); color: #fff; }
+.pill.p { background: var(--p); color: #fff; }
+.pill.pink { background: var(--pink); color: var(--ink); }
+
+/* ====================================================== */
+/* Empty                                                 */
+/* ====================================================== */
+.empty {
+  text-align: center;
+  padding: 36px 20px;
+  border: 3px dashed var(--ink);
+  border-radius: var(--rad);
+  background: var(--paper-2);
+  color: var(--muted);
+  font-size: 14px;
+}
+.empty b { color: var(--ink); display: block; margin-bottom: 4px; font-size: 16px; }
+
+/* ====================================================== */
+/* Modal                                                 */
+/* ====================================================== */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(42,31,74,.55);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+  padding: 20px;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: #fff;
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--rad-lg);
+  padding: 28px;
+  max-width: 440px;
+  width: 100%;
+  box-shadow: 8px 8px 0 var(--ink);
+  position: relative;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal h3 {
+  margin: 0 0 12px;
+  font-weight: 900;
+  font-size: 22px;
+}
+.modal p { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+.modal .modal-actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* ====================================================== */
+/* Toast                                                 */
+/* ====================================================== */
+.toast {
+  position: fixed;
+  bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--paper);
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 5px 5px 0 var(--y);
+  border: var(--bw) solid var(--ink);
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  z-index: 300;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.r { box-shadow: 5px 5px 0 var(--r); }
+.toast.g { box-shadow: 5px 5px 0 var(--g); }
+
+/* ====================================================== */
+/* 號碼按鈕（共用 emotion / picker / attendance）          */
+/* ====================================================== */
+.num-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 10px;
+}
+.num-btn {
+  position: relative;
+  aspect-ratio: 1;
+  border: var(--bw) solid var(--ink);
+  background: #fff;
+  border-radius: 18px;
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s, background .12s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4px;
+  overflow: hidden;
+}
+.num-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.num-btn.selected {
+  background: var(--y);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.num-btn.done {
+  background: var(--g);
+  color: #1a3e22;
+}
+.num-btn.locked {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.num-btn .name-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.1;
+  margin-top: 2px;
+  opacity: .8;
+  word-break: break-all;
+}
+.num-btn .emoji-tag {
+  font-size: 14px;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+/* ====================================================== */
+/* Footer                                                */
+/* ====================================================== */
+footer.f {
+  margin-top: 60px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 20px;
+}
+footer.f a {
+  color: var(--ink);
+  font-weight: 700;
+  border-bottom: 2px solid var(--y);
+}
+footer.f .ver {
+  margin-top: 6px;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--mute-2);
+}
+
+/* ====================================================== */
+/* Reduced motion                                        */
+/* ====================================================== */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ============================================================
+   主題系統：accent swap / dark mode / deco / flat
+   由 tweaks.js 在 <html> 上設定 data-* 屬性後生效
+   ============================================================ */
+
+/* ---- Accent 變化（換 --y / 主要強調色） ---- */
+html[data-accent="mint"]    { --y: #6bcb77; }
+html[data-accent="sunset"]  { --y: #ff9d4d; }
+html[data-accent="berry"]   { --y: #b070ff; }
+html[data-accent="ocean"]   { --y: #4d96ff; }
+/* default rainbow keeps --y: #ffd23f */
+
+/* ---- 裝飾關閉 ---- */
+html[data-deco="off"] .bg-deco { display: none; }
+
+/* ---- 扁平模式：移除偏移投影 ---- */
+html[data-flat="on"] .btn,
+html[data-flat="on"] .home-btn,
+html[data-flat="on"] .stat,
+html[data-flat="on"] .block,
+html[data-flat="on"] .tool,
+html[data-flat="on"] .page-hero,
+html[data-flat="on"] .step-chip,
+html[data-flat="on"] .pill,
+html[data-flat="on"] .num-btn,
+html[data-flat="on"] .input,
+html[data-flat="on"] .textarea,
+html[data-flat="on"] .select { box-shadow: none !important; }
+html[data-flat="on"] .input:focus,
+html[data-flat="on"] .textarea:focus,
+html[data-flat="on"] .select:focus { transform: none !important; }
+
+/* ---- 暗色模式 ---- */
+html[data-theme="dark"] {
+  --ink:     #fff8e8;
+  --ink-2:   #d4cce6;
+  --paper:   #15102e;
+  --paper-2: #2a1f4a;
+  --muted:   #b8a8d4;
+  --mute-2:  #7a6a9e;
+  --shadow:  5px 5px 0 #0a0618;
+  --shadow-lg: 7px 7px 0 #0a0618;
+}
+html[data-theme="dark"] body { background: var(--paper); color: var(--ink); }
+
+/* 暗色：原本 #fff 卡片底改成深紫卡 */
+html[data-theme="dark"] .block,
+html[data-theme="dark"] .stat,
+html[data-theme="dark"] .modal,
+html[data-theme="dark"] .num-btn,
+html[data-theme="dark"] .input,
+html[data-theme="dark"] .textarea,
+html[data-theme="dark"] .select,
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] .home-btn,
+html[data-theme="dark"] .step-chip,
+html[data-theme="dark"] .pill,
+html[data-theme="dark"] .chip,
+html[data-theme="dark"] .filter-btn,
+html[data-theme="dark"] .name-cell,
+html[data-theme="dark"] .item,
+html[data-theme="dark"] .preset-btn,
+html[data-theme="dark"] .msg-item,
+html[data-theme="dark"] .mini-card,
+html[data-theme="dark"] .add-btn { background: var(--paper-2); color: var(--ink); border-color: var(--ink); }
+
+/* hero 在暗色裡用更深的色 */
+html[data-theme="dark"] .page-hero,
+html[data-theme="dark"] .today,
+html[data-theme="dark"] .today-mantra,
+html[data-theme="dark"] .display-box,
+html[data-theme="dark"] .timer-panel { background: #0d0820; color: #fff8e8; }
+/* 顯式維持深底容器內的文字為 cream — 否則繼承到 dark 的 --paper 會變很暗 */
+html[data-theme="dark"] .page-hero h1,
+html[data-theme="dark"] .page-hero h2,
+html[data-theme="dark"] .today h2,
+html[data-theme="dark"] .today-mantra .quote,
+html[data-theme="dark"] .page-hero .sub,
+html[data-theme="dark"] .page-hero .sub b,
+html[data-theme="dark"] .today .quote b,
+html[data-theme="dark"] .timer-panel .time-num,
+html[data-theme="dark"] .display-box .big-num,
+html[data-theme="dark"] .display-box .big-name { color: #fff8e8; }
+html[data-theme="dark"] .page-hero .sub,
+html[data-theme="dark"] .today .quote { color: #c8c2dc; }
+
+/* 暗色：表格 */
+html[data-theme="dark"] table.sheet td { background: var(--paper-2); }
+html[data-theme="dark"] table.sheet td.weekend-cell { background: #3a1f3a; }
+html[data-theme="dark"] table.sheet td:not(.weekend-cell):hover { background: var(--y); color: #15102e; }
+
+/* 暗色：跑馬燈 input bg */
+html[data-theme="dark"] .msg-item input[type="text"]:focus { background: var(--y); color: #15102e; }
+html[data-theme="dark"] .input:focus,
+html[data-theme="dark"] .textarea:focus,
+html[data-theme="dark"] .select:focus { background: var(--y); color: #15102e; }
+
+/* 暗色：空白狀態 */
+html[data-theme="dark"] .empty { background: var(--paper-2); color: var(--muted); }
+
+/* 暗色：tool.cream 也要變暗 */
+html[data-theme="dark"] .tool.cream { background: var(--paper-2); color: var(--ink); }
+html[data-theme="dark"] .tool.cream .num-tag { background: var(--y); color: var(--paper); }
+
+/* 暗色：home-btn 用淺色 paper bg */
+html[data-theme="dark"] .home-btn { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+/* 暗色：背景裝飾減淡 */
+html[data-theme="dark"] .bg-deco .blob { opacity: .22; }
+html[data-theme="dark"] .bg-deco .dots,
+html[data-theme="dark"] .bg-deco .squig { opacity: .12; }
+
+/* 暗色：picker / 彈窗保持淺色（裡面是按鈕集合） */
+html[data-theme="dark"] .picker { background: var(--paper-2); border-color: var(--ink); }
+html[data-theme="dark"] .picker button { border-color: var(--ink); }
+
+/* ============================================================
+   Tweaks 視覺微調面板 + 浮鈕
+   ============================================================ */
+.akai-tweaks-fab {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--y);
+  border: 3px solid var(--ink);
+  font-size: 22px;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 var(--y);
+  z-index: 90;
+  transition: transform .15s, box-shadow .15s;
+  font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+}
+.akai-tweaks-fab:hover {
+  transform: translate(-2px, -2px) rotate(-8deg);
+  box-shadow: 6px 6px 0 var(--y);
+}
+
+.akai-tweaks {
+  position: fixed;
+  bottom: 84px; right: 20px;
+  width: min(340px, calc(100vw - 40px));
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  box-shadow: 6px 6px 0 var(--ink);
+  z-index: 99;
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(10px) scale(.96);
+  pointer-events: none;
+  transition: opacity .18s, transform .18s;
+}
+.akai-tweaks.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+html[data-theme="dark"] .akai-tweaks { background: var(--paper-2); }
+
+.akai-tweaks-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 10px;
+  border-bottom: 3px dashed var(--ink);
+}
+.akai-tweaks-title {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 900; font-size: 16px;
+}
+.akai-tweaks-title .dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--y);
+  border: 2px solid var(--ink);
+  display: inline-block;
+}
+.akai-tweaks-title small {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+.akai-tweaks-close {
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.akai-tweaks-close:hover { background: var(--r); }
+
+.akai-tweaks-body {
+  padding: 14px 18px 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.akai-tw-section { display: flex; flex-direction: column; gap: 8px; }
+.akai-tw-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+
+.akai-tw-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+.akai-tw-swatch {
+  position: relative;
+  aspect-ratio: 1;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+  font-family: inherit;
+  padding: 0;
+}
+.akai-tw-swatch .lbl {
+  position: absolute;
+  bottom: -22px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  opacity: 0;
+}
+.akai-tw-swatch:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+.akai-tw-swatch:hover .lbl { opacity: 1; }
+.akai-tw-swatch.on {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.akai-tw-swatch.on::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900;
+  font-size: 18px;
+  color: var(--ink);
+  text-shadow: 0 0 4px rgba(255,255,255,.6);
+}
+
+.akai-tw-seg {
+  display: flex;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.akai-tw-seg button {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.akai-tw-seg button + button { border-left: 3px solid var(--ink); }
+.akai-tw-seg button.on { background: var(--ink); color: var(--paper); }
+html[data-theme="dark"] .akai-tw-seg button { background: var(--paper-2); }
+html[data-theme="dark"] .akai-tw-seg button.on { background: var(--y); color: var(--paper-2); }
+
+.akai-tw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+.akai-tw-help {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.akai-tw-switch {
+  display: inline-block; cursor: pointer;
+  flex-shrink: 0;
+}
+.akai-tw-switch input { display: none; }
+.akai-tw-switch .knob {
+  width: 44px; height: 24px;
+  background: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  position: relative;
+  display: block;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.akai-tw-switch .knob::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: var(--ink);
+  border-radius: 50%;
+  transition: transform .2s;
+}
+.akai-tw-switch input:checked + .knob { background: var(--g); }
+.akai-tw-switch input:checked + .knob::after { transform: translateX(20px); }
+
+.akai-tw-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 12px;
+  background: var(--paper-2);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  outline: none;
+}
+.akai-tw-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  background: var(--y);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.akai-tw-range::-moz-range-thumb {
+  width: 22px; height: 22px;
+  background: var(--y);
+  border: 3px solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.akai-tw-foot {
+  display: flex; align-items: center;
+  border-top: 2px dashed var(--ink);
+  padding-top: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.akai-tw-reset {
+  background: #fff;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+}
+.akai-tw-reset:hover { background: var(--y); }
+html[data-theme="dark"] .akai-tw-reset { background: var(--paper-2); }
+.akai-tw-hint {
+  color: var(--muted);
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+}
+
+/* 列印時隱藏 tweaks */
+@media print {
+  .akai-tweaks, .akai-tweaks-fab { display: none !important; }
+}
+
+/* ============================================================
+   Onboarding 首次使用引導
+   ============================================================ */
+.akai-ob-bg {
+  position: fixed; inset: 0;
+  background: rgba(15, 8, 32, 0.75);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity .25s;
+  font-family: 'Noto Sans TC', system-ui, sans-serif;
+}
+.akai-ob-bg.show { opacity: 1; }
+
+.akai-ob-modal {
+  position: relative;
+  width: min(540px, 100%);
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 28px;
+  box-shadow: 8px 8px 0 var(--y);
+  padding: 28px 28px 22px;
+  color: var(--ink);
+  transform: translateY(20px) scale(.95);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.akai-ob-bg.show .akai-ob-modal { transform: translateY(0) scale(1); }
+html[data-theme="dark"] .akai-ob-modal { background: var(--paper-2); }
+
+.akai-ob-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.akai-ob-dot {
+  flex: 1;
+  height: 8px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.akai-ob-dot.done { background: var(--g); }
+.akai-ob-dot.on   { background: var(--y); }
+html[data-theme="dark"] .akai-ob-dot { background: var(--paper); }
+
+.akai-ob-skip {
+  position: absolute;
+  top: 18px; right: 18px;
+  background: transparent;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.akai-ob-skip:hover { background: var(--ink); color: var(--paper); }
+
+.akai-ob-slide-wrap {
+  margin-top: 8px;
+  min-height: 280px;
+}
+.akai-ob-slide {
+  animation: obFade .35s ease;
+}
+@keyframes obFade {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.akai-ob-visual {
+  width: 100%;
+  margin-bottom: 18px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+.akai-ob-visual svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 180px;
+}
+
+.akai-ob-tag {
+  display: inline-block;
+  background: var(--y);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.akai-ob-title {
+  margin: 0 0 12px;
+  font-weight: 900;
+  font-size: clamp(22px, 3vw, 28px);
+  line-height: 1.25;
+  letter-spacing: -.3px;
+}
+.akai-ob-title em {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 900;
+  color: var(--ink);
+  background: var(--y);
+  padding: 0 6px;
+  border-radius: 6px;
+  display: inline-block;
+  transform: rotate(-1deg);
+  border: 2px solid var(--ink);
+}
+
+.akai-ob-desc {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.akai-ob-desc b { color: var(--ink); }
+
+.akai-ob-foot {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 2px dashed var(--ink);
+}
+.akai-ob-back, .akai-ob-next, .akai-ob-goto {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 999px;
+  border: 3px solid var(--ink);
+  padding: 9px 18px;
+  cursor: pointer;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+}
+.akai-ob-back:hover, .akai-ob-next:hover, .akai-ob-goto:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+}
+.akai-ob-back { color: var(--muted); }
+.akai-ob-next { background: var(--ink); color: var(--paper); margin-left: auto; }
+.akai-ob-goto { background: var(--y); color: var(--ink); }
+html[data-theme="dark"] .akai-ob-back { background: var(--paper-2); }
+html[data-theme="dark"] .akai-ob-next { background: var(--y); color: var(--paper-2); border-color: var(--ink); }
+
+@media (max-width: 540px) {
+  .akai-ob-modal { padding: 22px 18px 18px; }
+  .akai-ob-title { font-size: 22px; }
+  .akai-ob-desc { font-size: 14px; }
+}
+
+@media print {
+  .akai-ob-bg { display: none !important; }
+}

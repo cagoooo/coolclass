@@ -3,267 +3,313 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⏱️ 教室計時器 · 教室小幫手</title>
+<title>教室計時器 · 教室小幫手</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#4ec0a0">
+<meta name="theme-color" content="#6bcb77">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
 <style>
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
-  body {
-    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
-    color: #2a3a4e;
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at 20% 20%, rgba(180,240,210,.5), transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(180,220,240,.5), transparent 50%),
-      linear-gradient(135deg, #f0fff5 0%, #f0f8ff 100%);
-    transition: background .3s;
-  }
-  body.warn-mode { background: linear-gradient(135deg, #fff5e0 0%, #ffe5d0 100%); }
+  /* 模式背景切換 */
+  body { transition: background .3s; }
+  body.warn-mode { background: #ffe9c8; }
   body.done-mode {
-    background: linear-gradient(135deg, #ffd0d0 0%, #ffe0e0 100%);
-    animation: flashbg 1s infinite;
+    background: #ffd4d4;
+    animation: flashbg 0.8s infinite;
   }
   @keyframes flashbg {
     0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.2); }
+    50%      { filter: brightness(1.1); }
   }
+  body.warn-mode .bg-deco, body.done-mode .bg-deco { opacity: .5; }
 
-  .home-btn {
-    position: fixed; top: 16px; left: 16px;
-    background: #fff; border: 3px solid #b8e0c8; color: #4a8a5e;
-    padding: 10px 18px; border-radius: 999px; font-weight: 700;
-    text-decoration: none; font-size: 14px;
-    box-shadow: 0 4px 12px rgba(150,210,170,.25); z-index: 100;
-    transition: transform .2s;
-  }
-  .home-btn:hover { transform: translateY(-2px) scale(1.05); }
-
-  header { text-align: center; padding: 50px 20px 4px; }
-  header h1 {
-    margin: 0; font-size: clamp(28px, 5vw, 44px); color: #2e8a6a;
-    text-shadow: 2px 2px 0 #fff;
-  }
-  header .sub { color: #6a8a7e; margin-top: 6px; font-size: 14px; }
-
-  main { max-width: 1000px; margin: 0 auto; padding: 0 20px 60px; }
-
-  /* 大型顯示 */
-  .timer-display {
+  /* 計時主面板 */
+  .timer-panel {
+    background: var(--ink);
+    color: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 40px 30px 30px;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
     text-align: center;
-    margin: 20px 0;
+    margin-bottom: 24px;
+  }
+  body.warn-mode .timer-panel { background: var(--orange); border-color: var(--ink); color: #fff; }
+  body.done-mode .timer-panel { background: var(--r); border-color: var(--ink); color: #fff; }
+  .timer-panel::before {
+    content: ''; position: absolute; inset: 14px;
+    border: 3px dashed currentColor;
+    border-radius: 20px;
+    opacity: .25;
+    pointer-events: none;
+  }
+
+  .timer-display {
     cursor: pointer;
     user-select: none;
+    position: relative;
   }
+
   .time-num {
-    font-size: clamp(160px, 28vw, 320px);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(140px, 26vw, 320px);
     font-weight: 900;
     line-height: 1;
     font-variant-numeric: tabular-nums;
-    color: #2e8a6a;
+    color: var(--y);
     text-shadow:
-      4px 4px 0 rgba(80,180,120,.2),
-      8px 8px 0 rgba(80,180,120,.1);
-    letter-spacing: -4px;
-    transition: color .3s, transform .2s;
+      6px 6px 0 var(--r),
+      12px 12px 0 var(--b);
+    letter-spacing: -6px;
+    transition: color .2s, transform .15s;
   }
-  body.warn-mode .time-num { color: #e09040; }
-  body.done-mode .time-num { color: #d04040; }
+  body.warn-mode .time-num { color: #fff; text-shadow: 6px 6px 0 var(--ink), 12px 12px 0 var(--r); }
+  body.done-mode .time-num { color: #fff; text-shadow: 6px 6px 0 var(--ink), 12px 12px 0 var(--y); }
+
   .time-num.tick { animation: tickAnim .15s ease-out; }
   @keyframes tickAnim {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.03); }
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.03); }
     100% { transform: scale(1); }
   }
+
   .timer-label {
-    margin-top: 14px;
-    font-size: clamp(20px, 3vw, 32px);
+    position: relative;
+    margin-top: 16px;
+    font-size: clamp(18px, 2.6vw, 28px);
     font-weight: 700;
-    color: #4a8a6e;
+    color: currentColor;
+    opacity: .9;
   }
 
   /* 進度條 */
   .progress-wrap {
-    max-width: 700px; margin: 14px auto 30px;
-    background: rgba(255,255,255,.7);
+    background: rgba(255,255,255,.15);
+    border: 3px solid var(--paper);
     border-radius: 999px;
-    height: 18px;
+    height: 22px;
     overflow: hidden;
-    border: 3px solid #fff;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,.08);
+    margin: 24px auto 10px;
+    max-width: 700px;
+    position: relative;
   }
   .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, #80c890, #b8e0a8);
+    background: var(--y);
     transition: width .3s, background .3s;
-    border-radius: 999px;
+    border-radius: 999px 0 0 999px;
   }
-  body.warn-mode .progress-bar { background: linear-gradient(90deg, #e09040, #ffc070); }
-  body.done-mode .progress-bar { background: linear-gradient(90deg, #d04040, #ff6060); }
+  body.warn-mode .progress-bar { background: var(--ink); }
+  body.done-mode .progress-bar { background: var(--ink); }
 
-  .actions {
-    display: flex; gap: 12px; justify-content: center;
-    flex-wrap: wrap; margin: 20px 0;
-  }
-  .big-btn {
-    padding: 16px 36px;
-    border-radius: 999px;
-    border: none;
-    font-weight: 900;
-    font-size: 18px;
-    cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 8px 20px rgba(0,0,0,.12);
-    transition: all .2s;
-  }
-  .big-btn:hover { transform: translateY(-3px) scale(1.03); }
-  .btn-start { background: linear-gradient(135deg, #80c890, #4ec0a0); color: #fff; min-width: 160px; }
-  .btn-pause { background: linear-gradient(135deg, #ffc040, #e0a040); color: #fff; }
-  .btn-reset { background: #fff; color: #888; border: 3px solid #ddd; }
-  .btn-add { background: #fff; color: #4a8a6e; border: 3px solid #b8e0c8; padding: 10px 18px; font-size: 15px; }
-
-  /* 預設按鈕 */
-  .presets {
-    background: rgba(255,255,255,.8);
-    border-radius: 20px;
-    padding: 18px 22px;
-    margin-top: 20px;
-  }
-  .presets h3 {
-    margin: 0 0 12px; color: #2e8a6a; font-size: 16px;
-  }
+  /* 預設 grid */
   .preset-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
     gap: 10px;
   }
+  @media (max-width: 720px) { .preset-grid { grid-template-columns: repeat(4, 1fr); } }
   .preset-btn {
-    background: #fff; border: 2px solid #b8e0c8;
-    border-radius: 14px; padding: 14px 8px;
-    cursor: pointer; font-family: inherit;
-    font-weight: 700; color: #4a8a6e;
-    transition: all .2s;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 16px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s, background .12s;
     text-align: center;
   }
-  .preset-btn:hover { transform: translateY(-2px); background: #e0f4e5; }
-  .preset-btn .label { display: block; font-size: 13px; opacity: .7; margin-bottom: 2px; }
-  .preset-btn .mins { display: block; font-size: 22px; font-weight: 900; }
+  .preset-btn:hover {
+    transform: translate(-2px, -2px);
+    background: var(--y);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .preset-btn .mins {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .preset-btn .label {
+    display: block;
+    font-size: 11px;
+    opacity: .65;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
 
-  /* 自訂 */
   .custom-row {
     display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
-    margin-top: 14px;
-  }
-  .custom-row label { font-weight: 700; color: #4a8a6e; font-size: 14px; }
-  .custom-row input {
-    width: 80px;
-    padding: 10px 12px;
-    border: 2px solid #b8e0c8;
-    border-radius: 10px;
-    font-size: 16px;
-    font-family: inherit;
-    text-align: center;
-  }
-  .custom-row input:focus { outline: none; border-color: #4ec0a0; }
-
-  /* 設定 */
-  .settings {
-    background: rgba(255,255,255,.8);
-    border-radius: 20px;
-    padding: 18px 22px;
     margin-top: 16px;
+    border-top: 2px dashed var(--ink);
+    padding-top: 16px;
   }
-  .settings h3 { margin: 0 0 10px; color: #2e8a6a; font-size: 16px; }
-  .settings label {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 8px; font-size: 14px;
+  .custom-row .input { width: 80px; text-align: center; }
+  .custom-row .lbl { font-weight: 700; font-size: 14px; }
+
+  /* 切換 */
+  .switch {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
   }
+  .switch input { display: none; }
+  .switch .knob {
+    width: 44px; height: 24px;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    position: relative;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .switch .knob::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 14px; height: 14px;
+    background: var(--ink);
+    border-radius: 50%;
+    transition: transform .2s;
+  }
+  .switch input:checked + .knob { background: var(--g); }
+  .switch input:checked + .knob::after { transform: translateX(20px); }
+
+  .settings-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px;
+  }
+  @media (max-width: 720px) { .settings-grid { grid-template-columns: 1fr; } }
 
   /* 全螢幕 */
   body.fullscreen .home-btn { opacity: .15; }
-  body.fullscreen header,
-  body.fullscreen .presets,
-  body.fullscreen .settings,
-  body.fullscreen footer { display: none; }
-  body.fullscreen .actions { margin-top: 50px; }
-  body.fullscreen .timer-display { margin-top: 10vh; }
-  body.fullscreen .time-num { font-size: clamp(240px, 40vw, 600px); }
-
-  footer {
-    text-align: center; padding: 20px; font-size: 13px; color: #6a8a7e;
-  }
-  footer a { color: #2e8a6a; font-weight: 700; }
+  body.fullscreen .page-hero,
+  body.fullscreen .block,
+  body.fullscreen footer.f { display: none; }
+  body.fullscreen .bg-deco { opacity: .15; }
+  body.fullscreen .timer-panel { padding: 80px 40px; margin-top: 4vh; }
+  body.fullscreen .time-num { font-size: clamp(220px, 38vw, 600px); }
+  body.fullscreen .btn-bar { margin-top: 32px; }
 </style>
+<script src="tweaks.js"></script>
 </head>
 <body>
 
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-b"></span>
+  <span class="dots dots-1"></span>
+</div>
+
 <a class="home-btn" href="index.html">← 回主頁</a>
 
-<header>
-  <h1>⏱️ 教室計時器</h1>
-  <p class="sub">討論、考試、休息都好用 · 空白鍵 = 開始/暫停 · F = 全螢幕</p>
-</header>
+<div class="wrap">
 
-<main>
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">TIMER · 倒數計時</span>
+      <h1>大字幕<em>倒數</em>，<br>專注就在眼前。</h1>
+      <p class="sub">
+        <span class="badge">⌨ 空白鍵 = 開始/暫停</span>
+        <span class="badge">R = 重設</span>
+        <span class="badge">F = 全螢幕</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="heroMin">10</span>
+      <span class="sml">分鐘 · 預設</span>
+    </div>
+  </section>
 
-  <div class="timer-display" id="display" onclick="toggleStart()">
-    <div class="time-num" id="timeNum">10:00</div>
-    <div class="timer-label" id="timerLabel">準備開始</div>
+  <!-- 主計時面板 -->
+  <div class="timer-panel">
+    <div class="timer-display" id="display" onclick="toggleStart()">
+      <div class="time-num" id="timeNum">10:00</div>
+      <div class="timer-label" id="timerLabel">準備開始</div>
+    </div>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:100%"></div></div>
+    <div class="btn-bar center" style="margin-top:18px;">
+      <button class="btn y lg" id="startBtn" onclick="toggleStart()">▶ 開始</button>
+      <button class="btn g lg" onclick="addTime(60)">+1 分</button>
+      <button class="btn lg" onclick="reset()">🔄 重設</button>
+      <button class="btn b lg" onclick="toggleFull()">🖥 全螢幕</button>
+    </div>
   </div>
 
-  <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:100%"></div></div>
-
-  <div class="actions">
-    <button class="big-btn btn-start" id="startBtn" onclick="toggleStart()">▶️ 開始</button>
-    <button class="big-btn btn-add" onclick="addTime(60)">+1 分</button>
-    <button class="big-btn btn-reset" onclick="reset()">🔄 重設</button>
-    <button class="big-btn btn-add" onclick="toggleFull()">🖥️ 全螢幕</button>
-  </div>
-
-  <div class="presets">
-    <h3>🎯 快速設定</h3>
+  <!-- 快速設定 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⚡</div>
+      <h2>快速設定</h2>
+      <span class="tail">點一下立刻套用</span>
+    </div>
     <div class="preset-grid">
-      <button class="preset-btn" data-sec="60"><span class="label">1 分鐘</span><span class="mins">1</span></button>
-      <button class="preset-btn" data-sec="180"><span class="label">3 分鐘</span><span class="mins">3</span></button>
-      <button class="preset-btn" data-sec="300"><span class="label">5 分鐘</span><span class="mins">5</span></button>
-      <button class="preset-btn" data-sec="600"><span class="label">10 分鐘</span><span class="mins">10</span></button>
-      <button class="preset-btn" data-sec="1200"><span class="label">20 分鐘</span><span class="mins">20</span></button>
-      <button class="preset-btn" data-sec="1800"><span class="label">30 分鐘</span><span class="mins">30</span></button>
-      <button class="preset-btn" data-sec="2400"><span class="label">40 分鐘</span><span class="mins">40</span></button>
-      <button class="preset-btn" data-sec="3000"><span class="label">50 分鐘</span><span class="mins">50</span></button>
+      <button class="preset-btn" data-sec="60"><span class="mins">1</span><span class="label">MINUTE</span></button>
+      <button class="preset-btn" data-sec="180"><span class="mins">3</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="300"><span class="mins">5</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="600"><span class="mins">10</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="1200"><span class="mins">20</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="1800"><span class="mins">30</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="2400"><span class="mins">40</span><span class="label">MINUTES</span></button>
+      <button class="preset-btn" data-sec="3000"><span class="mins">50</span><span class="label">MINUTES</span></button>
     </div>
     <div class="custom-row">
-      <label>自訂：</label>
-      <input type="number" id="customMin" min="0" max="180" placeholder="分">
-      <label>分</label>
-      <input type="number" id="customSec" min="0" max="59" placeholder="秒">
-      <label>秒</label>
-      <button class="big-btn btn-add" onclick="applyCustom()">設定</button>
+      <span class="lbl">自訂：</span>
+      <input type="number" id="customMin" class="input" min="0" max="180" placeholder="分">
+      <span class="lbl">分</span>
+      <input type="number" id="customSec" class="input" min="0" max="59" placeholder="秒">
+      <span class="lbl">秒</span>
+      <button class="btn primary" onclick="applyCustom()">設定</button>
     </div>
-  </div>
+  </section>
 
-  <div class="settings">
-    <h3>⚙️ 設定</h3>
-    <label><input type="checkbox" id="sound" checked> 🔔 時間到時播放鈴聲</label>
-    <label><input type="checkbox" id="warnTick" checked> ⏰ 最後 30 秒切換警示色</label>
-    <label><input type="checkbox" id="tickSound"> 🔊 每秒滴答聲（用於考試專注）</label>
-  </div>
+  <!-- 設定 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⚙</div>
+      <h2>設定</h2>
+    </div>
+    <div class="settings-grid">
+      <label class="switch">
+        <input type="checkbox" id="sound" checked>
+        <span class="knob"></span>
+        🔔 時間到時播放鈴聲
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="warnTick" checked>
+        <span class="knob"></span>
+        ⏰ 最後 30 秒切警示色
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="tickSound">
+        <span class="knob"></span>
+        🔊 每秒滴答聲（考試專用）
+      </label>
+    </div>
+  </section>
 
-</main>
-
-<footer>
-  Made with ❤️ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
-</footer>
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 “Crayon Pop”</div>
+  </footer>
+</div>
 
 <script src="sw-update.js" defer></script>
 <script>
 const STORAGE_KEY = 'akai_timer_v1';
 let settings = loadSettings();
 
-let totalSec = 600;     // 預設 10 分
-let remainSec = 600;
+let totalSec = settings.lastSec;
+let remainSec = totalSec;
 let running = false;
 let intervalId = null;
 let endAt = 0;
@@ -296,11 +342,11 @@ function updateDisplay() {
   el.textContent = fmt(remainSec);
   el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
 
-  // 進度條
+  document.getElementById('heroMin').textContent = Math.round(totalSec / 60);
+
   const pct = totalSec > 0 ? (remainSec / totalSec * 100) : 0;
   document.getElementById('progressBar').style.width = pct + '%';
 
-  // 警示色
   if (remainSec <= 0) {
     document.body.classList.add('done-mode');
     document.body.classList.remove('warn-mode');
@@ -311,27 +357,20 @@ function updateDisplay() {
     document.getElementById('timerLabel').textContent = '⚡ 最後衝刺！';
   } else {
     document.body.classList.remove('warn-mode', 'done-mode');
-    document.getElementById('timerLabel').textContent = running ? '⏳ 計時中…' : '⏸️ 已暫停';
+    document.getElementById('timerLabel').textContent = running ? '⏳ 計時中…' : '⏸ 已暫停';
   }
 }
 
 function toggleStart() {
-  if (remainSec <= 0) {
-    reset();
-    return;
-  }
-  if (running) {
-    pause();
-  } else {
-    start();
-  }
+  if (remainSec <= 0) { reset(); return; }
+  if (running) pause(); else start();
 }
 
 function start() {
   if (remainSec <= 0) return;
   running = true;
   endAt = Date.now() + remainSec * 1000;
-  document.getElementById('startBtn').innerHTML = '⏸️ 暫停';
+  document.getElementById('startBtn').innerHTML = '⏸ 暫停';
   document.body.classList.remove('done-mode');
   intervalId = setInterval(tick, 200);
   tick();
@@ -340,7 +379,7 @@ function start() {
 function pause() {
   running = false;
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
-  document.getElementById('startBtn').innerHTML = '▶️ 繼續';
+  document.getElementById('startBtn').innerHTML = '▶ 繼續';
   updateDisplay();
 }
 
@@ -363,7 +402,7 @@ function reset() {
   if (intervalId) { clearInterval(intervalId); intervalId = null; }
   running = false;
   remainSec = totalSec;
-  document.getElementById('startBtn').innerHTML = '▶️ 開始';
+  document.getElementById('startBtn').innerHTML = '▶ 開始';
   document.body.classList.remove('done-mode', 'warn-mode');
   updateDisplay();
 }
@@ -399,11 +438,12 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
 document.getElementById('sound').checked = settings.sound;
 document.getElementById('warnTick').checked = settings.warnTick;
 document.getElementById('tickSound').checked = settings.tickSound;
-document.getElementById('sound').onchange = e => { settings.sound = e.target.checked; saveSettings(); };
+document.getElementById('sound').onchange    = e => { settings.sound = e.target.checked; saveSettings(); };
 document.getElementById('warnTick').onchange = e => { settings.warnTick = e.target.checked; saveSettings(); updateDisplay(); };
-document.getElementById('tickSound').onchange = e => { settings.tickSound = e.target.checked; saveSettings(); };
+document.getElementById('tickSound').onchange= e => { settings.tickSound = e.target.checked; saveSettings(); };
 
 function toggleFull() { document.body.classList.toggle('fullscreen'); }
+
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT') return;
   if (e.code === 'Space') { e.preventDefault(); toggleStart(); }
@@ -412,12 +452,10 @@ document.addEventListener('keydown', (e) => {
   else if (e.code === 'Escape' && document.body.classList.contains('fullscreen')) toggleFull();
 });
 
-// 音效
 function playBell() {
   if (!settings.sound) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // 三聲鈴
     [0, 0.4, 0.8].forEach(t => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
@@ -446,9 +484,6 @@ function playTick() {
   } catch {}
 }
 
-// 初始
-totalSec = settings.lastSec;
-remainSec = totalSec;
 updateDisplay();
 </script>
 
