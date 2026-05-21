@@ -964,6 +964,7 @@ html[data-theme="dark"] .akai-ob-modal { background: var(--paper-2); }
   display: flex;
   gap: 8px;
   margin-bottom: 18px;
+  padding-right: 76px;  /* 留空間給右上「跳過」按鈕，避免重疊 */
 }
 .akai-ob-dot {
   flex: 1;
