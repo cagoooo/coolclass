@@ -1,5 +1,5 @@
 {
-  "version": "20260521-1132-d725e70",
-  "builtAt": "2026-05-21T03:32:54Z",
-  "notes": "修正抽卡 bug：放棄 3D rotateY 改用 @keyframes opacity 交叉淡入"
+  "version": "20260521-1142-3473cb5",
+  "builtAt": "2026-05-21T03:42:00Z",
+  "notes": "cards.html UI/UX 改良 + RWD：category 不再撐全寬、頂部 meta row、手機字級調整"
 }

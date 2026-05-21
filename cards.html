@@ -101,6 +101,15 @@
     font-size: 12px;
     font-weight: 700;
   }
+  @media (max-width: 600px) {
+    .today-mantra { padding: 22px 20px; border-radius: var(--rad); box-shadow: 5px 5px 0 var(--p); }
+    .today-mantra::before { width: 160px; height: 160px; top: -60px; right: -40px; }
+    .today-mantra::after { font-size: 140px; top: -10px; left: 6px; }
+    .today-mantra .label { font-size: 11px; padding: 4px 12px; letter-spacing: 1.5px; margin-bottom: 12px; }
+    .today-mantra .quote { font-size: clamp(18px, 5vw, 24px); line-height: 1.55; }
+    .today-mantra .meta { margin-top: 14px; gap: 6px; }
+    .today-mantra .meta span { font-size: 11px; padding: 3px 10px; }
+  }
 
   /* 篩選 */
   .filters {
@@ -112,7 +121,7 @@
     background: #fff;
     border: 3px solid var(--ink);
     border-radius: 999px;
-    padding: 7px 16px;
+    padding: 8px 16px;
     font-family: inherit;
     font-weight: 700;
     font-size: 13px;
@@ -120,6 +129,7 @@
     cursor: pointer;
     box-shadow: 3px 3px 0 var(--ink);
     transition: transform .12s, box-shadow .12s;
+    min-height: 38px;  /* RWD：手機觸控目標至少 38px */
   }
   .filter-btn:hover {
     transform: translate(-2px, -2px);
@@ -127,6 +137,10 @@
   }
   .filter-btn.on {
     background: var(--ink); color: var(--paper);
+  }
+  @media (max-width: 600px) {
+    .filters { gap: 6px; margin-bottom: 18px; }
+    .filter-btn { padding: 8px 12px; font-size: 12px; box-shadow: 2px 2px 0 var(--ink); }
   }
 
   /* 卡片舞台 */
@@ -238,56 +252,97 @@
     letter-spacing: 2px;
   }
 
-  /* .card-front 的 background / color 由此處設定（position 由 .card-face absolute 統一管）*/
+  /* v3.1.3：重新平衡卡正面版面（修 flex column 把 inline-block 撐滿全寬的問題）*/
   .card-front {
     background: var(--card-bg, var(--y));
     color: var(--card-fg, var(--ink));
     text-align: center;
+    padding: 24px 24px 22px;  /* 上下不對稱：頂部留多一點給 meta */
+    gap: 12px;
+  }
+  /* 頂部：左右兩端 — 分類膠囊 + 編號 */
+  .card-front .top-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .card-front .category {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    line-height: 1.4;
+    white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(0,0,0,.18);
   }
   .card-front .seq {
-    position: absolute; top: 16px; right: 22px;
     font-family: 'Fraunces', serif;
     font-style: italic;
     font-size: 14px;
     font-weight: 700;
-    opacity: .7;
+    opacity: .65;
     letter-spacing: 1px;
   }
-  .card-front .category {
-    display: inline-block;
-    background: var(--ink);
-    color: var(--paper);
-    padding: 4px 14px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-  }
+  /* keyword：跟引言之間更緊湊，視覺上像「子標題」*/
   .card-front .keyword {
     font-family: 'Fraunces', serif;
     font-style: italic;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 900;
-    letter-spacing: 4px;
-    margin-bottom: 10px;
+    letter-spacing: 6px;
+    flex-shrink: 0;
+    margin: 4px 0 -4px;
+    opacity: .85;
   }
+  .card-front .keyword::before,
+  .card-front .keyword::after {
+    content: '·';
+    margin: 0 8px;
+    opacity: .55;
+  }
+  /* 引言：視覺重心，自動填滿剩餘空間 */
   .card-front .quote {
     flex: 1;
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Noto Serif TC', serif;
+    font-family: 'Noto Serif TC', "Noto Sans TC", serif;
     font-weight: 700;
-    font-size: clamp(20px, 3.2vw, 25px);
-    line-height: 1.7;
-    padding: 8px 4px;
+    font-size: clamp(18px, 3.6vw, 28px);
+    line-height: 1.75;
+    padding: 4px;
+    word-break: break-word;
   }
   .card-front .tail {
     font-family: 'Fraunces', serif;
     font-style: italic;
-    font-size: 13px;
+    font-size: 12px;
     border-top: 2px dashed currentColor;
-    padding-top: 12px;
-    opacity: .85;
+    padding-top: 10px;
+    opacity: .8;
+    flex-shrink: 0;
+  }
+  /* === RWD：手機 === */
+  @media (max-width: 600px) {
+    .stage { max-width: 100%; padding: 0 6px; }
+    .card-face { padding: 18px 18px 14px; border-radius: 22px; box-shadow: 5px 5px 0 var(--ink); }
+    .card-front { padding: 18px 18px 14px; gap: 8px; }
+    .card-front .category { font-size: 10px; padding: 4px 11px; letter-spacing: 1.5px; }
+    .card-front .seq { font-size: 12px; }
+    .card-front .keyword { font-size: 17px; letter-spacing: 4px; }
+    .card-front .quote { font-size: clamp(17px, 5.2vw, 22px); line-height: 1.65; }
+    .card-front .tail { font-size: 11px; padding-top: 8px; }
+    .card-back .rainbow-ring { width: 96px; height: 96px; }
+    .card-back .rainbow-ring::after { font-size: 38px; }
+    .card-back .hint { font-size: 22px; letter-spacing: 3px; }
+    .card-back .sub-hint { font-size: 11px; letter-spacing: 1.5px; }
+  }
+  @media (max-width: 380px) {
+    .card-front .quote { font-size: 16px; line-height: 1.6; }
+    .card-front .keyword { font-size: 15px; letter-spacing: 3px; }
   }
 
   /* 能量牆 */
@@ -397,8 +452,10 @@
             <div class="sub-hint">RAINBOW ENERGY · 103</div>
           </div>
           <div class="card-face card-front" id="cardFront">
-            <div class="seq" id="seq"></div>
-            <div class="category" id="category">—</div>
+            <div class="top-meta">
+              <div class="category" id="category">—</div>
+              <div class="seq" id="seq"></div>
+            </div>
             <div class="keyword" id="keyword">—</div>
             <div class="quote" id="quote">點下面的「抽卡」按鈕，開始今天的旅程 ✨</div>
             <div class="tail">願今天的你，比昨天再靠近幸福一步。</div>
