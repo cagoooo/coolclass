@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學生作品牆 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff97c5">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="學生作品牆 · 教室小幫手">
+<meta property="og:description" content="拍照上傳學生作品，自動排成 collage，可印 A4 教室展示。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .upload-box {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 22px 26px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .upload-box h2 { margin: 0 0 12px; color: var(--y); font-weight: 900; }
+  .upload-form {
+    display: grid;
+    grid-template-columns: 110px 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .upload-form label { font-size: 11px; font-weight: 700; color: var(--y); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .upload-form select, .upload-form input[type="text"], .upload-form input[type="file"] {
+    width: 100%;
+    background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+  }
+  .upload-form .upload-btn {
+    background: var(--y); color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 10px 18px;
+    font-weight: 900; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 3px 3px 0 #000;
+  }
+  .upload-form .upload-btn:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #000; }
+
+  /* 作品 grid */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .work {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: transform .15s;
+    position: relative;
+  }
+  .work:hover { transform: translate(-2px,-2px); box-shadow: 7px 7px 0 var(--ink); }
+  .work:nth-child(3n+1) { transform: rotate(-1deg); }
+  .work:nth-child(3n+2) { transform: rotate(0.6deg); }
+  .work:nth-child(3n)   { transform: rotate(-0.4deg); }
+  .work:nth-child(3n+1):hover { transform: rotate(-1deg) translate(-2px,-2px); }
+  .work:nth-child(3n+2):hover { transform: rotate(0.6deg) translate(-2px,-2px); }
+  .work:nth-child(3n):hover   { transform: rotate(-0.4deg) translate(-2px,-2px); }
+
+  .work .img-box {
+    background: var(--paper-2);
+    aspect-ratio: 4/3;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    border-bottom: 3px solid var(--ink);
+  }
+  .work .img-box img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    cursor: zoom-in;
+  }
+  .work .meta {
+    padding: 12px 14px;
+  }
+  .work .student {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 4px;
+  }
+  .work .num-chip {
+    background: var(--ink); color: var(--y);
+    padding: 2px 10px; border-radius: 999px;
+    font-size: 11px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+  }
+  .work .name { font-weight: 900; font-size: 15px; }
+  .work .title {
+    font-family: 'Caveat', cursive;
+    font-size: 18px;
+    color: var(--p);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .work .date {
+    font-size: 11px;
+    color: var(--mute-2);
+    margin-top: 4px;
+    font-family: 'Fraunces', serif; font-style: italic;
+  }
+  .work .actions {
+    position: absolute;
+    top: 8px; right: 8px;
+    display: flex; gap: 4px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .work:hover .actions { opacity: 1; }
+  .work .actions button {
+    background: rgba(255,255,255,.95);
+    border: 2px solid var(--ink);
+    cursor: pointer;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    font-weight: 900;
+    color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .work .actions .del:hover { background: var(--r); color: #fff; border-color: var(--r); }
+
+  /* 燈箱 */
+  .lightbox {
+    position: fixed; inset: 0;
+    background: rgba(42,31,74,.92);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 999;
+    padding: 30px;
+    cursor: zoom-out;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img {
+    max-width: 100%; max-height: 90vh;
+    border: 4px solid var(--paper);
+    box-shadow: 0 20px 40px rgba(0,0,0,.5);
+    border-radius: var(--rad-sm);
+  }
+  .lightbox .caption {
+    position: absolute;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--paper); color: var(--ink);
+    padding: 8px 18px; border-radius: 999px;
+    border: 2px solid var(--ink);
+    font-weight: 700;
+  }
+
+  /* 篩選列 */
+  .filters-row {
+    display: flex; gap: 10px; align-items: center;
+    margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .filters-row select {
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 14px;
+    font-family: inherit; font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+    background: #fff;
+  }
+
+  /* 統計 */
+  .stats-mini {
+    background: var(--paper-2);
+    border: 2px dashed var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .empty-state {
+    text-align: center; padding: 50px 20px;
+    background: var(--paper-2);
+    border: 3px dashed var(--ink);
+    border-radius: var(--rad);
+    color: var(--muted);
+  }
+  .empty-state h3 { color: var(--ink); margin: 0 0 8px; }
+
+  /* 列印 */
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    body { background: #fff !important; }
+    .home-btn, .upload-box, .filters-row, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar, .work .actions { display: none !important; }
+    .work { box-shadow: none !important; border-width: 2px; break-inside: avoid; transform: none !important; }
+    .gallery { grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+    .work .img-box { aspect-ratio: 4/3; }
+    .lightbox { display: none !important; }
+  }
+
+  @media (max-width: 600px) {
+    .upload-box { padding: 14px 16px; }
+    .upload-form { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .upload-form .upload-btn { grid-column: 1 / -1; }
+    .gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .work .meta { padding: 8px 10px; }
+    .work .name { font-size: 13px; }
+    .work .title { font-size: 15px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-pink"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">GALLERY · 作品牆</span>
+      <h1>把孩子的<em>努力</em>，<br>掛在教室上。</h1>
+      <p class="sub">
+        <span class="badge">拍照上傳</span>
+        <span class="badge">collage 排版</span>
+        <span class="badge">可印 A4 橫向</span>
+        <span class="badge">只存本機</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalWorks">0</span>
+      <span class="sml">件 · 已收錄</span>
+    </div>
+  </section>
+
+  <!-- 上傳區 -->
+  <div class="upload-box">
+    <h2>📷 上傳新作品</h2>
+    <form class="upload-form" id="uploadForm" onsubmit="uploadWork(event)">
+      <div>
+        <label>學生</label>
+        <select id="upStudent" required></select>
+      </div>
+      <div>
+        <label>作品標題</label>
+        <input type="text" id="upTitle" placeholder="例：我畫的春天" maxlength="40" required>
+      </div>
+      <div>
+        <label>圖片（會自動壓縮）</label>
+        <input type="file" id="upFile" accept="image/*" required>
+      </div>
+      <button class="upload-btn" type="submit">✨ 上傳</button>
+    </form>
+    <p style="font-size:12px;color:var(--y);opacity:.8;margin:10px 0 0;">
+      💡 圖片只存在你電腦的 IndexedDB，不會上傳到任何雲端。建議單張 &lt; 2MB。
+    </p>
+  </div>
+
+  <!-- 篩選 -->
+  <div class="filters-row">
+    <label style="font-weight:700;">篩選：</label>
+    <select id="filterStudent">
+      <option value="">全部學生</option>
+    </select>
+    <button class="btn y" onclick="window.print()" style="margin-left:auto;">🖨️ 列印 collage</button>
+    <button class="btn r sm" onclick="resetAll()">🗑️ 全部刪除</button>
+  </div>
+
+  <div class="stats-mini" id="statsMini">📊 統計載入中…</div>
+
+  <!-- 作品牆 -->
+  <div class="gallery" id="gallery"></div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<!-- 燈箱 -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <img id="lbImg" alt="作品">
+  <div class="caption" id="lbCap"></div>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+// IndexedDB
+const DB_NAME = 'akai_gallery_v1';
+const DB_STORE = 'works';
+let dbInstance = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    if (dbInstance) return resolve(dbInstance);
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(DB_STORE)) {
+        db.createObjectStore(DB_STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = (e) => { dbInstance = e.target.result; resolve(dbInstance); };
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function dbAll() {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction([DB_STORE], 'readonly');
+    const req = tx.objectStore(DB_STORE).getAll();
+    req.onsuccess = () => res(req.result || []);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function dbAdd(rec) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction([DB_STORE], 'readwrite');
+    tx.objectStore(DB_STORE).put(rec);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function dbDel(id) {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction([DB_STORE], 'readwrite');
+    tx.objectStore(DB_STORE).delete(id);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+async function dbClear() {
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction([DB_STORE], 'readwrite');
+    tx.objectStore(DB_STORE).clear();
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+let allWorks = [];
+let currentFilter = '';
+
+function fillStudentSelects() {
+  const r = AkaiRoster.load();
+  const n = r.count || 30;
+  const up = document.getElementById('upStudent');
+  const fi = document.getElementById('filterStudent');
+  up.innerHTML = '';
+  fi.innerHTML = '<option value="">全部學生</option>';
+  for (let i = 1; i <= n; i++) {
+    const name = AkaiRoster.getName(i);
+    const o1 = document.createElement('option');
+    o1.value = i;
+    o1.textContent = name ? `${i} 號 · ${name}` : `${i} 號`;
+    up.appendChild(o1);
+    const o2 = o1.cloneNode(true);
+    fi.appendChild(o2);
+  }
+}
+
+/** 圖片壓縮：把使用者選的檔案壓到 max 1024px 寬，JPEG 0.85 品質 */
+function compressImage(file, maxW = 1024) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = Math.min(1, maxW / img.width);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      cv.toBlob(blob => {
+        if (!blob) return reject(new Error('compress failed'));
+        const reader = new FileReader();
+        reader.onload = () => resolve({ dataUrl: reader.result, w, h });
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      }, 'image/jpeg', 0.85);
+    };
+    img.onerror = reject;
+    const r = new FileReader();
+    r.onload = () => { img.src = r.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function uploadWork(ev) {
+  ev.preventDefault();
+  const num = parseInt(document.getElementById('upStudent').value);
+  const title = document.getElementById('upTitle').value.trim();
+  const file = document.getElementById('upFile').files[0];
+  if (!num || !title || !file) return;
+  flash('🌀 處理中…');
+  try {
+    const { dataUrl } = await compressImage(file);
+    const rec = {
+      id: 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+      num,
+      title,
+      img: dataUrl,
+      ts: Date.now(),
+    };
+    await dbAdd(rec);
+    flash(`✓ ${title} 已上傳`);
+    document.getElementById('upTitle').value = '';
+    document.getElementById('upFile').value = '';
+    await loadGallery();
+  } catch (e) {
+    alert('上傳失敗：' + (e.message || e));
+  }
+}
+
+async function loadGallery() {
+  allWorks = await dbAll();
+  // 排序：新到舊
+  allWorks.sort((a, b) => b.ts - a.ts);
+  document.getElementById('totalWorks').textContent = allWorks.length;
+  // 統計
+  const students = [...new Set(allWorks.map(w => w.num))];
+  document.getElementById('statsMini').innerHTML = allWorks.length === 0
+    ? '📷 還沒有任何作品'
+    : `📊 共 <b>${allWorks.length}</b> 件作品 · <b>${students.length}</b> 位學生參與`;
+  renderGallery();
+}
+
+function renderGallery() {
+  const wrap = document.getElementById('gallery');
+  const list = currentFilter
+    ? allWorks.filter(w => w.num === parseInt(currentFilter))
+    : allWorks;
+  if (list.length === 0) {
+    wrap.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+      <h3>📷 ${currentFilter ? '這位學生還沒有作品' : '還沒有任何作品'}</h3>
+      <p>上傳第一張試試看 ✨</p>
+    </div>`;
+    return;
+  }
+  wrap.innerHTML = '';
+  list.forEach(w => {
+    const name = AkaiRoster.getName(w.num) || '—';
+    const dateStr = new Date(w.ts).toLocaleDateString('zh-TW', { month: '2-digit', day: '2-digit' });
+    const card = document.createElement('div');
+    card.className = 'work';
+    card.innerHTML = `
+      <div class="img-box"><img src="${w.img}" alt="${escapeHtml(w.title)}" loading="lazy"></div>
+      <div class="meta">
+        <div class="student">
+          <span class="num-chip">${w.num}</span>
+          <span class="name">${escapeHtml(name)}</span>
+        </div>
+        <div class="title">「${escapeHtml(w.title)}」</div>
+        <div class="date">📅 ${dateStr}</div>
+      </div>
+      <div class="actions">
+        <button class="del" title="刪除">✕</button>
+      </div>
+    `;
+    card.querySelector('.img-box img').onclick = () => openLightbox(w);
+    card.querySelector('.del').onclick = (e) => {
+      e.stopPropagation();
+      if (!confirm(`刪除「${w.title}」這張作品？`)) return;
+      dbDel(w.id).then(() => loadGallery());
+    };
+    wrap.appendChild(card);
+  });
+}
+
+function openLightbox(w) {
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lbImg');
+  const cap = document.getElementById('lbCap');
+  img.src = w.img;
+  const name = AkaiRoster.getName(w.num) || '';
+  cap.textContent = `${w.num} 號 ${name} · 「${w.title}」`;
+  lb.classList.add('show');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeLightbox();
+});
+
+async function resetAll() {
+  const works = await dbAll();
+  if (works.length === 0) { alert('沒有作品可清'); return; }
+  if (!confirm(`要刪除全部 ${works.length} 件作品嗎？無法復原。`)) return;
+  if (!confirm('再確認一次：真的要全部清除？')) return;
+  await dbClear();
+  await loadGallery();
+  flash('已全部清除');
+}
+
+document.getElementById('filterStudent').onchange = (e) => {
+  currentFilter = e.target.value;
+  renderGallery();
+};
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1') fillStudentSelects();
+});
+
+fillStudentSelects();
+loadGallery();
+</script>
+
+</body>
+</html>

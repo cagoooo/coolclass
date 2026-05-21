@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萬用抽籤箱 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="萬用抽籤箱 · 教室小幫手">
+<meta property="og:description" content="自訂選項抽籤：午餐選什麼、班會議題、值日工作分配，都用得到。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 大轉盤 */
+  .lottery-box {
+    background: var(--ink);
+    color: var(--paper);
+    border: 4px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 40px 30px;
+    margin: 0 0 24px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .lottery-box::before {
+    content: ''; position: absolute;
+    inset: 14px;
+    border: 3px dashed var(--orange);
+    border-radius: 20px;
+    opacity: .35;
+    pointer-events: none;
+  }
+  .lottery-box::after {
+    content: ''; position: absolute;
+    width: 240px; height: 240px;
+    background: radial-gradient(var(--orange) 2px, transparent 2.5px) 0 0/12px 12px;
+    opacity: .12;
+    bottom: -80px; right: -60px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .big-pick {
+    position: relative;
+    font-family: 'Noto Serif TC', 'Fraunces', serif;
+    font-weight: 900;
+    font-size: clamp(36px, 6vw, 60px);
+    line-height: 1.3;
+    color: var(--y);
+    text-shadow:
+      4px 4px 0 var(--r),
+      8px 8px 0 var(--orange);
+    transition: transform .25s;
+    min-height: 80px;
+    display: flex; align-items: center; justify-content: center;
+    word-break: break-word;
+    padding: 10px;
+  }
+  .big-pick.spinning {
+    animation: spin .08s linear infinite;
+  }
+  @keyframes spin {
+    0%   { transform: scale(1) rotate(-1deg); }
+    50%  { transform: scale(1.05) rotate(1deg); }
+    100% { transform: scale(1) rotate(-1deg); }
+  }
+  .big-pick.reveal { animation: popReveal .6s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes popReveal {
+    0% { transform: scale(.3); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .big-pick.idle { color: rgba(255,255,255,.4); opacity: .6; text-shadow: none; font-size: 22px; }
+  .item-count {
+    position: relative;
+    margin-top: 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,.6);
+    font-family: 'Fraunces', serif; font-style: italic;
+  }
+
+  /* 預設集合 */
+  .preset-chips {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .preset-chips button {
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-family: inherit; font-weight: 700;
+    font-size: 12px; cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .preset-chips button:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); background: var(--y); }
+  .preset-chips button.on { background: var(--ink); color: var(--paper); }
+  .preset-chips .add-pre {
+    background: var(--g); color: #fff; border-color: var(--ink);
+  }
+
+  /* 選項列表 */
+  .options-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .opt-cell {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .opt-cell.used { opacity: .45; background: var(--paper-2); }
+  .opt-cell.used .label { text-decoration: line-through; }
+  .opt-cell .label {
+    flex: 1; font-weight: 700; font-size: 14px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .opt-cell .del-x {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--mute-2); padding: 0 4px; font-weight: 900;
+  }
+  .opt-cell .del-x:hover { color: var(--r); }
+
+  textarea.bulk {
+    width: 100%; min-height: 120px;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px;
+    font-family: inherit; font-size: 14px; line-height: 1.6;
+    background: #fff;
+    box-shadow: 3px 3px 0 var(--ink);
+    resize: vertical;
+  }
+  textarea.bulk:focus { outline: none; box-shadow: 0 0 0 3px var(--y), 3px 3px 0 var(--ink); }
+
+  .history-chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    min-height: 40px;
+  }
+  .history-chips .chip {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 13px; font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  @media (max-width: 600px) {
+    .lottery-box { padding: 24px 16px; box-shadow: 5px 5px 0 var(--ink) !important; }
+    .big-pick { font-size: clamp(28px, 7vw, 38px); }
+    .options-list { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .opt-cell { padding: 6px 8px; }
+    .opt-cell .label { font-size: 13px; }
+    textarea.bulk { font-size: 13px; min-height: 100px; }
+    .preset-chips button { padding: 5px 10px; font-size: 11px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-r"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">LOTTERY · 萬用抽籤</span>
+      <h1>什麼都可以<em>抽</em>，<br>讓老天爺決定。</h1>
+      <p class="sub">
+        <span class="badge">午餐選擇</span>
+        <span class="badge">值日工作</span>
+        <span class="badge">班會議題</span>
+        <span class="badge">獎品分配</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalOpts">—</span>
+      <span class="sml">個選項</span>
+    </div>
+  </section>
+
+  <!-- 大轉盤 -->
+  <div class="lottery-box">
+    <div class="big-pick idle" id="bigPick">點下方「🎲 抽」開始</div>
+    <div class="item-count" id="itemCount">—</div>
+  </div>
+
+  <div class="btn-bar center">
+    <button class="btn primary xl" id="pickBtn" onclick="pickLottery()">🎲 抽一個！</button>
+    <button class="btn y lg" onclick="undoLottery()">↩️ 上一個</button>
+    <button class="btn r lg" onclick="resetUsed()">🔄 重抽全部</button>
+  </div>
+
+  <!-- 預設集合 -->
+  <section class="block" style="margin-top:22px;">
+    <div class="block-head">
+      <div class="step">⚡</div>
+      <h2>預設集合</h2>
+      <span class="tail">點一下切換</span>
+    </div>
+    <div class="preset-chips" id="presetChips"></div>
+    <div class="opt-row" style="margin-top:10px;flex-wrap:wrap;">
+      <input id="newSetName" class="input" placeholder="新集合名稱（如：午餐選擇）" maxlength="20" style="flex:1;min-width:160px;">
+      <button class="btn g" onclick="saveCurrentAsPreset()">＋ 把目前選項存成集合</button>
+    </div>
+  </section>
+
+  <!-- 選項管理 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📝</div>
+      <h2>選項列表</h2>
+      <span class="tail" id="optsTail">—</span>
+    </div>
+
+    <label class="switch" style="margin-bottom:10px;">
+      <input type="checkbox" id="excludeUsed" checked>
+      <span class="knob"></span>
+      公平模式（排除已抽過的）
+    </label>
+
+    <div class="options-list" id="optsList"></div>
+
+    <div class="add-row" style="display:flex;gap:8px;margin-bottom:14px;">
+      <input id="newOpt" class="input" placeholder="新增單筆選項…" maxlength="40" style="flex:1;">
+      <button class="btn primary" onclick="addOne()">＋ 加</button>
+    </div>
+
+    <details>
+      <summary style="cursor:pointer;font-weight:700;color:var(--muted);margin-bottom:8px;">📋 批次貼上（一行一個）</summary>
+      <textarea class="bulk" id="bulkArea" placeholder="炸雞便當&#10;咖哩飯&#10;牛肉麵&#10;..."></textarea>
+      <div class="btn-bar" style="margin-top:8px;">
+        <button class="btn primary" onclick="applyBulk()">✓ 批次替換</button>
+        <button class="btn" onclick="appendBulk()">＋ 批次新增</button>
+      </div>
+    </details>
+
+    <div class="btn-bar" style="margin-top:14px;border-top:2px dashed var(--ink);padding-top:14px;">
+      <button class="btn r" onclick="clearOpts()">🧹 清空所有選項</button>
+      <button class="btn y" onclick="resetUsed()">🔄 重抽全部</button>
+      <span style="margin-left:auto;color:var(--muted);font-size:13px;">📜 抽過：<b id="usedCount">0</b> 個</span>
+    </div>
+  </section>
+
+  <!-- 歷史 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">▸</div>
+      <h2>抽號歷史</h2>
+      <span class="tail">最新在前</span>
+    </div>
+    <div class="history-chips" id="historyList">
+      <div style="color:var(--mute-2);font-size:13px;padding:14px;">還沒抽過喔～</div>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已抽中</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_lottery_v1';
+
+// 預設集合（給新使用者範例）
+const BUILTIN_PRESETS = {
+  '午餐選擇': ['炸雞便當', '咖哩飯', '牛肉麵', '滷肉飯', '義大利麵', '水餃', '壽司', '便當'],
+  '值日工作': ['擦黑板', '掃地', '倒垃圾', '排桌椅', '關燈關電腦', '收作業', '送公文', '打掃廁所'],
+  '班會議題': ['班規修訂', '校外教學討論', '同學表揚', '改善建議', '節慶活動規劃', '讀書會主題'],
+  '禮物 / 獎品': ['鉛筆', '橡皮擦', '貼紙', '巧克力', '小本子', '原子筆', '糖果', '小禮物'],
+};
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      currentSet: obj.currentSet || '午餐選擇',
+      sets: obj.sets || { ...BUILTIN_PRESETS },
+      used: obj.used || {},          // { setName: [used items] }
+      history: obj.history || [],     // [{ set, item, ts }]
+      excludeUsed: obj.excludeUsed !== false,
+    };
+  } catch { return { currentSet: '午餐選擇', sets: { ...BUILTIN_PRESETS }, used: {}, history: [], excludeUsed: true }; }
+}
+
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function getCurrentOpts() { return state.sets[state.currentSet] || []; }
+function getCurrentUsed() {
+  if (!state.used[state.currentSet]) state.used[state.currentSet] = [];
+  return state.used[state.currentSet];
+}
+
+let spinning = false;
+
+function pickLottery() {
+  if (spinning) return;
+  const opts = getCurrentOpts();
+  const used = new Set(getCurrentUsed());
+  const remain = state.excludeUsed ? opts.filter(o => !used.has(o)) : opts;
+  if (remain.length === 0) {
+    flash(opts.length === 0 ? '請先加選項' : '🎉 都抽過了！按「重抽全部」再來一次');
+    return;
+  }
+  spinning = true;
+  const big = document.getElementById('bigPick');
+  big.classList.remove('idle', 'reveal');
+  big.classList.add('spinning');
+  document.getElementById('pickBtn').disabled = true;
+
+  // 動畫：1.2 秒快速跳
+  const allForAnim = opts.length > 0 ? opts : ['?'];
+  const it = setInterval(() => {
+    big.textContent = allForAnim[Math.floor(Math.random() * allForAnim.length)];
+  }, 70);
+
+  setTimeout(() => {
+    clearInterval(it);
+    const picked = remain[Math.floor(Math.random() * remain.length)];
+    big.classList.remove('spinning');
+    big.classList.add('reveal');
+    big.textContent = picked;
+    getCurrentUsed().push(picked);
+    state.history.unshift({ set: state.currentSet, item: picked, ts: Date.now() });
+    if (state.history.length > 50) state.history.length = 50;
+    saveState();
+    spinning = false;
+    document.getElementById('pickBtn').disabled = false;
+    playPop();
+    render();
+  }, 1200);
+}
+
+function undoLottery() {
+  if (state.history.length === 0) return;
+  const last = state.history.shift();
+  const used = state.used[last.set] || [];
+  const idx = used.lastIndexOf(last.item);
+  if (idx >= 0) used.splice(idx, 1);
+  saveState();
+  const big = document.getElementById('bigPick');
+  big.textContent = state.history[0]?.item || '點下方「🎲 抽」開始';
+  big.className = 'big-pick' + (state.history[0] ? '' : ' idle');
+  render();
+}
+
+function resetUsed() {
+  if (getCurrentUsed().length === 0) return;
+  if (!confirm(`要重置「${state.currentSet}」的抽過紀錄嗎？所有選項可以重新被抽中。`)) return;
+  state.used[state.currentSet] = [];
+  saveState();
+  render();
+}
+
+function setActive(name) {
+  if (!state.sets[name]) return;
+  state.currentSet = name;
+  saveState();
+  document.getElementById('bigPick').textContent = '點下方「🎲 抽」開始';
+  document.getElementById('bigPick').className = 'big-pick idle';
+  render();
+}
+
+function deletePreset(name) {
+  if (Object.keys(state.sets).length <= 1) { alert('至少要保留一個集合'); return; }
+  if (!confirm(`刪除「${name}」這個集合？`)) return;
+  delete state.sets[name];
+  delete state.used[name];
+  if (state.currentSet === name) state.currentSet = Object.keys(state.sets)[0];
+  saveState();
+  render();
+}
+
+function saveCurrentAsPreset() {
+  const name = document.getElementById('newSetName').value.trim();
+  if (!name) { alert('請輸入集合名稱'); return; }
+  if (state.sets[name] && !confirm(`「${name}」已存在，要覆蓋嗎？`)) return;
+  state.sets[name] = [...getCurrentOpts()];
+  state.currentSet = name;
+  saveState();
+  document.getElementById('newSetName').value = '';
+  render();
+  flash('✓ 已存成新集合：' + name);
+}
+
+function addOne() {
+  const v = document.getElementById('newOpt').value.trim();
+  if (!v) return;
+  const opts = getCurrentOpts();
+  if (opts.includes(v)) { flash('已有這個選項'); return; }
+  opts.push(v);
+  saveState();
+  document.getElementById('newOpt').value = '';
+  render();
+}
+
+function delOne(item) {
+  const opts = getCurrentOpts();
+  const idx = opts.indexOf(item);
+  if (idx >= 0) opts.splice(idx, 1);
+  saveState();
+  render();
+}
+
+function applyBulk() {
+  const text = document.getElementById('bulkArea').value;
+  const items = [...new Set(text.split(/\r?\n/).map(s => s.trim()).filter(Boolean))];
+  if (items.length === 0) { alert('沒偵測到選項'); return; }
+  if (!confirm(`要用這 ${items.length} 個選項替換目前的「${state.currentSet}」嗎？`)) return;
+  state.sets[state.currentSet] = items;
+  state.used[state.currentSet] = [];
+  saveState();
+  document.getElementById('bulkArea').value = '';
+  render();
+}
+
+function appendBulk() {
+  const text = document.getElementById('bulkArea').value;
+  const items = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (items.length === 0) return;
+  const opts = getCurrentOpts();
+  items.forEach(i => { if (!opts.includes(i)) opts.push(i); });
+  saveState();
+  document.getElementById('bulkArea').value = '';
+  render();
+  flash('✓ 已新增 ' + items.length + ' 項');
+}
+
+function clearOpts() {
+  if (!confirm(`要清空「${state.currentSet}」所有選項嗎？`)) return;
+  state.sets[state.currentSet] = [];
+  state.used[state.currentSet] = [];
+  saveState();
+  render();
+}
+
+function render() {
+  // 預設 chips
+  const chips = document.getElementById('presetChips');
+  chips.innerHTML = '';
+  Object.keys(state.sets).forEach(name => {
+    const b = document.createElement('button');
+    b.className = name === state.currentSet ? 'on' : '';
+    b.textContent = `${name}（${state.sets[name].length}）`;
+    b.onclick = () => setActive(name);
+    b.oncontextmenu = (e) => { e.preventDefault(); deletePreset(name); };
+    chips.appendChild(b);
+  });
+
+  // 選項列表
+  const opts = getCurrentOpts();
+  const used = new Set(getCurrentUsed());
+  document.getElementById('totalOpts').textContent = opts.length;
+  document.getElementById('itemCount').textContent = `${state.currentSet} · ${opts.length} 個選項 · 已抽 ${used.size}`;
+  document.getElementById('optsTail').textContent = `${state.currentSet} · 共 ${opts.length} 項`;
+  document.getElementById('usedCount').textContent = used.size;
+
+  const list = document.getElementById('optsList');
+  list.innerHTML = '';
+  if (opts.length === 0) {
+    list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--mute-2);">沒有選項，從下方加一個吧 👇</div>';
+  } else {
+    opts.forEach(item => {
+      const cell = document.createElement('div');
+      cell.className = 'opt-cell' + (used.has(item) ? ' used' : '');
+      cell.innerHTML = `<span class="label" title="${escapeHtml(item)}">${escapeHtml(item)}</span><button class="del-x" title="刪除">✕</button>`;
+      cell.querySelector('.del-x').onclick = () => delOne(item);
+      list.appendChild(cell);
+    });
+  }
+
+  // 歷史
+  const histList = document.getElementById('historyList');
+  if (state.history.length === 0) {
+    histList.innerHTML = '<div style="color:var(--mute-2);font-size:13px;padding:14px;">還沒抽過喔～</div>';
+  } else {
+    histList.innerHTML = '';
+    state.history.forEach(h => {
+      const c = document.createElement('span');
+      c.className = 'chip';
+      c.innerHTML = `<b>${escapeHtml(h.item)}</b> <small style="color:var(--mute-2);">· ${h.set}</small>`;
+      histList.appendChild(c);
+    });
+  }
+}
+
+document.getElementById('excludeUsed').checked = state.excludeUsed;
+document.getElementById('excludeUsed').onchange = (e) => { state.excludeUsed = e.target.checked; saveState(); render(); };
+
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    pickLottery();
+  }
+});
+
+document.getElementById('newOpt').addEventListener('keydown', e => { if (e.key === 'Enter') addOne(); });
+document.getElementById('newSetName').addEventListener('keydown', e => { if (e.key === 'Enter') saveCurrentAsPreset(); });
+
+function playPop() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine';
+    o.frequency.setValueAtTime(700, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.15);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+    o.start();
+    o.stop(ctx.currentTime + 0.25);
+  } catch {}
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+render();
+</script>
+
+</body>
+</html>

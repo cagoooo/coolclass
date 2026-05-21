@@ -218,6 +218,13 @@
   <div class="display-box">
     <div class="big-num idle" id="bigNum">?</div>
     <div class="big-name" id="bigName"></div>
+    <!-- v3.4 G2：快速給抽中學生加積點 -->
+    <div id="quickActions" style="margin-top:14px;display:none;gap:8px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;">
+      <button class="btn g sm" onclick="addPointToPicked(1)" title="給此學生 +1 積點（會累積到「班級積點榜」）">🏆 +1 積點</button>
+      <button class="btn g sm" onclick="addPointToPicked(5)" title="給此學生 +5 積點">🏆 +5</button>
+      <button class="btn r sm" onclick="addPointToPicked(-1)" title="給此學生 -1 積點">−1</button>
+      <a class="btn sm" href="points.html" style="background:rgba(255,255,255,.15);color:var(--paper);border-color:rgba(255,255,255,.3);">📊 查看積點榜</a>
+    </div>
   </div>
 
   <div class="btn-bar center">
@@ -485,8 +492,34 @@ function pick() {
     playSound();
     // v3.3：語音播報
     if (state.voice) speakStudent(picked, name);
+    // v3.4 G2：顯示快速加積點按鈕
+    const qa = document.getElementById('quickActions');
+    if (qa) { qa.style.display = 'flex'; qa.dataset.num = picked; }
     render();
   }, 1200);
+}
+
+/** v3.4 G2：給剛抽中的學生加積點（寫 akai_points_v1） */
+function addPointToPicked(delta) {
+  const qa = document.getElementById('quickActions');
+  const num = parseInt(qa.dataset.num);
+  if (!num) return;
+  try {
+    const raw = localStorage.getItem('akai_points_v1');
+    const pts = raw ? JSON.parse(raw) : { mode: 'individual', points: {}, groupPoints: {}, lastChange: {} };
+    if (!pts.points) pts.points = {};
+    if (!pts.lastChange) pts.lastChange = {};
+    const k = String(num);
+    pts.points[k] = (pts.points[k] || 0) + delta;
+    pts.lastChange[k] = new Date().toISOString();
+    localStorage.setItem('akai_points_v1', JSON.stringify(pts));
+    const name = AkaiRoster.getName(num);
+    const label = name ? `${num} 號 ${name}` : `${num} 號`;
+    const sign = delta > 0 ? '+' : '';
+    flash(`🏆 ${label} ${sign}${delta} 積點（目前 ${pts.points[k]}）`);
+  } catch (e) {
+    flash('加積點失敗：' + e.message);
+  }
 }
 
 /** v3.3：語音播報「N 號 ○○○」用 speechSynthesis（中文）*/
@@ -521,6 +554,7 @@ function undo() {
   bigNum.classList.add('idle');
   bigNum.classList.remove('reveal');
   document.getElementById('bigName').textContent = '';
+  const qa = document.getElementById('quickActions'); if (qa) qa.style.display = 'none';
   render();
 }
 
@@ -533,6 +567,7 @@ function resetAll() {
   bigNum.textContent = '?';
   bigNum.classList.add('idle');
   document.getElementById('bigName').textContent = '';
+  const qa = document.getElementById('quickActions'); if (qa) qa.style.display = 'none';
   render();
 }
 

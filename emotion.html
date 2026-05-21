@@ -156,6 +156,44 @@
   .mini-stat[data-mood="nervous"] { background: var(--p); color: #fff; }
   .mini-stat[data-mood="calm"]    { background: var(--g); color: #1a3e22; }
 
+  /* v3.4 G1：出勤狀態聯動（請假 / 缺席） */
+  .num-btn.on-leave {
+    background: var(--p) !important;
+    color: #fff !important;
+    opacity: .85;
+    position: relative;
+  }
+  .num-btn.on-leave::after {
+    content: '假';
+    position: absolute;
+    top: 3px; right: 4px;
+    background: #fff;
+    color: var(--p);
+    border-radius: 999px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 900;
+  }
+  .num-btn.is-absent {
+    background: rgba(255,107,107,.2) !important;
+    color: var(--r) !important;
+    opacity: .6;
+    text-decoration: line-through;
+    position: relative;
+  }
+  .num-btn.is-absent::after {
+    content: '缺';
+    position: absolute;
+    top: 3px; right: 4px;
+    background: var(--r);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
   /* ========== v3.2 RWD：手機（< 600px） ========== */
   @media (max-width: 600px) {
     /* 號碼按鈕 grid 5 欄（從 auto-fill 改成固定 5） */
@@ -359,10 +397,22 @@ function renderHeader() {
   document.getElementById('heroTotal').textContent = r.count || 30;
 }
 
+/** v3.4 G1：讀今日出勤狀態，回傳 { num: 'present'|'late'|'leave'|'absent' } */
+function getTodayAttendance() {
+  try {
+    const atn = JSON.parse(localStorage.getItem('akai_attendance_v1') || '{}');
+    const d = new Date();
+    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const dKey = `${ym}-${String(d.getDate()).padStart(2,'0')}`;
+    return atn.sheets?.[ym]?.marks?.[dKey] || {};
+  } catch { return {}; }
+}
+
 function renderNumbers() {
   const grid = document.getElementById('numberGrid');
   const records = todayRecords();
   const maxNum = getMaxNum();
+  const attn = getTodayAttendance();  // v3.4：今日出勤
   grid.innerHTML = '';
   for (let i = 1; i <= maxNum; i++) {
     const btn = document.createElement('button');
@@ -370,6 +420,8 @@ function renderNumbers() {
     btn.dataset.num = i;
     const name = AkaiRoster.getName(i);
     const checked = records[i];
+    const attnState = attn[i];
+
     if (checked) {
       btn.classList.add('done');
       const emo = EMOTIONS.find(e => e.key === checked);
@@ -377,8 +429,17 @@ function renderNumbers() {
     } else {
       btn.innerHTML = `${i}${name ? `<span class="name-tag">${escapeHtml(name)}</span>` : ''}`;
     }
+    // v3.4：套出勤狀態樣式（請假/缺席的覆蓋一般狀態）
+    if (!checked && attnState === 'leave') {
+      btn.classList.add('on-leave');
+      btn.title = `${i} 號${name ? ' ' + name : ''} · 今日請假`;
+    } else if (!checked && attnState === 'absent') {
+      btn.classList.add('is-absent');
+      btn.title = `${i} 號${name ? ' ' + name : ''} · 今日缺席`;
+    } else {
+      btn.title = name ? `${i} 號 ${name}` : `${i} 號`;
+    }
     if (selectedNum === i) btn.classList.add('selected');
-    btn.title = name ? `${i} 號 ${name}` : `${i} 號`;
     btn.onclick = () => selectNumber(i);
     grid.appendChild(btn);
   }

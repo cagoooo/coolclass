@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>班級公約 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="班級公約 · 教室小幫手">
+<meta property="og:description" content="老師寫公約 → 美化展示頁 → 學生簽名 → 可印 A4。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 編輯模式 vs 顯示模式 */
+  .mode-toggle {
+    display: flex; gap: 8px; align-items: center;
+    background: var(--ink); color: var(--paper);
+    padding: 10px 16px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+  }
+  .mode-toggle button {
+    background: transparent; border: none;
+    color: var(--paper); font-family: inherit; font-weight: 700;
+    cursor: pointer; padding: 6px 14px; border-radius: 999px;
+  }
+  .mode-toggle button.on { background: var(--y); color: var(--ink); }
+
+  /* 編輯模式 */
+  .rules-edit {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 22px 26px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .rules-edit h2 { margin: 0 0 14px; font-weight: 900; }
+  .rules-edit input[type="text"], .rules-edit textarea {
+    width: 100%;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    font-family: inherit; font-weight: 700; font-size: 15px;
+    box-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 12px;
+    background: #fff;
+  }
+  .rules-edit input:focus, .rules-edit textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--y), 3px 3px 0 var(--ink); }
+  .rule-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 40px;
+    gap: 10px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .rule-row .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 18px;
+  }
+  .rule-row input {
+    margin-bottom: 0 !important;
+  }
+  .rule-row .del {
+    background: transparent; border: 2px solid var(--ink);
+    color: var(--ink); cursor: pointer;
+    width: 32px; height: 32px;
+    border-radius: 50%; font-weight: 900;
+  }
+  .rule-row .del:hover { background: var(--r); color: #fff; border-color: var(--r); }
+
+  /* 顯示模式（投影 / 列印用） */
+  .rules-display {
+    background: var(--paper);
+    border: 5px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 40px 50px;
+    box-shadow: 10px 10px 0 var(--p);
+    position: relative;
+    overflow: hidden;
+  }
+  .rules-display::before {
+    content: ''; position: absolute;
+    inset: 18px;
+    border: 3px dashed var(--ink);
+    border-radius: var(--rad);
+    pointer-events: none;
+    opacity: .5;
+  }
+  .rules-display::after {
+    content: '🌈';
+    position: absolute;
+    top: 18px; right: 30px;
+    font-size: 60px;
+    opacity: .25;
+  }
+  .rules-display .head {
+    text-align: center;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  .rules-display .head .eyebrow {
+    background: var(--ink); color: var(--y);
+    padding: 5px 18px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 4px;
+    font-weight: 900;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+  .rules-display .head h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .rules-display .head h1 em {
+    color: var(--r); font-style: italic; font-family: 'Fraunces', serif;
+  }
+  .rules-display .head .subtitle {
+    color: var(--muted); margin-top: 8px; font-size: 14px;
+  }
+
+  .rule-item {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 16px 22px;
+    margin-bottom: 12px;
+    box-shadow: 4px 4px 0 var(--ink);
+    display: flex; align-items: center; gap: 18px;
+    position: relative;
+  }
+  .rule-item:nth-child(5n+1) { background: linear-gradient(135deg, #fff 0%, #fffbe0 100%); }
+  .rule-item:nth-child(5n+2) { background: linear-gradient(135deg, #fff 0%, #e0f4e8 100%); }
+  .rule-item:nth-child(5n+3) { background: linear-gradient(135deg, #fff 0%, #e0e8fa 100%); }
+  .rule-item:nth-child(5n+4) { background: linear-gradient(135deg, #fff 0%, #f0e0fa 100%); }
+  .rule-item:nth-child(5n+5) { background: linear-gradient(135deg, #fff 0%, #ffe0e0 100%); }
+
+  .rule-item .num-tag {
+    flex-shrink: 0;
+    width: 52px; height: 52px;
+    background: var(--ink); color: var(--y);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 24px;
+  }
+  .rule-item .text {
+    flex: 1;
+    font-size: clamp(16px, 2.2vw, 19px);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  /* 簽名區 */
+  .sign-section {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 3px dashed var(--ink);
+  }
+  .sign-section h3 {
+    margin: 0 0 14px;
+    font-size: 18px;
+    font-weight: 900;
+  }
+  .sign-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .sign-cell {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 12px;
+    text-align: center;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .sign-cell .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+  }
+  .sign-cell .name {
+    margin-top: 4px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .sign-cell .signed {
+    margin-top: 6px;
+    font-family: 'Caveat', cursive;
+    color: var(--p);
+    font-weight: 700;
+    font-size: 22px;
+    height: 30px;
+    line-height: 1;
+  }
+  .sign-cell .signed:empty::before {
+    content: '___';
+    color: var(--mute-2);
+    letter-spacing: 4px;
+  }
+  .sign-cell.signed-yes {
+    background: linear-gradient(180deg, #fff 0%, #e0f4e8 100%);
+    border-color: var(--g);
+  }
+  .sign-cell button {
+    margin-top: 4px;
+    background: transparent;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+    cursor: pointer;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-family: inherit; font-weight: 700;
+    font-size: 11px;
+  }
+  .sign-cell button:hover { background: var(--y); }
+
+  /* 列印 */
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .mode-toggle, .rules-edit, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar { display: none !important; }
+    .rules-display { box-shadow: none !important; border-width: 2px; padding: 20px 30px; }
+    .rule-item { box-shadow: none !important; border-width: 2px; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sign-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .rules-edit { padding: 16px 18px; }
+    .rules-display { padding: 22px 18px; border-radius: var(--rad); box-shadow: 6px 6px 0 var(--p); }
+    .rules-display::before { inset: 10px; }
+    .rules-display::after { font-size: 36px; top: 10px; right: 14px; }
+    .rule-item { padding: 12px 14px; gap: 12px; }
+    .rule-item .num-tag { width: 40px; height: 40px; font-size: 18px; }
+    .rule-item .text { font-size: 15px; }
+    .sign-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .sign-cell { padding: 8px; }
+    .rule-row { grid-template-columns: 40px 1fr 36px; }
+    .rule-row .num { width: 32px; height: 32px; font-size: 14px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">RULES · 班級公約</span>
+      <h1>把約定<em>寫下來</em>、<br>大家一起遵守。</h1>
+      <p class="sub">
+        <span class="badge">編輯 / 投影 / 列印</span>
+        <span class="badge">學生簽名留念</span>
+        <span class="badge">可印 A4 貼牆</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="ruleCount">—</span>
+      <span class="sml">條公約</span>
+    </div>
+  </section>
+
+  <div class="mode-toggle">
+    <span style="font-weight:900;font-size:13px;letter-spacing:2px;">模式：</span>
+    <button class="on" data-mode="display" onclick="setMode('display')">📜 展示 / 投影</button>
+    <button data-mode="edit" onclick="setMode('edit')">✏️ 編輯</button>
+    <button data-mode="sign" onclick="setMode('sign')">✍️ 簽名</button>
+    <span style="flex:1;"></span>
+    <button onclick="window.print()" style="background:var(--y);color:var(--ink);font-size:13px;">🖨️ 列印</button>
+  </div>
+
+  <!-- 編輯模式 -->
+  <section class="rules-edit" id="editPanel" style="display:none;">
+    <h2>✏️ 編輯班級公約</h2>
+
+    <label style="font-weight:700;display:block;margin-bottom:4px;">公約標題</label>
+    <input type="text" id="ruleTitle" placeholder="例如：五年甲班 班規">
+
+    <label style="font-weight:700;display:block;margin-bottom:4px;">副標題</label>
+    <input type="text" id="ruleSubtitle" placeholder="例如：2026 學年度 · 我們一起寫的">
+
+    <h3 style="margin:18px 0 10px;font-weight:900;">📝 公約內容</h3>
+    <div id="ruleEditList"></div>
+    <button class="btn primary" onclick="addRule()" style="margin-top:6px;">＋ 新增一條</button>
+
+    <details style="margin-top:18px;">
+      <summary style="cursor:pointer;font-weight:700;color:var(--muted);">📋 批次貼上（一行一條）</summary>
+      <textarea id="bulkArea" style="margin-top:8px;min-height:160px;"></textarea>
+      <button class="btn primary" onclick="applyBulkRules()" style="margin-top:8px;">✓ 套用</button>
+    </details>
+
+    <div class="btn-bar" style="border-top:2px dashed var(--ink);padding-top:14px;margin-top:18px;">
+      <button class="btn g" onclick="saveAll()">💾 立即存檔</button>
+      <button class="btn y" onclick="loadDefault()">📋 套用範本</button>
+      <button class="btn r" onclick="resetAll()" style="margin-left:auto;">🔄 全部清除</button>
+    </div>
+  </section>
+
+  <!-- 展示模式 -->
+  <div class="rules-display" id="displayPanel">
+    <div class="head">
+      <span class="eyebrow">CLASS · 班級公約</span>
+      <h1 id="displayTitle"><em>—</em></h1>
+      <p class="subtitle" id="displaySubtitle"></p>
+    </div>
+    <div id="rulesList"></div>
+  </div>
+
+  <!-- 簽名區（藏在展示下方） -->
+  <div class="sign-section" id="signSection" style="display:none;">
+    <h3>✍️ 學生簽名</h3>
+    <p style="color:var(--muted);font-size:13px;margin:0 0 14px;">點某位學生 → 輸入簽名字串（系統會幫你變成手寫風格）</p>
+    <div class="sign-grid" id="signGrid"></div>
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_rules_v1';
+
+const DEFAULT_RULES = {
+  title: '我們的班級公約',
+  subtitle: '一起寫的、一起遵守的、一起守護的',
+  rules: [
+    '尊重每一位同學，說話的時候輪流發言。',
+    '上課專心聽，有想法就舉手分享。',
+    '完成每天的功課，準時繳交。',
+    '愛惜教室公物，用完歸位、保持整潔。',
+    '遇到問題先深呼吸，不傷害別人也不傷害自己。',
+    '主動關心同學，有人需要幫忙就伸出援手。',
+    '每天要笑著迎接、笑著回家。',
+  ],
+};
+
+let state = loadState();
+let mode = 'display';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      title: obj.title || '',
+      subtitle: obj.subtitle || '',
+      rules: obj.rules || [],
+      signatures: obj.signatures || {},  // { num: "簽名字串" }
+    };
+  } catch { return { title: '', subtitle: '', rules: [], signatures: {} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+let saveT;
+function autosave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { saveState(); flash('✓ 已存檔'); }, 600);
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('editPanel').style.display = m === 'edit' ? '' : 'none';
+  document.getElementById('signSection').style.display = m === 'sign' ? '' : 'none';
+  document.querySelectorAll('.mode-toggle button[data-mode]').forEach(b => {
+    b.classList.toggle('on', b.dataset.mode === m);
+  });
+  render();
+}
+
+function addRule(text) {
+  state.rules.push(text || '');
+  saveState();
+  renderEditList();
+  render();
+}
+
+function removeRule(idx) {
+  state.rules.splice(idx, 1);
+  saveState();
+  renderEditList();
+  render();
+}
+
+function loadDefault() {
+  if (state.rules.length > 0 && !confirm('要把目前的公約替換成範本嗎？')) return;
+  state.title = DEFAULT_RULES.title;
+  state.subtitle = DEFAULT_RULES.subtitle;
+  state.rules = [...DEFAULT_RULES.rules];
+  saveState();
+  initInputs();
+  render();
+  flash('✓ 已套用範本');
+}
+
+function resetAll() {
+  if (!confirm('要清空所有公約和簽名嗎？')) return;
+  state = { title: '', subtitle: '', rules: [], signatures: {} };
+  saveState();
+  initInputs();
+  render();
+}
+
+function saveAll() {
+  saveState();
+  flash('✓ 已存檔');
+}
+
+function applyBulkRules() {
+  const text = document.getElementById('bulkArea').value;
+  const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  if (lines.length === 0) { alert('請貼上至少一條公約'); return; }
+  if (state.rules.length > 0 && !confirm(`要用這 ${lines.length} 條公約替換目前的嗎？`)) return;
+  state.rules = lines;
+  saveState();
+  document.getElementById('bulkArea').value = '';
+  renderEditList();
+  render();
+}
+
+function renderEditList() {
+  const wrap = document.getElementById('ruleEditList');
+  wrap.innerHTML = '';
+  state.rules.forEach((text, i) => {
+    const row = document.createElement('div');
+    row.className = 'rule-row';
+    row.innerHTML = `
+      <div class="num">${i+1}</div>
+      <input type="text" value="" placeholder="第 ${i+1} 條...">
+      <button class="del" title="刪除">✕</button>
+    `;
+    const inp = row.querySelector('input');
+    inp.value = text;
+    inp.oninput = () => { state.rules[i] = inp.value; autosave(); render(); };
+    row.querySelector('.del').onclick = () => removeRule(i);
+    wrap.appendChild(row);
+  });
+}
+
+function initInputs() {
+  document.getElementById('ruleTitle').value = state.title || '';
+  document.getElementById('ruleSubtitle').value = state.subtitle || '';
+  renderEditList();
+}
+
+document.getElementById('ruleTitle').oninput = (e) => { state.title = e.target.value; autosave(); render(); };
+document.getElementById('ruleSubtitle').oninput = (e) => { state.subtitle = e.target.value; autosave(); render(); };
+
+function render() {
+  document.getElementById('ruleCount').textContent = state.rules.length;
+  document.getElementById('displayTitle').innerHTML = state.title
+    ? `<em>${escapeHtml(state.title)}</em>`
+    : '<em>還沒有標題</em>';
+  document.getElementById('displaySubtitle').textContent = state.subtitle || '';
+  const list = document.getElementById('rulesList');
+  if (state.rules.length === 0) {
+    list.innerHTML = '<div class="empty" style="background:#fff;">還沒有任何公約。<br><a class="btn sm" onclick="setMode(\'edit\')">去編輯</a> 或 <a class="btn sm y" onclick="loadDefault()">套用範本</a></div>';
+  } else {
+    list.innerHTML = '';
+    state.rules.forEach((text, i) => {
+      if (!text.trim()) return;
+      const item = document.createElement('div');
+      item.className = 'rule-item';
+      item.innerHTML = `<span class="num-tag">${i+1}</span><span class="text">${escapeHtml(text)}</span>`;
+      list.appendChild(item);
+    });
+  }
+
+  if (mode === 'sign') renderSignGrid();
+}
+
+function renderSignGrid() {
+  const r = AkaiRoster.load();
+  const n = r.count || 30;
+  const grid = document.getElementById('signGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= n; i++) {
+    const name = AkaiRoster.getName(i) || '—';
+    const sig = state.signatures[String(i)] || '';
+    const cell = document.createElement('div');
+    cell.className = 'sign-cell' + (sig ? ' signed-yes' : '');
+    cell.innerHTML = `
+      <span class="num">${i} 號</span>
+      <div class="name">${escapeHtml(name)}</div>
+      <div class="signed">${escapeHtml(sig)}</div>
+      <button onclick="askSign(${i})">${sig ? '✏️ 重簽' : '✍️ 簽名'}</button>
+    `;
+    grid.appendChild(cell);
+  }
+}
+
+function askSign(num) {
+  const r = AkaiRoster.load();
+  const defaultName = AkaiRoster.getName(num);
+  const sig = prompt(`第 ${num} 號簽名（系統會用手寫風格顯示）`, state.signatures[String(num)] || defaultName);
+  if (sig === null) return;
+  if (sig.trim()) {
+    state.signatures[String(num)] = sig.trim();
+  } else {
+    delete state.signatures[String(num)];
+  }
+  saveState();
+  renderSignGrid();
+  flash(sig.trim() ? `✓ ${num} 號 已簽` : '已清除簽名');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1' && mode === 'sign') renderSignGrid();
+});
+
+initInputs();
+render();
+</script>
+
+</body>
+</html>
