@@ -1,4 +1,4 @@
-/* 阿凱老師的教室小幫手｜Service Worker
+/* 教室小幫手｜Service Worker
  *
  * BUILD_VERSION 由 bump-version.sh 在部署前自動替換，
  * 保證每次部署 sw.js byte 都不同，瀏覽器必偵測為更新。
@@ -11,7 +11,7 @@
  * activate 後 postMessage SW_ACTIVATED 通知所有 clients，
  * 配合 sw-update.js 顯示更新 banner。
  */
-const BUILD_VERSION = "20260520-2008-1ba5c2a";  // ← bump-version.sh 會替換這行
+const BUILD_VERSION = "20260521-0826-bebfada";  // ← bump-version.sh 會替換這行
 const CACHE = `akai-classroom-${BUILD_VERSION}`;
 
 const CORE_ASSETS = [

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 阿凱老師的教室小幫手｜自動升版腳本
+# 教室小幫手｜自動升版腳本
 #
 # 用法：
 #   ./bump-version.sh                       # 用 git short hash + 時間戳
