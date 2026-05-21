@@ -501,6 +501,10 @@ function drawCard() {
   if (now - lastDrawTime < 600) return;
   lastDrawTime = now;
 
+  // 防禦：以 DOM 實際狀態為準，避免 JS 變數與 class 失同步導致「點了沒反應」
+  const innerEl = document.getElementById('cardInner');
+  flipped = innerEl.classList.contains('flipped');
+
   const next = pickRandom();
   if (!next) return;
   const inner = document.getElementById('cardInner');

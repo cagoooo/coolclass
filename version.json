@@ -1,5 +1,5 @@
 {
-  "version": "20260521-1056-3477e7c",
-  "builtAt": "2026-05-21T02:56:06Z",
-  "notes": "加入 og-image.png 社群分享圖（瀏覽器 Canvas 產生）"
+  "version": "20260521-1103-8a26d79",
+  "builtAt": "2026-05-21T03:03:06Z",
+  "notes": "防禦修正：cards.html 抽卡以 DOM class 為真實狀態（避免 JS 變數與視覺不同步）"
 }
