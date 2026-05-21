@@ -7,6 +7,20 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6bcb77">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
+<!-- Open Graph / Social Share -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:description" content="8 個免費小工具：情緒打卡、To-Do、能量卡、出勤、跑馬燈、抽號、計時、分組。免登入、不上傳、離線可用。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="教室小幫手">
+<meta name="twitter:description" content="老師的每日課堂工具 · 8 個免費小工具，免登入、不上傳、離線可用。">
+<meta name="twitter:image" content="https://cagoooo.github.io/coolclass/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
@@ -297,6 +311,90 @@
     </div>
   </section>
 
+  <!-- 額外計時器（多計時器並行） -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">＋</div>
+      <h2>額外計時器</h2>
+      <span class="tail">分組討論用：可以開多個獨立計時</span>
+    </div>
+    <div id="extraTimers" class="extras-grid"></div>
+    <div class="btn-bar" style="margin-top:12px;border-top:2px dashed var(--ink);padding-top:14px;">
+      <button class="btn primary" onclick="addExtra()">＋ 新增一個計時器</button>
+      <button class="btn y" onclick="addExtraPreset(180, '討論 3 分鐘')">+ 3 分</button>
+      <button class="btn y" onclick="addExtraPreset(300, '討論 5 分鐘')">+ 5 分</button>
+      <button class="btn y" onclick="addExtraPreset(600, '討論 10 分鐘')">+ 10 分</button>
+      <button class="btn r" onclick="clearAllExtras()" style="margin-left:auto;">🗑️ 清空全部</button>
+    </div>
+  </section>
+
+  <style>
+    .extras-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .extras-grid .empty {
+      grid-column: 1/-1; text-align: center; color: var(--mute-2);
+      padding: 24px; border: 2px dashed var(--ink); border-radius: var(--rad-sm);
+      background: var(--paper-2);
+    }
+    .ext-card {
+      background: #fff;
+      border: 3px solid var(--ink);
+      border-radius: var(--rad);
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .ext-card.warn { background: #ffe9c8; }
+    .ext-card.done { background: #ffd4d4; animation: extFlash 0.8s infinite; }
+    @keyframes extFlash { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.1);} }
+    .ext-head {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    }
+    .ext-head input.ext-label {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-family: inherit; font-weight: 900; font-size: 16px; color: var(--ink);
+      min-width: 0;
+    }
+    .ext-head .ext-x {
+      background: transparent; border: 2px solid var(--ink); cursor: pointer;
+      width: 28px; height: 28px; border-radius: 50%;
+      font-weight: 900; color: var(--ink); padding: 0;
+    }
+    .ext-head .ext-x:hover { background: var(--r); color: #fff; border-color: var(--r); }
+    .ext-time {
+      font-family: 'Fraunces', serif;
+      font-style: italic;
+      font-size: 56px; font-weight: 900; line-height: 1;
+      color: var(--ink);
+      text-align: center;
+      letter-spacing: -2px;
+      font-variant-numeric: tabular-nums;
+      margin: 6px 0 10px;
+    }
+    .ext-card.done .ext-time { color: var(--r); }
+    .ext-progress {
+      height: 8px; background: var(--paper-2); border: 2px solid var(--ink);
+      border-radius: 999px; overflow: hidden; margin-bottom: 12px;
+    }
+    .ext-progress > div { height: 100%; background: var(--g); transition: width .3s; }
+    .ext-card.warn .ext-progress > div { background: var(--orange); }
+    .ext-card.done .ext-progress > div { background: var(--r); }
+    .ext-bar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+    .ext-bar button {
+      flex: 1; min-width: 0;
+      padding: 8px 6px;
+      border: 2px solid var(--ink);
+      background: #fff; cursor: pointer; font-family: inherit; font-weight: 700;
+      border-radius: var(--rad-sm); color: var(--ink); font-size: 13px;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .ext-bar button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--ink); }
+    .ext-bar .ext-play { background: var(--y); }
+    .ext-bar .ext-add { background: var(--g); color: #fff; border-color: var(--ink); }
+  </style>
+
   <footer class="f">
     Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
     <div class="ver">© 2026 · v3 “Crayon Pop”</div>
@@ -323,8 +421,9 @@ function loadSettings() {
       warnTick: obj.warnTick !== false,
       tickSound: !!obj.tickSound,
       lastSec: obj.lastSec || 600,
+      extras: obj.extras || [],  // v3.1：額外計時器
     };
-  } catch { return { sound: true, warnTick: true, tickSound: false, lastSec: 600 }; }
+  } catch { return { sound: true, warnTick: true, tickSound: false, lastSec: 600, extras: [] }; }
 }
 function saveSettings() { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
 
@@ -485,7 +584,170 @@ function playTick() {
 }
 
 updateDisplay();
+
+// ===== v3.1：額外計時器（多計時並行） =====
+function uidExt() { return 'x_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+
+function addExtra() {
+  const min = parseInt(prompt('幾分鐘？', '5'));
+  if (!min || min <= 0) return;
+  const label = prompt('給這個計時器一個名字（可空白）', `計時器 ${settings.extras.length + 1}`);
+  addExtraPreset(min * 60, label || `計時器 ${settings.extras.length + 1}`);
+}
+
+function addExtraPreset(sec, label) {
+  settings.extras.push({
+    id: uidExt(),
+    label: label,
+    totalSec: sec,
+    remainSec: sec,
+    running: false,
+    endAt: 0,
+  });
+  saveSettings();
+  renderExtras();
+}
+
+function removeExtra(id) {
+  settings.extras = settings.extras.filter(t => t.id !== id);
+  saveSettings();
+  renderExtras();
+}
+
+function toggleExtra(id) {
+  const t = settings.extras.find(x => x.id === id);
+  if (!t) return;
+  if (t.remainSec <= 0) {
+    t.remainSec = t.totalSec;
+    t.endAt = Date.now() + t.totalSec * 1000;
+    t.running = true;
+  } else if (t.running) {
+    t.running = false;
+    t.remainSec = Math.max(0, Math.round((t.endAt - Date.now()) / 1000));
+  } else {
+    t.running = true;
+    t.endAt = Date.now() + t.remainSec * 1000;
+  }
+  saveSettings();
+  renderExtras();
+}
+
+function resetExtra(id) {
+  const t = settings.extras.find(x => x.id === id);
+  if (!t) return;
+  t.running = false;
+  t.remainSec = t.totalSec;
+  saveSettings();
+  renderExtras();
+}
+
+function addExtraTime(id, sec) {
+  const t = settings.extras.find(x => x.id === id);
+  if (!t) return;
+  t.totalSec += sec;
+  if (t.running) t.endAt += sec * 1000;
+  else t.remainSec += sec;
+  saveSettings();
+  renderExtras();
+}
+
+function renameExtra(id, newLabel) {
+  const t = settings.extras.find(x => x.id === id);
+  if (!t) return;
+  t.label = newLabel;
+  saveSettings();
+}
+
+function clearAllExtras() {
+  if (settings.extras.length === 0) return;
+  if (!confirm(`要清掉 ${settings.extras.length} 個額外計時器嗎？`)) return;
+  settings.extras = [];
+  saveSettings();
+  renderExtras();
+}
+
+function renderExtras() {
+  const wrap = document.getElementById('extraTimers');
+  if (settings.extras.length === 0) {
+    wrap.innerHTML = '<div class="empty">還沒有額外計時器。點下面「＋」新增。<br>例如：分組討論時各組各自一個計時器。</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  settings.extras.forEach(t => {
+    const remainNow = t.running
+      ? Math.max(0, Math.round((t.endAt - Date.now()) / 1000))
+      : t.remainSec;
+    const pct = t.totalSec > 0 ? (remainNow / t.totalSec) * 100 : 0;
+    const isWarn = remainNow > 0 && remainNow <= 30;
+    const isDone = remainNow <= 0;
+    const card = document.createElement('div');
+    card.className = 'ext-card' + (isWarn ? ' warn' : '') + (isDone ? ' done' : '');
+    card.dataset.id = t.id;
+    card.innerHTML = `
+      <div class="ext-head">
+        <input class="ext-label" value="${escapeAttr(t.label)}" maxlength="20">
+        <button class="ext-x" title="刪除">✕</button>
+      </div>
+      <div class="ext-time">${fmt(remainNow)}</div>
+      <div class="ext-progress"><div style="width:${pct}%"></div></div>
+      <div class="ext-bar">
+        <button class="ext-play">${isDone ? '🔄' : t.running ? '⏸' : '▶'}</button>
+        <button class="ext-add">+30s</button>
+        <button>+1分</button>
+        <button class="ext-reset">🔄</button>
+      </div>
+    `;
+    card.querySelector('.ext-label').onchange = (e) => renameExtra(t.id, e.target.value);
+    card.querySelector('.ext-x').onclick = () => { if (confirm('刪除這個計時器？')) removeExtra(t.id); };
+    card.querySelector('.ext-play').onclick = () => toggleExtra(t.id);
+    const bars = card.querySelectorAll('.ext-bar button');
+    bars[1].onclick = () => addExtraTime(t.id, 30);
+    bars[2].onclick = () => addExtraTime(t.id, 60);
+    bars[3].onclick = () => resetExtra(t.id);
+    wrap.appendChild(card);
+  });
+}
+
+function escapeAttr(s) {
+  return String(s).replace(/"/g, '&quot;');
+}
+
+// 額外計時器的 tick：每秒檢查、有結束的響鈴
+let extraDoneIds = new Set(); // 避免重複響
+setInterval(() => {
+  if (settings.extras.length === 0) return;
+  let needRender = false;
+  let needSave = false;
+  settings.extras.forEach(t => {
+    if (!t.running) return;
+    const left = Math.max(0, Math.round((t.endAt - Date.now()) / 1000));
+    if (left <= 0 && !extraDoneIds.has(t.id)) {
+      extraDoneIds.add(t.id);
+      t.running = false;
+      t.remainSec = 0;
+      needSave = true;
+      playBell();
+      flashToast(`⏰ 「${t.label}」時間到！`);
+    }
+    needRender = true;
+  });
+  if (needSave) saveSettings();
+  if (needRender) renderExtras();
+}, 1000);
+
+function flashToast(text) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._flashT);
+  window._flashT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+renderExtras();
 </script>
+
+<div class="toast" id="toast">已存檔</div>
 
 </body>
 </html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情緒打卡歷史 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6b6b">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/emotion-history.html">
+<meta property="og:title" content="情緒打卡歷史 · 教室小幫手">
+<meta property="og:description" content="班級情緒過去 30 天趨勢，含單一學生深掘。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 區間切換 */
+  .range-pick {
+    display: inline-flex; gap: 0;
+    border: 3px solid var(--ink);
+    border-radius: 999px;
+    overflow: hidden;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .range-pick button {
+    padding: 8px 16px;
+    border: none;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .range-pick button + button { border-left: 3px solid var(--ink); }
+  .range-pick button.on { background: var(--ink); color: var(--paper); }
+
+  /* 情緒堆疊長條圖 */
+  .chart-wrap {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 20px;
+    margin: 14px 0;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .chart {
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    height: 200px;
+    min-width: 100%;
+  }
+  .day-col {
+    flex: 1;
+    min-width: 30px;
+    display: flex; flex-direction: column;
+    height: 100%;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    border: 2px solid var(--ink);
+    transition: transform .15s;
+  }
+  .day-col:hover { transform: translateY(-3px); }
+  .day-col .seg {
+    transition: opacity .2s;
+  }
+  .day-col.empty { background: var(--paper-2); }
+  .day-axis {
+    display: flex; gap: 4px;
+    margin-top: 8px;
+    font-size: 10px; color: var(--muted);
+    font-weight: 700;
+    border-top: 2px dashed var(--ink);
+    padding-top: 8px;
+  }
+  .day-axis .lbl {
+    flex: 1; min-width: 30px; text-align: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+  }
+  .day-axis .lbl.weekend { color: var(--r); }
+
+  /* Legend */
+  .legend {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+    margin-top: 12px;
+    font-size: 13px; font-weight: 700;
+  }
+  .legend .item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .item .sq {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 2px solid var(--ink);
+  }
+
+  /* Stats grid */
+  .stats {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 12px; margin: 14px 0;
+  }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 14px;
+    text-align: center;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .stat .ico { font-size: 32px; line-height: 1; }
+  .stat .lbl { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 4px; letter-spacing: 1px; }
+  .stat .val {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 30px; font-weight: 900; color: var(--ink);
+    margin-top: 2px;
+  }
+
+  /* 學生個人面板 */
+  .student-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .student-chip {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: all .15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .student-chip:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); background: var(--y); }
+  .student-chip.active { background: var(--y); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+  .student-chip .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+  }
+  .student-chip .nm { font-size: 13px; font-weight: 700; flex: 1; min-width: 0; }
+  .student-chip .cnt {
+    font-size: 11px; color: var(--muted);
+  }
+
+  /* 個別學生情緒序列 */
+  .student-detail {
+    background: var(--paper-2);
+    border: 3px dashed var(--ink);
+    border-radius: var(--rad);
+    padding: 18px;
+    margin-top: 14px;
+    display: none;
+  }
+  .student-detail.show { display: block; }
+  .student-detail h3 {
+    margin: 0 0 12px;
+    font-weight: 900;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .emoji-seq {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .emoji-seq .day {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    width: 42px; height: 56px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+  }
+  .emoji-seq .day .d {
+    font-size: 9px; color: var(--muted);
+    font-family: 'Fraunces', serif; font-style: italic;
+  }
+  .emoji-seq .day .f { font-size: 22px; line-height: 1; }
+  .emoji-seq .day.empty {
+    background: var(--paper-2);
+    border-style: dashed;
+    opacity: .5;
+  }
+  .emoji-seq .day.empty .f::before { content: '—'; font-size: 14px; color: var(--mute-2); }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-p"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">EMOTION · 歷史趨勢</span>
+      <h1>看看班級<em>心情變化</em>，<br>關懷不該等到爆炸才開始。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge">過去 30 天</span>
+        <span class="badge">含單一學生深掘</span>
+        <a class="btn sm" href="emotion.html" style="margin-left:8px;">← 回每日打卡</a>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalDays">0</span>
+      <span class="sml">天 · 有打卡紀錄</span>
+    </div>
+  </section>
+
+  <!-- 區間選擇 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">▦</div>
+      <h2>班級情緒堆疊</h2>
+      <span class="tail">每天一柱，5 色比例＝當天 5 種情緒分布</span>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+      <label style="font-weight:700;color:var(--ink);">時間範圍：</label>
+      <div class="range-pick" id="rangePick">
+        <button data-r="7" class="on">過去 7 天</button>
+        <button data-r="14">過去 14 天</button>
+        <button data-r="30">過去 30 天</button>
+        <button data-r="90">過去 90 天</button>
+      </div>
+    </div>
+
+    <div class="chart-wrap">
+      <div class="chart" id="chart"></div>
+      <div class="day-axis" id="axis"></div>
+    </div>
+
+    <div class="legend" id="legend"></div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <!-- 個別學生 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">👤</div>
+      <h2>單一學生深掘</h2>
+      <span class="tail">點任一位 → 看他過去的情緒變化</span>
+    </div>
+    <div class="student-list" id="studentList"></div>
+    <div class="student-detail" id="studentDetail">
+      <h3 id="detailTitle">—</h3>
+      <div class="emoji-seq" id="emojiSeq"></div>
+      <div style="margin-top:14px;font-size:13px;color:var(--muted);">
+        💡 觀察：連續多天「緊張」「難過」可能是需要關心的訊號。
+      </div>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const EMOTIONS = [
+  { key: 'happy',   face: '😄', label: '開心', color: '#ffd23f' },
+  { key: 'angry',   face: '😠', label: '生氣', color: '#ff6b6b' },
+  { key: 'sad',     face: '😢', label: '難過', color: '#4d96ff' },
+  { key: 'nervous', face: '😬', label: '緊張', color: '#b070ff' },
+  { key: 'calm',    face: '😌', label: '平靜', color: '#6bcb77' },
+];
+
+let rangeDays = 7;
+let activeStudent = null;
+
+function loadEmotion() {
+  try {
+    return JSON.parse(localStorage.getItem('akai_emotion_v1') || '{}');
+  } catch { return {}; }
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+function dateKey(d) {
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function getDays(n) {
+  const days = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  return days;
+}
+
+function renderClassBadge() {
+  const r = AkaiRoster.load();
+  document.getElementById('classBadge').textContent = r.className
+    ? `🏫 ${r.className} · ${r.count} 人`
+    : `👥 ${r.count || 30} 人`;
+}
+
+function renderChart() {
+  const data = loadEmotion();
+  const records = data.records || {};
+  const r = AkaiRoster.load();
+  const maxNum = r.count || 30;
+  const days = getDays(rangeDays);
+
+  // 統計總天數有打卡
+  const totalActive = Object.entries(records).filter(([k, v]) => Object.keys(v).length > 0).length;
+  document.getElementById('totalDays').textContent = totalActive;
+
+  // 圖
+  const chart = document.getElementById('chart');
+  const axis = document.getElementById('axis');
+  chart.innerHTML = '';
+  axis.innerHTML = '';
+
+  // 累積各情緒總數（用於底下統計）
+  const totals = { happy: 0, angry: 0, sad: 0, nervous: 0, calm: 0 };
+
+  days.forEach(d => {
+    const k = dateKey(d);
+    const day = records[k] || {};
+    const counts = { happy: 0, angry: 0, sad: 0, nervous: 0, calm: 0 };
+    Object.values(day).forEach(mood => {
+      if (counts[mood] !== undefined) counts[mood]++;
+      if (totals[mood] !== undefined) totals[mood]++;
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+    const col = document.createElement('div');
+    col.className = 'day-col' + (total === 0 ? ' empty' : '');
+    col.title = `${k}：${total} 人打卡`;
+    if (total > 0) {
+      const fullHeight = (total / maxNum) * 100; // 跟班級人數比例
+      EMOTIONS.forEach(emo => {
+        if (counts[emo.key] === 0) return;
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        seg.style.background = emo.color;
+        seg.style.flex = counts[emo.key]; // 比例
+        seg.title = `${emo.label}：${counts[emo.key]} 人`;
+        col.appendChild(seg);
+      });
+      // 加上空白填充：未打卡的人佔比
+      const unfilled = maxNum - total;
+      if (unfilled > 0) {
+        const seg = document.createElement('div');
+        seg.style.background = 'transparent';
+        seg.style.flex = unfilled;
+        col.appendChild(seg);
+      }
+    }
+    chart.appendChild(col);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'lbl';
+    if (d.getDay() === 0 || d.getDay() === 6) lbl.classList.add('weekend');
+    lbl.textContent = `${d.getMonth()+1}/${d.getDate()}`;
+    axis.appendChild(lbl);
+  });
+
+  // Legend
+  const legend = document.getElementById('legend');
+  legend.innerHTML = EMOTIONS.map(emo =>
+    `<span class="item"><span class="sq" style="background:${emo.color}"></span>${emo.face} ${emo.label}（${totals[emo.key]}）</span>`
+  ).join('');
+
+  // Stats
+  const stats = document.getElementById('stats');
+  stats.innerHTML = EMOTIONS.map(emo =>
+    `<div class="stat" style="border-color:${emo.color};box-shadow:3px 3px 0 ${emo.color};">
+      <div class="ico">${emo.face}</div>
+      <div class="lbl">${emo.label.toUpperCase()}</div>
+      <div class="val">${totals[emo.key]}</div>
+    </div>`
+  ).join('');
+}
+
+function renderStudentList() {
+  const r = AkaiRoster.load();
+  const maxNum = r.count || 30;
+  const data = loadEmotion();
+  const records = data.records || {};
+  const list = document.getElementById('studentList');
+  list.innerHTML = '';
+  for (let i = 1; i <= maxNum; i++) {
+    const cnt = Object.values(records).reduce((acc, day) => acc + (day[i] ? 1 : 0), 0);
+    const chip = document.createElement('div');
+    chip.className = 'student-chip' + (activeStudent === i ? ' active' : '');
+    const name = AkaiRoster.getName(i);
+    chip.innerHTML = `<span class="num">${i}</span><span class="nm">${name || '—'}</span><span class="cnt">${cnt}</span>`;
+    chip.onclick = () => { activeStudent = i; renderStudentList(); renderStudentDetail(); };
+    list.appendChild(chip);
+  }
+}
+
+function renderStudentDetail() {
+  const detail = document.getElementById('studentDetail');
+  if (!activeStudent) {
+    detail.classList.remove('show');
+    return;
+  }
+  detail.classList.add('show');
+  const r = AkaiRoster.load();
+  const name = AkaiRoster.getName(activeStudent);
+  document.getElementById('detailTitle').innerHTML =
+    `<span class="pill ink">${activeStudent} 號</span> ${name || '（未填姓名）'} 的情緒序列`;
+
+  const records = loadEmotion().records || {};
+  const days = getDays(rangeDays);
+  const seq = document.getElementById('emojiSeq');
+  seq.innerHTML = '';
+  days.forEach(d => {
+    const k = dateKey(d);
+    const mood = records[k]?.[activeStudent];
+    const emo = EMOTIONS.find(e => e.key === mood);
+    const cell = document.createElement('div');
+    cell.className = 'day' + (mood ? '' : ' empty');
+    if (mood) cell.style.background = emo.color + '30';
+    cell.innerHTML = `<span class="d">${d.getMonth()+1}/${d.getDate()}</span><span class="f">${emo ? emo.face : ''}</span>`;
+    cell.title = mood ? `${k}：${emo.label}` : `${k}：未打卡`;
+    seq.appendChild(cell);
+  });
+}
+
+document.querySelectorAll('#rangePick button').forEach(b => {
+  b.onclick = () => {
+    rangeDays = parseInt(b.dataset.r);
+    document.querySelectorAll('#rangePick button').forEach(x => x.classList.toggle('on', x === b));
+    renderAll();
+  };
+});
+
+function renderAll() {
+  renderClassBadge();
+  renderChart();
+  renderStudentList();
+  renderStudentDetail();
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_emotion_v1' || e.key === 'akai_roster_v1') renderAll();
+});
+window.addEventListener('focus', renderAll);
+
+renderAll();
+</script>
+
+</body>
+</html>

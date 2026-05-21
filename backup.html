@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>備份與還原 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="備份與還原 · 教室小幫手">
+<meta property="og:description" content="一鍵備份所有班級資料；換電腦時一鍵還原。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .summary {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 20px 24px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-lg);
+  }
+  .summary h3 { margin: 0 0 10px; color: var(--y); font-weight: 900; }
+  .summary table { width: 100%; border-collapse: collapse; }
+  .summary td { padding: 8px 10px; border-bottom: 1px dashed rgba(255,210,63,.3); font-size: 14px; }
+  .summary td:nth-child(2) { text-align: right; font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; color: var(--y); }
+  .summary tr:last-child td { border-bottom: none; }
+
+  .danger-zone {
+    border: 3px dashed var(--r);
+    border-radius: var(--rad);
+    padding: 20px;
+    background: rgba(255,107,107,.08);
+    margin-top: 22px;
+  }
+  .danger-zone h3 { color: var(--r); margin: 0 0 12px; }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">BACKUP · 備份與還原</span>
+      <h1>一鍵<em>備份</em>所有班級資料，<br>換電腦也不會丟。</h1>
+      <p class="sub">
+        <span class="badge">含 11 個工具的設定 + 紀錄</span>
+        <span class="badge">JSON 格式</span>
+        <span class="badge">純本機</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalKB">—</span>
+      <span class="sml">KB · 目前資料量</span>
+    </div>
+  </section>
+
+  <!-- 摘要 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📊</div>
+      <h2>目前本機資料</h2>
+    </div>
+    <div class="summary">
+      <h3>📦 你的資料夾</h3>
+      <table id="summaryTable"></table>
+    </div>
+  </section>
+
+  <!-- 備份 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📤</div>
+      <h2>匯出備份</h2>
+      <span class="tail">下載成 JSON 檔放雲端 / USB / 備份硬碟</span>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 14px;">
+      建議每月匯出一次。檔名會自動帶上日期，方便管理多份備份。
+    </p>
+    <div class="btn-bar">
+      <button class="btn primary lg" onclick="exportAll()">📥 立即下載全部備份</button>
+      <button class="btn y" onclick="copyToClipboard()">📋 複製到剪貼簿</button>
+    </div>
+  </section>
+
+  <!-- 還原 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📥</div>
+      <h2>還原備份</h2>
+      <span class="tail">從之前匯出的 JSON 檔還原</span>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 14px;">
+      還原會 <b style="color:var(--r);">覆蓋目前本機資料</b>，操作前請先匯出一份目前的備份保險起見。
+    </p>
+    <div class="btn-bar">
+      <button class="btn g lg" onclick="importFile()">📂 選檔案還原</button>
+      <button class="btn y" onclick="importFromClipboard()">📋 從剪貼簿還原</button>
+    </div>
+  </section>
+
+  <!-- 危險區 -->
+  <section class="danger-zone">
+    <h3>⚠️ 危險操作</h3>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 14px;">
+      「全部清除」會把所有 <code>akai_*_v1</code> 資料從這個瀏覽器移除（班級名單、出勤、情緒、能量卡收藏、設定都會消失）。<br>
+      <b>建議只在「測試新班級」「轉手給其他老師」時用</b>。操作前務必先匯出備份。
+    </p>
+    <div class="btn-bar">
+      <button class="btn r" onclick="clearAll()">🗑️ 全部清除（不可復原）</button>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已匯出</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const KEYS_INFO = [
+  { key: 'akai_roster_v1',       name: '👥 班級名單',          summary: r => `${r.className || '未命名'} · ${r.count || 0} 人 · ${Object.keys(r.names||{}).length} 個姓名` },
+  { key: 'akai_emotion_v1',      name: '😊 情緒打卡',          summary: r => `${Object.keys(r.records||{}).length} 天紀錄` },
+  { key: 'akai_todo_v1',         name: '📝 班級 To-Do',         summary: r => `紅 ${(r.red||[]).length} · 黃 ${(r.yellow||[]).length} · 綠 ${(r.green||[]).length} 項` },
+  { key: 'akai_cards_v1',        name: '🌈 能量卡收藏',        summary: r => `${Array.isArray(r) ? r.length : 0} 張` },
+  { key: 'akai_attendance_v1',   name: '📋 出勤記錄',          summary: r => `${Object.keys(r.sheets||{}).length} 個月` },
+  { key: 'akai_marquee_v1',      name: '📢 跑馬燈',             summary: r => `${(r.messages||[]).length} 則訊息 · ${r.themeIdx >= 0 ? '預設主題' : '自訂'}` },
+  { key: 'akai_picker_v1',       name: '🎯 抽號',                summary: r => `今日已抽 ${(r.history||[]).length} 個` },
+  { key: 'akai_timer_v1',        name: '⏱️ 計時器',             summary: r => `${(r.extras||[]).length} 個額外計時器` },
+  { key: 'akai_grouper_v1',      name: '👥 分組',                summary: r => `上次分 ${(r.lastGroups||[]).length} 組` },
+  { key: 'akai_tweaks_v1',       name: '🎨 視覺微調',          summary: r => `${r.accent || '預設'} · ${r.theme || 'light'}` },
+  { key: 'akai_onboarded_v1',    name: '📖 引導狀態',          summary: r => r === '1' ? '已完成首次引導' : '未完成' },
+  { key: 'akai_points_v1',       name: '🏆 班級積點',          summary: r => `${Object.keys(r.points||{}).length} 位有紀錄` },
+  { key: 'akai_bell_v1',         name: '🔔 上下課鈴聲',        summary: r => `${(r.slots||[]).length} 個時段 · ${r.enabled ? '已啟用' : '未啟用'}` },
+];
+
+function loadKey(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    // onboarded 是 '1' 不是 JSON
+    try { return JSON.parse(raw); } catch { return raw; }
+  } catch { return null; }
+}
+
+function renderSummary() {
+  const table = document.getElementById('summaryTable');
+  table.innerHTML = '';
+  let totalBytes = 0;
+  KEYS_INFO.forEach(info => {
+    const raw = localStorage.getItem(info.key);
+    const data = loadKey(info.key);
+    if (!raw) {
+      // 還沒有資料
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td style="opacity:.4;">${info.name}</td><td style="opacity:.4;">—</td>`;
+      table.appendChild(tr);
+      return;
+    }
+    totalBytes += raw.length;
+    let summary = '';
+    try { summary = info.summary(data); } catch { summary = '✓'; }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${info.name}<br><span style="color:var(--mute-2);font-size:11px;">${summary}</span></td><td>${(raw.length / 1024).toFixed(1)} KB</td>`;
+    table.appendChild(tr);
+  });
+
+  document.getElementById('totalKB').textContent = (totalBytes / 1024).toFixed(1);
+}
+
+function buildBackup() {
+  const out = {
+    _meta: {
+      app: '教室小幫手 / classroom-kit',
+      version: 'backup-v1',
+      exportedAt: new Date().toISOString(),
+      keysIncluded: [],
+    },
+  };
+  KEYS_INFO.forEach(info => {
+    const raw = localStorage.getItem(info.key);
+    if (raw === null) return;
+    try {
+      out[info.key] = JSON.parse(raw);
+    } catch {
+      out[info.key] = raw; // 字串型（如 onboarded）
+    }
+    out._meta.keysIncluded.push(info.key);
+  });
+  return out;
+}
+
+function exportAll() {
+  const data = buildBackup();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const ds = `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  const r = data['akai_roster_v1'];
+  const safeName = (r?.className || '班級').replace(/[\/\\:*?"<>|]/g, '_');
+  a.href = url;
+  a.download = `教室小幫手備份_${safeName}_${ds}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  flash(`✓ 已下載 ${(json.length / 1024).toFixed(1)} KB 備份`);
+}
+
+async function copyToClipboard() {
+  const data = buildBackup();
+  const json = JSON.stringify(data);
+  try {
+    await navigator.clipboard.writeText(json);
+    flash('✓ 備份已複製到剪貼簿');
+  } catch {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = json;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flash('✓ 備份已複製'); }
+    catch { alert('複製失敗，請改用「立即下載」'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function importFile() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  inp.onchange = () => {
+    const f = inp.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => doImport(reader.result, f.name);
+    reader.readAsText(f);
+  };
+  inp.click();
+}
+
+async function importFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    doImport(text, '剪貼簿');
+  } catch {
+    alert('無法讀剪貼簿。請改用「選檔案還原」。');
+  }
+}
+
+function doImport(text, source) {
+  let obj;
+  try { obj = JSON.parse(text); } catch {
+    alert('JSON 格式不對，無法還原。');
+    return;
+  }
+  if (!obj._meta || !obj._meta.keysIncluded) {
+    if (!confirm('這個 JSON 看起來不是「教室小幫手」的備份。仍要繼續嗎？')) return;
+  }
+  const keys = KEYS_INFO.map(i => i.key);
+  const willRestore = keys.filter(k => obj[k] !== undefined);
+  if (willRestore.length === 0) {
+    alert('檔案內沒有任何可還原的資料。');
+    return;
+  }
+  if (!confirm(`要從「${source}」還原 ${willRestore.length} 個項目嗎？\n\n⚠️ 這會覆蓋目前的本機資料。建議先按「立即下載備份」存一份保險。\n\n要還原的項目：\n${willRestore.map(k => '· ' + (KEYS_INFO.find(i => i.key === k)?.name || k)).join('\n')}`)) return;
+
+  willRestore.forEach(k => {
+    const v = obj[k];
+    localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+  });
+  flash(`✓ 已還原 ${willRestore.length} 個項目`);
+  setTimeout(renderSummary, 200);
+}
+
+function clearAll() {
+  const keys = KEYS_INFO.map(i => i.key).filter(k => localStorage.getItem(k) !== null);
+  if (keys.length === 0) { alert('本機沒有任何 akai_* 資料可清。'); return; }
+  if (!confirm(`要清除 ${keys.length} 項 akai_* 資料嗎？\n\n⚠️ 不可復原。建議先「立即下載備份」。`)) return;
+  if (!confirm('再確認一次：真的要清除嗎？')) return;
+  keys.forEach(k => localStorage.removeItem(k));
+  flash(`🗑️ 已清除 ${keys.length} 項資料`);
+  setTimeout(renderSummary, 200);
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+window.addEventListener('focus', renderSummary);
+renderSummary();
+</script>
+
+</body>
+</html>

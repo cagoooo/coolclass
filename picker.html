@@ -7,6 +7,20 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#ff97c5">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
+<!-- Open Graph / Social Share -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:description" content="8 個免費小工具：情緒打卡、To-Do、能量卡、出勤、跑馬燈、抽號、計時、分組。免登入、不上傳、離線可用。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="教室小幫手">
+<meta name="twitter:description" content="老師的每日課堂工具 · 8 個免費小工具，免登入、不上傳、離線可用。">
+<meta name="twitter:image" content="https://cagoooo.github.io/coolclass/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
@@ -194,11 +208,50 @@
       <div class="step">⚙</div>
       <h2>選項</h2>
     </div>
-    <div class="opt-row">
+
+    <!-- 範圍 -->
+    <div class="opt-row" style="margin-bottom:12px;">
+      <label style="font-weight:700;color:var(--ink);font-size:14px;min-width:60px;">範圍：</label>
+      <div class="mode-pick" id="scopePick">
+        <button data-scope="all" class="on">全班</button>
+        <button data-scope="range">指定範圍</button>
+        <button data-scope="group">從某組抽</button>
+      </div>
+      <span id="scopeHint" style="color:var(--muted);font-size:13px;">＝ 1～30 號全部</span>
+    </div>
+
+    <!-- 範圍：指定區間 -->
+    <div class="opt-row" id="rangeRow" style="display:none;margin-bottom:12px;">
+      <label style="font-weight:700;color:var(--ink);font-size:14px;min-width:60px;">範圍：</label>
+      <input type="number" class="input" id="rangeFrom" min="1" max="60" value="1" style="width:80px;">
+      <span style="font-weight:700;">→</span>
+      <input type="number" class="input" id="rangeTo" min="1" max="60" value="10" style="width:80px;">
+      <span style="color:var(--muted);font-size:13px;">號</span>
+    </div>
+
+    <!-- 範圍：某組 -->
+    <div class="opt-row" id="groupRow" style="display:none;margin-bottom:12px;">
+      <label style="font-weight:700;color:var(--ink);font-size:14px;min-width:60px;">組別：</label>
+      <select class="input" id="groupSelect" style="width:auto;min-width:160px;"></select>
+      <a href="grouper.html" class="btn sm" style="margin-left:8px;">👥 去分組</a>
+    </div>
+
+    <!-- 策略 -->
+    <div class="opt-row" style="margin-bottom:12px;">
+      <label style="font-weight:700;color:var(--ink);font-size:14px;min-width:60px;">策略：</label>
+      <div class="mode-pick" id="strategyPick">
+        <button data-strategy="random" class="on">純隨機</button>
+        <button data-strategy="least">最少被抽優先</button>
+      </div>
+      <span id="strategyHint" style="color:var(--muted);font-size:13px;">＝ 每次都從候選裡隨機抽</span>
+    </div>
+
+    <!-- 公平模式 + 音效 -->
+    <div class="opt-row" style="border-top:2px dashed var(--ink);padding-top:14px;">
       <label class="switch">
         <input type="checkbox" id="excludeUsed" checked>
         <span class="knob"></span>
-        排除已抽過的（公平模式）
+        排除今日已抽過（公平模式）
       </label>
       <label class="switch">
         <input type="checkbox" id="sound" checked>
@@ -208,6 +261,28 @@
       <a href="roster.html" class="btn sm" style="margin-left:auto;">👥 編輯班級名單</a>
     </div>
   </section>
+
+  <style>
+    .mode-pick {
+      display: inline-flex; gap: 0;
+      border: 3px solid var(--ink);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .mode-pick button {
+      padding: 8px 16px;
+      border: none;
+      background: #fff;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 13px;
+    }
+    .mode-pick button + button { border-left: 3px solid var(--ink); }
+    .mode-pick button.on { background: var(--ink); color: var(--paper); }
+  </style>
 
   <div class="panels">
     <section class="block">
@@ -274,8 +349,15 @@ function loadState() {
       excludeUsed: obj.excludeUsed !== false,
       sound: obj.sound !== false,
       day: obj.day || todayKey(),
+      // v3.1 新增
+      scope: obj.scope || 'all',                    // 'all' | 'range' | 'group'
+      rangeFrom: obj.rangeFrom || 1,
+      rangeTo: obj.rangeTo || 10,
+      groupIdx: obj.groupIdx ?? 0,
+      strategy: obj.strategy || 'random',           // 'random' | 'least'
+      pickCounts: obj.pickCounts || {},             // { "5": 3 } 累積每號被抽次數
     };
-  } catch { return { history: [], excludeUsed: true, sound: true, day: todayKey() }; }
+  } catch { return { history: [], excludeUsed: true, sound: true, day: todayKey(), scope: 'all', rangeFrom: 1, rangeTo: 10, groupIdx: 0, strategy: 'random', pickCounts: {} }; }
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -293,11 +375,49 @@ function getAllNums() {
   return list;
 }
 
-function getRemain() {
+/** 取得目前 scope 下的「候選號碼」（含當前範圍與分組設定，但還沒套用 excludeUsed） */
+function getScopeNums() {
   const all = getAllNums();
-  if (!state.excludeUsed) return all;
+  if (state.scope === 'range') {
+    const from = Math.max(1, Math.min(state.rangeFrom, state.rangeTo));
+    const to   = Math.min(all.length, Math.max(state.rangeFrom, state.rangeTo));
+    return all.filter(n => n >= from && n <= to);
+  }
+  if (state.scope === 'group') {
+    try {
+      const g = JSON.parse(localStorage.getItem('akai_grouper_v1') || '{}');
+      const groups = g.lastGroups || [];
+      const idx = Math.min(state.groupIdx, groups.length - 1);
+      if (idx >= 0 && groups[idx]) {
+        return groups[idx].map(m => parseInt(m.num)).filter(n => !isNaN(n));
+      }
+    } catch {}
+    return all; // fallback
+  }
+  return all;
+}
+
+function getRemain() {
+  const scope = getScopeNums();
+  if (!state.excludeUsed) return scope;
   const used = new Set(state.history);
-  return all.filter(n => !used.has(n));
+  return scope.filter(n => !used.has(n));
+}
+
+/** 「最少被抽優先」策略：在候選裡找累積次數最少的那批，再從裡面隨機 */
+function weightedPick(candidates) {
+  if (candidates.length === 0) return null;
+  if (state.strategy !== 'least') {
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+  // 找最少次數
+  let minCount = Infinity;
+  candidates.forEach(n => {
+    const c = state.pickCounts[String(n)] || 0;
+    if (c < minCount) minCount = c;
+  });
+  const least = candidates.filter(n => (state.pickCounts[String(n)] || 0) === minCount);
+  return least[Math.floor(Math.random() * least.length)];
 }
 
 function pick() {
@@ -321,8 +441,10 @@ function pick() {
 
   setTimeout(() => {
     clearInterval(interval);
-    const picked = remain[Math.floor(Math.random() * remain.length)];
+    const picked = weightedPick(remain);
+    if (picked === null) { spinning = false; document.getElementById('pickBtn').disabled = false; return; }
     state.history.unshift(picked);
+    state.pickCounts[String(picked)] = (state.pickCounts[String(picked)] || 0) + 1;
     saveState();
     bigNum.classList.remove('spinning');
     bigNum.classList.add('reveal');
@@ -418,6 +540,73 @@ document.getElementById('excludeUsed').checked = state.excludeUsed;
 document.getElementById('sound').checked = state.sound;
 document.getElementById('excludeUsed').onchange = (e) => { state.excludeUsed = e.target.checked; saveState(); render(); };
 document.getElementById('sound').onchange = (e) => { state.sound = e.target.checked; saveState(); };
+
+// ===== v3.1：範圍 + 策略 =====
+function syncScopeUI() {
+  document.querySelectorAll('#scopePick button').forEach(b => {
+    b.classList.toggle('on', b.dataset.scope === state.scope);
+  });
+  document.getElementById('rangeRow').style.display = state.scope === 'range' ? '' : 'none';
+  document.getElementById('groupRow').style.display = state.scope === 'group' ? '' : 'none';
+
+  const r = AkaiRoster.load();
+  let hint = '';
+  if (state.scope === 'all') hint = `＝ 1～${r.count || 30} 號全部`;
+  else if (state.scope === 'range') hint = `＝ ${Math.min(state.rangeFrom, state.rangeTo)}～${Math.max(state.rangeFrom, state.rangeTo)} 號`;
+  else if (state.scope === 'group') {
+    try {
+      const g = JSON.parse(localStorage.getItem('akai_grouper_v1') || '{}');
+      const groups = g.lastGroups || [];
+      hint = groups.length > 0 ? `＝ 第 ${state.groupIdx + 1} 組，共 ${groups[state.groupIdx]?.length || 0} 人` : `＝ 還沒分組，請先去「隨機分組」`;
+    } catch { hint = ''; }
+  }
+  document.getElementById('scopeHint').textContent = hint;
+
+  // 填組別下拉
+  if (state.scope === 'group') {
+    const sel = document.getElementById('groupSelect');
+    try {
+      const g = JSON.parse(localStorage.getItem('akai_grouper_v1') || '{}');
+      const groups = g.lastGroups || [];
+      sel.innerHTML = groups.length === 0
+        ? '<option value="">（還沒分組）</option>'
+        : groups.map((gr, i) => `<option value="${i}"${i===state.groupIdx?' selected':''}>第 ${i+1} 組（${gr.length} 人）</option>`).join('');
+    } catch {}
+  }
+}
+
+function syncStrategyUI() {
+  document.querySelectorAll('#strategyPick button').forEach(b => {
+    b.classList.toggle('on', b.dataset.strategy === state.strategy);
+  });
+  document.getElementById('strategyHint').textContent =
+    state.strategy === 'random'
+      ? '＝ 每次都從候選裡隨機抽'
+      : '＝ 累積最少被抽過的優先（更公平）';
+}
+
+document.querySelectorAll('#scopePick button').forEach(b => {
+  b.onclick = () => { state.scope = b.dataset.scope; saveState(); syncScopeUI(); render(); };
+});
+document.querySelectorAll('#strategyPick button').forEach(b => {
+  b.onclick = () => { state.strategy = b.dataset.strategy; saveState(); syncStrategyUI(); render(); };
+});
+
+['rangeFrom','rangeTo'].forEach(id => {
+  const el = document.getElementById(id);
+  el.value = state[id];
+  el.onchange = (e) => {
+    state[id] = Math.max(1, parseInt(e.target.value) || 1);
+    saveState(); syncScopeUI(); render();
+  };
+});
+document.getElementById('groupSelect').onchange = (e) => {
+  state.groupIdx = parseInt(e.target.value) || 0;
+  saveState(); syncScopeUI(); render();
+};
+
+syncScopeUI();
+syncStrategyUI();
 
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {

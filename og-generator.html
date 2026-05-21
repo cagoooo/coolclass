@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OG 分享圖產生器 · 教室小幫手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans TC', "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+    background: #fff8e8;
+    color: #2a1f4a;
+    padding: 30px;
+  }
+  h1 {
+    font-weight: 900;
+    margin: 0 0 10px;
+  }
+  .preview-wrap {
+    display: inline-block;
+    border: 3px solid #2a1f4a;
+    border-radius: 12px;
+    box-shadow: 6px 6px 0 #ffd23f;
+    margin: 20px 0;
+    overflow: hidden;
+    background: #fff;
+  }
+  canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+  .controls {
+    display: flex; gap: 12px; flex-wrap: wrap;
+    align-items: center; margin: 14px 0;
+  }
+  button {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 10px 22px;
+    border-radius: 999px;
+    border: 3px solid #2a1f4a;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 #2a1f4a;
+    transition: transform .15s, box-shadow .15s;
+  }
+  button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #2a1f4a;
+  }
+  .primary {
+    background: #2a1f4a;
+    color: #ffd23f;
+  }
+  .secondary {
+    background: #fff;
+    color: #2a1f4a;
+  }
+  .note {
+    background: #ffd23f;
+    border: 3px solid #2a1f4a;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    box-shadow: 4px 4px 0 #2a1f4a;
+    font-size: 14px;
+    line-height: 1.7;
+    max-width: 800px;
+  }
+  .note b { display: block; margin-bottom: 6px; font-size: 15px; }
+  .note ol { margin: 0; padding-left: 22px; }
+  code {
+    background: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 2px solid #2a1f4a;
+    font-family: 'Fraunces', 'Courier New', monospace;
+    font-style: italic;
+  }
+  a.home {
+    color: #2a1f4a; font-weight: 700;
+    border-bottom: 2px dotted #2a1f4a;
+    text-decoration: none;
+  }
+</style>
+</head>
+<body>
+
+<a class="home" href="index.html">← 回主頁</a>
+<h1>🖼️ OG 分享圖產生器</h1>
+<p>用來產生貼到 LINE / Facebook 時的預覽圖（1200 × 630 px）。</p>
+
+<div class="note">
+  <b>📌 使用流程</b>
+  <ol>
+    <li>等下方圖片載入完成（中文字型載完才會清楚）</li>
+    <li>按「下載 PNG」存到電腦</li>
+    <li>把檔名改成 <code>og-image.png</code> 放回專案根目錄</li>
+    <li><code>git add og-image.png && git commit && git push</code></li>
+    <li>之後貼網址到 LINE / FB 都會自動帶出這張圖 ✨</li>
+  </ol>
+</div>
+
+<div class="controls">
+  <button class="primary" onclick="downloadPng()">📥 下載 PNG (1200×630)</button>
+  <button class="secondary" onclick="redraw()">🔄 重新繪製</button>
+  <button class="secondary" onclick="downloadPng(false, 'og-image@2x.png')">📥 下載 @2x (2400×1260)</button>
+</div>
+
+<div class="preview-wrap">
+  <canvas id="cv" width="1200" height="630" style="width:600px;"></canvas>
+</div>
+
+<p style="color:#6a5a8e;font-size:13px;">
+  💡 提示：產生後若 LINE / FB 預覽還是顯示舊圖，<br>
+  到 <a href="https://developers.facebook.com/tools/debug/" target="_blank">FB 偵錯工具</a> 輸入網址按「重新抓取」就會更新。
+</p>
+
+<script>
+const TOOLS = [
+  { emoji: '😊', label: '情緒打卡' },
+  { emoji: '📝', label: 'To-Do' },
+  { emoji: '🌈', label: '能量卡' },
+  { emoji: '📋', label: '出勤表' },
+  { emoji: '📢', label: '跑馬燈' },
+  { emoji: '🎯', label: '抽號' },
+  { emoji: '⏱️', label: '計時器' },
+  { emoji: '👥', label: '分組' },
+];
+
+async function draw() {
+  // 等字型載完才繪製
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  }
+
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = 1200, H = 630;
+
+  // 背景：暖奶油底
+  ctx.fillStyle = '#fff8e8';
+  ctx.fillRect(0, 0, W, H);
+
+  // 大圓裝飾
+  ctx.fillStyle = '#ffd23f';
+  ctx.globalAlpha = 0.5;
+  ctx.beginPath(); ctx.arc(W + 60, -80, 280, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4d96ff';
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath(); ctx.arc(-80, H + 60, 240, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#b070ff';
+  ctx.globalAlpha = 0.22;
+  ctx.beginPath(); ctx.arc(W * 0.85, H * 0.85, 160, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // 點點
+  ctx.fillStyle = '#2a1f4a';
+  ctx.globalAlpha = 0.18;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      ctx.beginPath();
+      ctx.arc(60 + c * 16, 320 + r * 16, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // 主要內容容器（黑邊白底卡片）
+  const cardX = 60, cardY = 60, cardW = W - 120, cardH = H - 120;
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#2a1f4a';
+  ctx.lineWidth = 5;
+  // 投影
+  ctx.fillStyle = '#2a1f4a';
+  roundRect(ctx, cardX + 8, cardY + 8, cardW, cardH, 32);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  roundRect(ctx, cardX, cardY, cardW, cardH, 32);
+  ctx.fill();
+  ctx.stroke();
+
+  // 左上：「凱」圓 logo
+  const logoX = cardX + 50, logoY = cardY + 80, logoR = 50;
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath();
+  ctx.arc(logoX + 6, logoY + 6, logoR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2a1f4a';
+  ctx.beginPath();
+  ctx.arc(logoX, logoY, logoR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffd23f';
+  ctx.font = '900 italic 56px "Fraunces", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('凱', logoX, logoY + 2);
+
+  // 主標題
+  ctx.fillStyle = '#2a1f4a';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.font = '900 92px "Noto Sans TC", sans-serif';
+  ctx.fillText('教室小幫手', cardX + 130, cardY + 50);
+
+  // 副標
+  ctx.fillStyle = '#6a5a8e';
+  ctx.font = '700 28px "Noto Sans TC", sans-serif';
+  ctx.fillText('老師的每日課堂工具 · 8 個小工具', cardX + 130, cardY + 160);
+
+  // 中間：8 個工具 emoji grid
+  const gridStartX = cardX + 50;
+  const gridStartY = cardY + 230;
+  const gridW = cardW - 100;
+  const gridGap = gridW / 8;
+  TOOLS.forEach((t, i) => {
+    const x = gridStartX + gridGap * i + gridGap / 2;
+    const y = gridStartY;
+    // 圓背景
+    ctx.fillStyle = ['#ff6b6b', '#6bcb77', '#b070ff', '#4d96ff', '#ffd23f', '#ff97c5', '#ff9d4d', '#4ec5d8'][i];
+    ctx.beginPath();
+    ctx.arc(x + 4, y + 30 + 4, 38, 0, Math.PI * 2);
+    ctx.fillStyle = '#2a1f4a';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y + 30, 38, 0, Math.PI * 2);
+    ctx.fillStyle = ['#ff6b6b', '#6bcb77', '#b070ff', '#4d96ff', '#ffd23f', '#ff97c5', '#ff9d4d', '#4ec5d8'][i];
+    ctx.fill();
+    ctx.strokeStyle = '#2a1f4a';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // emoji
+    ctx.font = '36px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#2a1f4a';
+    ctx.fillText(t.emoji, x, y + 30);
+    // label
+    ctx.font = '700 16px "Noto Sans TC", sans-serif';
+    ctx.fillStyle = '#2a1f4a';
+    ctx.fillText(t.label, x, y + 90);
+  });
+
+  // 三個賣點 pill
+  const pills = ['✨ 免登入', '🔒 不上傳', '📲 可離線'];
+  const pillY = cardY + 410;
+  let pillX = cardX + 50;
+  ctx.font = '900 22px "Noto Sans TC", sans-serif';
+  pills.forEach((p) => {
+    const w = ctx.measureText(p).width + 36;
+    // 投影
+    ctx.fillStyle = '#2a1f4a';
+    roundRect(ctx, pillX + 4, pillY + 4, w, 44, 22);
+    ctx.fill();
+    // pill body
+    ctx.fillStyle = '#ffd23f';
+    roundRect(ctx, pillX, pillY, w, 44, 22);
+    ctx.fill();
+    ctx.strokeStyle = '#2a1f4a';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // text
+    ctx.fillStyle = '#2a1f4a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(p, pillX + 18, pillY + 22);
+    pillX += w + 14;
+  });
+
+  // 右下：網址
+  ctx.font = '700 italic 28px "Fraunces", serif';
+  ctx.fillStyle = '#6a5a8e';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('cagoooo.github.io/coolclass', cardX + cardW - 40, cardY + cardH - 30);
+
+  // 左下：MIT 自由使用
+  ctx.font = '700 18px "Noto Sans TC", sans-serif';
+  ctx.fillStyle = '#6a5a8e';
+  ctx.textAlign = 'left';
+  ctx.fillText('MIT License · 歡迎所有班級老師自由使用', cardX + 50, cardY + cardH - 30);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function redraw() { draw(); }
+
+function downloadPng(small, name) {
+  const cv = document.getElementById('cv');
+  if (small === false) {
+    // 2x 版本：產生一個 2400×1260 canvas 重畫
+    const big = document.createElement('canvas');
+    big.width = 2400; big.height = 1260;
+    const bctx = big.getContext('2d');
+    bctx.scale(2, 2);
+    // 把原 canvas 內容當圖貼上去（簡化做法：直接重畫於更大的 ctx）
+    bctx.drawImage(cv, 0, 0, 1200, 630);
+    big.toBlob(blob => triggerDownload(blob, name || 'og-image@2x.png'), 'image/png');
+    return;
+  }
+  cv.toBlob(blob => triggerDownload(blob, name || 'og-image.png'), 'image/png');
+}
+
+function triggerDownload(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+draw();
+</script>
+
+</body>
+</html>

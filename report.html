@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每月班級報告 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="每月班級報告 · 教室小幫手">
+<meta property="og:description" content="一鍵生成本月出勤統計 + 情緒分布 + 完成待辦 + 收藏的能量卡。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .report-toolbar {
+    display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 16px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .report-toolbar label { font-weight: 700; color: var(--y); }
+  .report-toolbar input[type="month"] {
+    background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-weight: 700;
+  }
+
+  .report-block {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 24px 28px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .report-block h3 {
+    margin: 0 0 14px;
+    font-weight: 900;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .report-block h3 .num {
+    background: var(--ink); color: var(--y);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 18px; font-weight: 900;
+  }
+
+  /* KPI grid */
+  .kpis {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 14px;
+    text-align: center;
+  }
+  .kpi .num {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 36px; line-height: 1;
+    color: var(--ink);
+  }
+  .kpi .lbl {
+    font-size: 12px; color: var(--muted);
+    font-weight: 700; letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* emotion bars */
+  .emo-bars {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .emo-bars .bar-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 6px 10px;
+  }
+  .emo-bars .lbl { width: 60px; font-weight: 700; }
+  .emo-bars .face { font-size: 24px; }
+  .emo-bars .bar {
+    flex: 1;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    height: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .emo-bars .bar > div {
+    height: 100%;
+    transition: width .6s;
+  }
+  .emo-bars .cnt {
+    min-width: 60px; text-align: right;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 18px;
+  }
+
+  /* 列表樣式 */
+  .item-list {
+    list-style: none; padding: 0; margin: 0;
+  }
+  .item-list li {
+    padding: 8px 12px;
+    border-bottom: 1px dashed var(--ink);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .item-list li:last-child { border-bottom: none; }
+
+  .student-issues {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .student-issues .chip {
+    background: var(--r); color: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .student-issues .chip.warn { background: var(--orange); }
+  .student-issues .chip small { font-weight: 500; opacity: .9; }
+
+  /* 列印樣式 */
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .report-toolbar, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar { display: none !important; }
+    .page-hero { background: var(--ink) !important; box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .report-block { box-shadow: none !important; break-inside: avoid; }
+    .kpi, .emo-bars .bar-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-g"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">REPORT · 月度報告</span>
+      <h1>把這個月<em>整合成一頁</em>，<br>列印交差、給家長都好用。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge" id="monthLabel">—</span>
+        <span class="badge">含出勤 / 情緒 / 待辦 / 能量卡</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="monthBig">—</span>
+      <span class="sml">月份</span>
+    </div>
+  </section>
+
+  <div class="report-toolbar">
+    <label>選月份：</label>
+    <input type="month" id="monthPick">
+    <button class="btn primary" onclick="apply()">📊 載入報告</button>
+    <button class="btn y" onclick="window.print()">🖨️ 列印 / 存 PDF</button>
+    <a class="btn" href="attendance.html" style="margin-left:auto;">📋 詳細出勤表</a>
+    <a class="btn" href="emotion-history.html">📈 情緒歷史</a>
+  </div>
+
+  <!-- 1. 出勤 -->
+  <div class="report-block" id="reportAttn">
+    <h3><span class="num">1</span>📋 本月出勤</h3>
+    <div id="attnContent">尚未載入</div>
+  </div>
+
+  <!-- 2. 情緒 -->
+  <div class="report-block" id="reportEmo">
+    <h3><span class="num">2</span>😊 本月情緒分布</h3>
+    <div id="emoContent">尚未載入</div>
+  </div>
+
+  <!-- 3. To-Do -->
+  <div class="report-block" id="reportTodo">
+    <h3><span class="num">3</span>📝 班級 To-Do 現況</h3>
+    <div id="todoContent">尚未載入</div>
+  </div>
+
+  <!-- 4. 能量卡 -->
+  <div class="report-block" id="reportCards">
+    <h3><span class="num">4</span>🌈 收藏的能量卡</h3>
+    <div id="cardsContent">尚未載入</div>
+  </div>
+
+  <!-- 5. 需關懷 -->
+  <div class="report-block" id="reportIssues">
+    <h3><span class="num">5</span>🚨 需要關心的學生</h3>
+    <div id="issuesContent">尚未載入</div>
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const EMOTIONS = [
+  { key: 'happy',   face: '😄', label: '開心', color: '#ffd23f' },
+  { key: 'angry',   face: '😠', label: '生氣', color: '#ff6b6b' },
+  { key: 'sad',     face: '😢', label: '難過', color: '#4d96ff' },
+  { key: 'nervous', face: '😬', label: '緊張', color: '#b070ff' },
+  { key: 'calm',    face: '😌', label: '平靜', color: '#6bcb77' },
+];
+
+function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch { return {}; } }
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function init() {
+  const now = new Date();
+  document.getElementById('monthPick').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  apply();
+}
+
+let currentYM = null;
+
+function apply() {
+  const m = document.getElementById('monthPick').value;
+  if (!m) return;
+  const [yStr, mStr] = m.split('-');
+  const year = parseInt(yStr), month = parseInt(mStr);
+  currentYM = { year, month, key: `${year}-${pad(month)}` };
+
+  document.getElementById('monthBig').textContent = month;
+  document.getElementById('monthLabel').textContent = `🗓 ${year} 年 ${month} 月`;
+  const r = AkaiRoster.load();
+  document.getElementById('classBadge').textContent = `🏫 ${r.className || '未命名班級'} · ${r.count || 30} 人`;
+
+  renderAttendance();
+  renderEmotion();
+  renderTodo();
+  renderCards();
+  renderIssues();
+}
+
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+function renderAttendance() {
+  const sheet = loadJSON('akai_attendance_v1').sheets?.[currentYM.key];
+  const wrap = document.getElementById('attnContent');
+  if (!sheet || !sheet.marks) {
+    wrap.innerHTML = '<div class="empty">本月還沒有出勤紀錄。<br><a class="btn sm" href="attendance.html">去填寫</a></div>';
+    return;
+  }
+  const days = daysInMonth(currentYM.year, currentYM.month);
+  let upDays = 0;
+  for (let d = 1; d <= days; d++) {
+    const wk = new Date(currentYM.year, currentYM.month - 1, d).getDay();
+    if (wk !== 0 && wk !== 6) upDays++;
+  }
+  const count = sheet.count || AkaiRoster.load().count || 30;
+  let totalP = 0, totalL = 0, totalLv = 0, totalA = 0;
+  for (let s = 1; s <= count; s++) {
+    for (let d = 1; d <= days; d++) {
+      const k = `${currentYM.year}-${pad(currentYM.month)}-${pad(d)}`;
+      const mk = sheet.marks[k]?.[s];
+      if (mk === 'present') totalP++;
+      else if (mk === 'late') totalL++;
+      else if (mk === 'leave') totalLv++;
+      else if (mk === 'absent') totalA++;
+    }
+  }
+  const totalSlots = count * upDays;
+  const rate = totalSlots > 0 ? ((totalP + totalL) / totalSlots * 100).toFixed(1) : '—';
+
+  wrap.innerHTML = `
+    <div class="kpis">
+      <div class="kpi" style="background:#d8f0d8;"><div class="num">${upDays}</div><div class="lbl">上學日數</div></div>
+      <div class="kpi" style="background:#fff5b3;"><div class="num">${totalL}</div><div class="lbl">遲到次數</div></div>
+      <div class="kpi" style="background:#e2d3f4;"><div class="num">${totalLv}</div><div class="lbl">請假次數</div></div>
+      <div class="kpi" style="background:#ffd0d0;"><div class="num">${totalA}</div><div class="lbl">缺席次數</div></div>
+    </div>
+    <p style="margin:8px 0;color:var(--muted);font-size:14px;">
+      📊 班級出席率：<b style="color:var(--ink);font-size:18px;font-family:Fraunces,serif;font-style:italic;">${rate}%</b>
+      （出席 + 遲到 ÷ 應到人次）
+    </p>
+  `;
+}
+
+function renderEmotion() {
+  const records = loadJSON('akai_emotion_v1').records || {};
+  const wrap = document.getElementById('emoContent');
+  const totals = { happy: 0, angry: 0, sad: 0, nervous: 0, calm: 0 };
+  const daysWithData = new Set();
+  Object.entries(records).forEach(([k, day]) => {
+    if (!k.startsWith(currentYM.key)) return;
+    daysWithData.add(k);
+    Object.values(day).forEach(mood => {
+      if (totals[mood] !== undefined) totals[mood]++;
+    });
+  });
+  const grand = Object.values(totals).reduce((a, b) => a + b, 0);
+  if (grand === 0) {
+    wrap.innerHTML = '<div class="empty">本月還沒有情緒打卡紀錄。<br><a class="btn sm" href="emotion.html">去打卡</a></div>';
+    return;
+  }
+  const max = Math.max(...Object.values(totals));
+  wrap.innerHTML = `
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">
+      📅 本月共有 <b style="color:var(--ink);">${daysWithData.size}</b> 天紀錄，總計 <b style="color:var(--ink);">${grand}</b> 次打卡。
+    </p>
+    <div class="emo-bars">
+      ${EMOTIONS.map(emo => `
+        <div class="bar-row">
+          <span class="face">${emo.face}</span>
+          <span class="lbl">${emo.label}</span>
+          <div class="bar"><div style="width:${max > 0 ? totals[emo.key] / max * 100 : 0}%;background:${emo.color}"></div></div>
+          <span class="cnt">${totals[emo.key]}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderTodo() {
+  const todo = loadJSON('akai_todo_v1');
+  const red = (todo.red || []).length;
+  const yellow = (todo.yellow || []).length;
+  const green = (todo.green || []).length;
+  const wrap = document.getElementById('todoContent');
+  const all = (todo.red || []).concat(todo.yellow || [], todo.green || []);
+  wrap.innerHTML = `
+    <div class="kpis" style="grid-template-columns:repeat(3,1fr);">
+      <div class="kpi" style="background:#ffd0d0;"><div class="num">${red}</div><div class="lbl">🔴 最緊急</div></div>
+      <div class="kpi" style="background:#fff5b3;"><div class="num">${yellow}</div><div class="lbl">🟡 進行中</div></div>
+      <div class="kpi" style="background:#d8f0d8;"><div class="num">${green}</div><div class="lbl">🟢 準備區</div></div>
+    </div>
+    ${all.length > 0 ? `<ul class="item-list" style="margin-top:14px;">${all.slice(0, 12).map(item => `<li>📌 <b>${escapeHtml(item.title || '')}</b>${item.note ? `<small style="color:var(--muted);"> · ${escapeHtml(item.note)}</small>` : ''}</li>`).join('')}</ul>${all.length > 12 ? `<p style="color:var(--muted);font-size:13px;text-align:center;margin-top:8px;">… 還有 ${all.length - 12} 項</p>` : ''}` : '<p style="color:var(--muted);font-size:14px;">目前沒有任何代辦事項。</p>'}
+  `;
+}
+
+function renderCards() {
+  const favs = loadJSON('akai_cards_v1');
+  const list = Array.isArray(favs) ? favs : [];
+  const wrap = document.getElementById('cardsContent');
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty">尚未收藏任何能量卡。<br><a class="btn sm" href="cards.html">去抽卡</a></div>';
+    return;
+  }
+  // 篩出本月收藏（ts 在當月）
+  const monthStart = new Date(currentYM.year, currentYM.month - 1, 1).getTime();
+  const monthEnd = new Date(currentYM.year, currentYM.month, 1).getTime();
+  const monthFavs = list.filter(f => f.ts >= monthStart && f.ts < monthEnd);
+  const showList = monthFavs.length > 0 ? monthFavs : list.slice(0, 5);
+  wrap.innerHTML = `
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">
+      ${monthFavs.length > 0 ? `📌 本月收藏 <b style="color:var(--ink);">${monthFavs.length}</b> 張` : `📚 顯示最近收藏的 5 張（本月未收藏）`}
+    </p>
+    <ul class="item-list">
+      ${showList.map(f => `<li>🌈 <b>${escapeHtml(f.keyword || '')}</b> · <span style="color:var(--ink);">「${escapeHtml(f.quote)}」</span></li>`).join('')}
+    </ul>
+  `;
+}
+
+function renderIssues() {
+  // 需關心邏輯：連續缺席 ≥3 天，或情緒連續 3 次「難過/緊張」
+  const wrap = document.getElementById('issuesContent');
+  const sheet = loadJSON('akai_attendance_v1').sheets?.[currentYM.key];
+  const records = loadJSON('akai_emotion_v1').records || {};
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  const days = daysInMonth(currentYM.year, currentYM.month);
+
+  const issues = [];
+  for (let s = 1; s <= count; s++) {
+    // 出勤連續缺席
+    let maxAbsentStreak = 0, currentStreak = 0;
+    if (sheet?.marks) {
+      for (let d = 1; d <= days; d++) {
+        const k = `${currentYM.year}-${pad(currentYM.month)}-${pad(d)}`;
+        const wk = new Date(currentYM.year, currentYM.month - 1, d).getDay();
+        if (wk === 0 || wk === 6) continue;
+        const mk = sheet.marks[k]?.[s];
+        if (mk === 'absent') { currentStreak++; maxAbsentStreak = Math.max(maxAbsentStreak, currentStreak); }
+        else currentStreak = 0;
+      }
+    }
+
+    // 情緒連續低落（含難過 + 緊張 + 生氣）
+    const recent = [];
+    Object.entries(records).filter(([k]) => k.startsWith(currentYM.key)).sort(([a],[b]) => a.localeCompare(b)).forEach(([_, day]) => {
+      if (day[s]) recent.push(day[s]);
+    });
+    let lowStreak = 0, maxLowStreak = 0;
+    recent.forEach(m => {
+      if (m === 'sad' || m === 'nervous' || m === 'angry') { lowStreak++; maxLowStreak = Math.max(maxLowStreak, lowStreak); }
+      else lowStreak = 0;
+    });
+
+    if (maxAbsentStreak >= 3 || maxLowStreak >= 3) {
+      issues.push({
+        num: s,
+        name: AkaiRoster.getName(s) || `${s} 號`,
+        absent: maxAbsentStreak,
+        low: maxLowStreak,
+      });
+    }
+  }
+
+  if (issues.length === 0) {
+    wrap.innerHTML = '<div class="empty">🎉 本月沒有偵測到需要特別關心的狀況。<br><span style="font-size:12px;">（連續 ≥3 天缺席、或連續 ≥3 次低落情緒會被列出）</span></div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px;">
+      ⚠️ 系統偵測到以下學生有「連續 ≥3 天缺席」或「連續 ≥3 次低落情緒」狀況。
+    </p>
+    <div class="student-issues">
+      ${issues.map(i => `<div class="chip ${i.absent >= 3 ? '' : 'warn'}"><b>${i.num} 號 ${escapeHtml(i.name)}</b><br><small>${i.absent >= 3 ? `連續缺席 ${i.absent} 天` : ''}${i.absent >= 3 && i.low >= 3 ? ' · ' : ''}${i.low >= 3 ? `連續低落 ${i.low} 次` : ''}</small></div>`).join('')}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+init();
+</script>
+
+</body>
+</html>

@@ -7,6 +7,20 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#b070ff">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
+<!-- Open Graph / Social Share -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:description" content="8 個免費小工具：情緒打卡、To-Do、能量卡、出勤、跑馬燈、抽號、計時、分組。免登入、不上傳、離線可用。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="教室小幫手 — 老師的每日課堂工具">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="教室小幫手">
+<meta name="twitter:description" content="老師的每日課堂工具 · 8 個免費小工具，免登入、不上傳、離線可用。">
+<meta name="twitter:image" content="https://cagoooo.github.io/coolclass/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Noto+Serif+TC:wght@700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
@@ -340,6 +354,7 @@
       <span id="todayCat">—</span>
       <span id="todayKeyword">—</span>
     </div>
+    <button class="btn b sm" style="margin-top:14px;" onclick="downloadTodayCard()" title="下載成 1080×1350 直式圖">📥 下載今日心錨成圖</button>
   </section>
 
   <!-- 篩選 + 抽卡 -->
@@ -373,6 +388,7 @@
       <div class="btn-bar center">
         <button class="btn primary lg" id="drawBtn">🎴 抽一張卡</button>
         <button class="btn y" id="favBtn">🌟 收藏</button>
+        <button class="btn b" id="downloadBtn" onclick="downloadCurrentCard()" title="下載成 1080×1350 直式圖（IG / 手機桌布 / 教室海報）">📥 下載成圖</button>
       </div>
     </div>
   </section>
@@ -586,12 +602,198 @@ document.getElementById('cardInner').addEventListener('click', drawCard);
 document.getElementById('drawBtn').addEventListener('click', drawCard);
 document.getElementById('favBtn').addEventListener('click', toggleFav);
 
+// ===== v3.1：下載卡片成圖 =====
+let _todayCard = null;  // 由 renderTodayCard 設定
+
+function downloadCurrentCard() {
+  if (!currentCard) { flash('請先抽一張卡'); return; }
+  drawCardToPng(currentCard, 'energy-card');
+}
+function downloadTodayCard() {
+  if (!_todayCard) { flash('還沒載入今日心錨'); return; }
+  drawCardToPng(_todayCard, 'today-mantra');
+}
+
+async function drawCardToPng(card, prefix) {
+  const cat = CATS[card.cat] || CATS.fixed;
+  const W = 1080, H = 1350;
+
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+
+  // 解析背景色 / 文字色（CATS 提供 hex 字串）
+  const bg = cat.bg || '#2a1f4a';
+  const fg = cat.fg || '#ffd23f';
+
+  // 1. 大底色（漸層）
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, lighten(bg, 0.08));
+  grad.addColorStop(1, bg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 2. 點點裝飾
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.13;
+  for (let r = 0; r < 16; r++) {
+    for (let c = 0; c < 12; c++) {
+      ctx.beginPath();
+      ctx.arc(80 + c * 80, 980 + r * 22, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // 3. 邊框（內框）
+  ctx.strokeStyle = fg;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([14, 12]);
+  ctx.strokeRect(50, 50, W - 100, H - 100);
+  ctx.setLineDash([]);
+
+  // 4. 右上：seq + category
+  ctx.fillStyle = fg;
+  ctx.font = '600 italic 30px "Fraunces", serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  const seq = `No.${String(DECK.indexOf(card) + 1).padStart(3, '0')}`;
+  ctx.fillText(seq, W - 90, 90);
+
+  // category pill
+  ctx.font = '700 26px "Noto Sans TC", sans-serif';
+  ctx.textAlign = 'left';
+  const catText = `· ${cat.label} ·`;
+  const catW = ctx.measureText(catText).width + 40;
+  ctx.fillStyle = fg;
+  roundRect(ctx, 90, 90, catW, 44, 22);
+  ctx.fill();
+  ctx.fillStyle = bg;
+  ctx.textBaseline = 'middle';
+  ctx.fillText(catText, 90 + 20, 112);
+
+  // 5. 中央：大引號 + quote
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.25;
+  ctx.font = '900 italic 320px "Fraunces", serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('"', 80, 220);
+  ctx.globalAlpha = 1;
+
+  // quote：自動換行
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 56px "Noto Serif TC", "Noto Sans TC", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lines = wrapChineseLines(ctx, card.quote, W - 200, 56);
+  const lineH = 84;
+  const totalH = lines.length * lineH;
+  const startY = H / 2 - totalH / 2 + 30;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, W / 2, startY + i * lineH);
+  });
+
+  // 6. 中央上方：keyword
+  ctx.fillStyle = fg;
+  ctx.font = '700 italic 36px "Fraunces", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const kwY = startY - totalH / 2 - 80;
+  ctx.fillText(`～ ${card.keyword} ～`, W / 2, Math.max(kwY, 180));
+
+  // 7. 底部：tail
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.85;
+  ctx.font = '500 italic 24px "Noto Serif TC", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('願今天的你，比昨天再靠近幸福一步。', W / 2, H - 200);
+  ctx.globalAlpha = 1;
+
+  // 8. 底部：品牌
+  ctx.fillStyle = fg;
+  ctx.globalAlpha = 0.7;
+  ctx.font = '700 22px "Noto Sans TC", sans-serif';
+  ctx.fillText('🌈 教室小幫手 · cagoooo.github.io/coolclass', W / 2, H - 140);
+
+  // 9. 底部裝飾分隔線
+  ctx.strokeStyle = fg;
+  ctx.globalAlpha = 0.4;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 8]);
+  ctx.beginPath();
+  ctx.moveTo(200, H - 170);
+  ctx.lineTo(W - 200, H - 170);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
+
+  // 下載
+  cv.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${prefix}_${seq}_${(card.keyword || '').replace(/[\\/:*?"<>|]/g, '')}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+    flash('📥 圖檔已下載');
+  }, 'image/png');
+}
+
+function wrapChineseLines(ctx, text, maxWidth, fontSize) {
+  const lines = [];
+  let buf = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const test = buf + ch;
+    if (ctx.measureText(test).width > maxWidth && buf.length > 0) {
+      lines.push(buf);
+      buf = ch;
+    } else {
+      buf = test;
+    }
+  }
+  if (buf) lines.push(buf);
+  return lines;
+}
+
+function lighten(hex, amount) {
+  // 簡單把 hex 加亮（用 white overlay 模擬）
+  // 真實使用 rgba 疊加更準，這裡用簡化版
+  try {
+    const m = hex.match(/^#([0-9a-f]{6})$/i);
+    if (!m) return hex;
+    const num = parseInt(m[1], 16);
+    let r = (num >> 16) & 255;
+    let g = (num >> 8) & 255;
+    let b = num & 255;
+    r = Math.min(255, Math.round(r + (255 - r) * amount));
+    g = Math.min(255, Math.round(g + (255 - g) * amount));
+    b = Math.min(255, Math.round(b + (255 - b) * amount));
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+  } catch { return hex; }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
 function renderTodayCard() {
   const d = new Date();
   const dateStr = `${d.getMonth()+1}/${d.getDate()}`;
   const wk = ['日','一','二','三','四','五','六'][d.getDay()];
   const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
   const card = DECK[seed % DECK.length];
+  _todayCard = card;  // v3.1：暴露給下載功能
   const cat = CATS[card.cat];
   document.getElementById('todayQuote').textContent = '「' + card.quote + '」';
   document.getElementById('todayDate').textContent = `📅 ${d.getFullYear()}.${dateStr} 星期${wk}`;

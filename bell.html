@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>上下課鈴聲 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="上下課鈴聲 · 教室小幫手">
+<meta property="og:description" content="設定課表時間，自動播預備鈴 / 下課鈴。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta property="og:locale" content="zh_TW">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .now-panel {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 24px 28px;
+    margin-bottom: 22px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .now-time {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: clamp(72px, 14vw, 140px);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--y);
+    text-shadow: 4px 4px 0 var(--r);
+    font-variant-numeric: tabular-nums;
+  }
+  .now-next {
+    margin-top: 16px;
+    font-size: clamp(16px, 2.4vw, 22px);
+    color: var(--paper);
+  }
+  .now-next b { color: var(--y); }
+
+  .slot-list { display: flex; flex-direction: column; gap: 8px; }
+  .slot {
+    display: grid;
+    grid-template-columns: 50px 1fr 100px 100px 80px;
+    gap: 10px;
+    align-items: center;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .slot.disabled { opacity: .45; border-style: dashed; }
+  .slot.current { background: var(--y); }
+  .slot .idx {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 22px; color: var(--ink);
+    text-align: center;
+  }
+  .slot input.label-input {
+    border: none; outline: none; background: transparent;
+    font-family: inherit; font-weight: 700; font-size: 16px;
+    color: var(--ink);
+  }
+  .slot input[type="time"] {
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 4px 8px;
+    font-family: inherit;
+    font-weight: 700;
+    background: #fff;
+    color: var(--ink);
+    text-align: center;
+  }
+  .slot .actions {
+    display: flex; gap: 4px; justify-content: flex-end;
+  }
+  .slot .actions button {
+    width: 32px; height: 32px;
+    border: 2px solid var(--ink); cursor: pointer;
+    background: #fff;
+    border-radius: 50%;
+    font-weight: 900;
+    font-family: inherit;
+    color: var(--ink);
+  }
+  .slot .actions .test { background: var(--y); }
+  .slot .actions .del { background: #fff; }
+  .slot .actions .del:hover { background: var(--r); color: #fff; }
+
+  @media (max-width: 720px) {
+    .slot { grid-template-columns: 40px 1fr 90px 80px; }
+    .slot .actions { grid-column: 1 / -1; justify-content: center; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-p"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">BELL · 上下課鈴聲</span>
+      <h1>把<em>時鐘</em>放在教室前，<br>準時上下課不靠人喊。</h1>
+      <p class="sub">
+        <span class="badge">⏰ 預備鈴 / 上課鈴 / 下課鈴</span>
+        <span class="badge">自動依時間播放</span>
+        <span class="badge">必須保持頁面開啟</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="slotCount">—</span>
+      <span class="sml">時段</span>
+    </div>
+  </section>
+
+  <!-- 當前狀態 -->
+  <div class="now-panel">
+    <div class="now-time" id="nowTime">--:--:--</div>
+    <div class="now-next" id="nowNext">準備中…</div>
+  </div>
+
+  <!-- 主控 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⚙</div>
+      <h2>主控</h2>
+    </div>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+      <label class="switch">
+        <input type="checkbox" id="enabled">
+        <span class="knob"></span>
+        <b>啟用自動鈴聲</b>
+      </label>
+      <span style="color:var(--muted);font-size:13px;">必須保持這個頁面開著才會響</span>
+      <span style="flex:1;"></span>
+      <button class="btn y sm" onclick="loadPreset()">📋 套用台灣國小預設課表</button>
+      <button class="btn r sm" onclick="clearAll()">🧹 全部清除</button>
+    </div>
+  </section>
+
+  <!-- 時段表 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⏰</div>
+      <h2>時段表</h2>
+      <span class="tail">每個時段含上課時間（會響上課鈴）+ 下課時間（會響下課鈴）</span>
+    </div>
+    <div class="slot-list" id="slotList"></div>
+    <div class="btn-bar" style="margin-top:14px;">
+      <button class="btn primary" onclick="addSlot()">＋ 新增時段</button>
+      <button class="btn b sm" onclick="testRing('start')">🔔 試聽上課鈴</button>
+      <button class="btn p sm" onclick="testRing('end')">🔔 試聽下課鈴</button>
+      <button class="btn y sm" onclick="testRing('warn')">🔔 試聽預備鈴</button>
+    </div>
+  </section>
+
+  <!-- 設定 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">🔊</div>
+      <h2>鈴聲設定</h2>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      <label class="switch">
+        <input type="checkbox" id="warnEnabled" checked>
+        <span class="knob"></span>
+        下課前 2 分鐘預備鈴
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="weekendsOff" checked>
+        <span class="knob"></span>
+        週末不響
+      </label>
+      <label style="font-weight:700;color:var(--ink);">音量：</label>
+      <input type="range" id="vol" min="0" max="100" value="50" style="flex:1;min-width:120px;">
+      <span id="volLbl" style="font-family:Fraunces,serif;font-style:italic;font-weight:900;">50%</span>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_bell_v1';
+
+// 預設台灣國小課表
+const DEFAULT_PRESET = [
+  { label: '第 1 節', start: '08:40', end: '09:20' },
+  { label: '第 2 節', start: '09:30', end: '10:10' },
+  { label: '第 3 節', start: '10:30', end: '11:10' },
+  { label: '第 4 節', start: '11:20', end: '12:00' },
+  { label: '午餐 / 午休', start: '12:00', end: '13:30' },
+  { label: '第 5 節', start: '13:30', end: '14:10' },
+  { label: '第 6 節', start: '14:20', end: '15:00' },
+  { label: '打掃 / 整潔', start: '15:00', end: '15:30' },
+];
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      enabled: !!obj.enabled,
+      warnEnabled: obj.warnEnabled !== false,
+      weekendsOff: obj.weekendsOff !== false,
+      vol: obj.vol ?? 50,
+      slots: obj.slots || [],
+    };
+  } catch { return { enabled: false, warnEnabled: true, weekendsOff: true, vol: 50, slots: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+let state = loadState();
+let triggered = new Set(); // 同一分鐘只響一次
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function renderSlots() {
+  const wrap = document.getElementById('slotList');
+  if (state.slots.length === 0) {
+    wrap.innerHTML = '<div class="empty">還沒有任何時段。<br>按下方「+ 新增時段」或「📋 套用台灣國小預設課表」開始。</div>';
+    return;
+  }
+  // 排序按 start 時間
+  state.slots.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  document.getElementById('slotCount').textContent = state.slots.length;
+
+  const nowStr = currentTimeStr();
+  wrap.innerHTML = '';
+  state.slots.forEach((s, i) => {
+    const isCurrent = s.start <= nowStr && nowStr <= s.end;
+    const row = document.createElement('div');
+    row.className = 'slot' + (s.enabled === false ? ' disabled' : '') + (isCurrent ? ' current' : '');
+    row.innerHTML = `
+      <div class="idx">${i + 1}</div>
+      <input class="label-input" value="${escapeAttr(s.label || '')}" placeholder="第 N 節 / 午休 / 等">
+      <input type="time" class="time-start" value="${s.start || ''}">
+      <input type="time" class="time-end" value="${s.end || ''}">
+      <div class="actions">
+        <button class="test" title="試聽上課鈴">🔔</button>
+        <button class="del" title="刪除">✕</button>
+      </div>
+    `;
+    row.querySelector('.label-input').onchange = (e) => { s.label = e.target.value; saveState(); };
+    row.querySelector('.time-start').onchange = (e) => { s.start = e.target.value; saveState(); renderSlots(); };
+    row.querySelector('.time-end').onchange = (e) => { s.end = e.target.value; saveState(); renderSlots(); };
+    row.querySelector('.test').onclick = () => testRing('start');
+    row.querySelector('.del').onclick = () => {
+      if (!confirm(`刪除「${s.label || '未命名'}」這個時段？`)) return;
+      state.slots.splice(i, 1);
+      saveState(); renderSlots();
+    };
+    wrap.appendChild(row);
+  });
+}
+
+function addSlot() {
+  state.slots.push({ label: `第 ${state.slots.length + 1} 節`, start: '08:00', end: '08:40', enabled: true });
+  saveState();
+  renderSlots();
+}
+
+function loadPreset() {
+  if (state.slots.length > 0) {
+    if (!confirm(`已有 ${state.slots.length} 個時段。要覆蓋成預設台灣國小課表嗎？`)) return;
+  }
+  state.slots = DEFAULT_PRESET.map(p => ({ ...p, enabled: true }));
+  saveState();
+  renderSlots();
+  flash('✓ 已載入預設課表');
+}
+
+function clearAll() {
+  if (state.slots.length === 0) return;
+  if (!confirm('要清掉所有時段嗎？')) return;
+  state.slots = [];
+  saveState();
+  renderSlots();
+}
+
+// === 主迴圈 ===
+function currentTimeStr() {
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function currentTimeStrSec() {
+  const d = new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function findNextEvent() {
+  const now = currentTimeStr();
+  // events = [{ time, type, label }]
+  const events = [];
+  state.slots.forEach(s => {
+    if (s.enabled === false) return;
+    if (s.start) events.push({ time: s.start, type: 'start', label: s.label });
+    if (s.end) events.push({ time: s.end, type: 'end', label: s.label });
+    if (state.warnEnabled && s.end) {
+      // 下課前 2 分鐘
+      const [h, m] = s.end.split(':').map(Number);
+      const warn = new Date(); warn.setHours(h, m - 2, 0, 0);
+      if (warn.getMinutes() < 0) { warn.setHours(warn.getHours() - 1); warn.setMinutes(60 + warn.getMinutes()); }
+      const warnStr = `${pad(warn.getHours())}:${pad(warn.getMinutes())}`;
+      events.push({ time: warnStr, type: 'warn', label: s.label });
+    }
+  });
+  events.sort((a, b) => a.time.localeCompare(b.time));
+  return events.find(e => e.time > now) || events[0]; // 沒有下一個就回明天第一個
+}
+
+function tick() {
+  document.getElementById('nowTime').textContent = currentTimeStrSec();
+  const next = findNextEvent();
+  if (next) {
+    const map = { start: '🔔 上課鈴', end: '🔔 下課鈴', warn: '🔔 預備鈴（下課前 2 分鐘）' };
+    document.getElementById('nowNext').innerHTML = state.enabled
+      ? `下一個：<b>${next.time}</b> · ${map[next.type] || ''}（${escapeHtml(next.label || '')}）`
+      : `⚠️ 自動鈴聲未啟用 · 打開上方開關`;
+  } else {
+    document.getElementById('nowNext').innerHTML = '尚未設定時段';
+  }
+
+  // 觸發
+  if (!state.enabled) return;
+  if (state.weekendsOff) {
+    const wk = new Date().getDay();
+    if (wk === 0 || wk === 6) return;
+  }
+  const now = currentTimeStr();
+  state.slots.forEach(s => {
+    if (s.enabled === false) return;
+    const triggerAt = (time, type) => {
+      if (time !== now) return;
+      const key = `${new Date().toDateString()}_${time}_${type}_${s.label}`;
+      if (triggered.has(key)) return;
+      triggered.add(key);
+      ringBell(type);
+      flash(`🔔 ${s.label} ${type === 'start' ? '上課' : type === 'end' ? '下課' : '預備'}`);
+    };
+    if (s.start) triggerAt(s.start, 'start');
+    if (s.end) triggerAt(s.end, 'end');
+    if (state.warnEnabled && s.end) {
+      const [h, m] = s.end.split(':').map(Number);
+      const warn = new Date(); warn.setHours(h, m - 2, 0, 0);
+      const warnStr = `${pad(warn.getHours())}:${pad(warn.getMinutes())}`;
+      triggerAt(warnStr, 'warn');
+    }
+  });
+}
+setInterval(tick, 1000);
+
+// 每天 00:00 清 triggered
+setInterval(() => {
+  if (currentTimeStr() === '00:00') triggered.clear();
+}, 60000);
+
+// === 鈴聲（WebAudio）===
+function ringBell(type) {
+  const vol = (state.vol || 50) / 100;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'start') {
+      // 上課：三聲短而清亮 1200Hz
+      [0, 0.25, 0.5].forEach(t => playTone(ctx, 1200, t, 0.18, vol));
+    } else if (type === 'end') {
+      // 下課：兩聲長 900-700Hz 下行
+      playTone(ctx, 900, 0, 0.5, vol);
+      playTone(ctx, 700, 0.5, 0.5, vol);
+    } else if (type === 'warn') {
+      // 預備鈴：短促兩聲 800Hz
+      playTone(ctx, 800, 0, 0.12, vol * 0.7);
+      playTone(ctx, 800, 0.2, 0.12, vol * 0.7);
+    }
+  } catch {}
+}
+function playTone(ctx, freq, atTime, dur, vol) {
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = 'sine';
+  o.frequency.setValueAtTime(freq, ctx.currentTime + atTime);
+  g.gain.setValueAtTime(vol, ctx.currentTime + atTime);
+  g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + atTime + dur);
+  o.start(ctx.currentTime + atTime);
+  o.stop(ctx.currentTime + atTime + dur);
+}
+
+function testRing(type) { ringBell(type); }
+
+// === UI ===
+document.getElementById('enabled').checked = state.enabled;
+document.getElementById('warnEnabled').checked = state.warnEnabled;
+document.getElementById('weekendsOff').checked = state.weekendsOff;
+document.getElementById('vol').value = state.vol;
+document.getElementById('volLbl').textContent = `${state.vol}%`;
+
+document.getElementById('enabled').onchange = (e) => { state.enabled = e.target.checked; saveState(); tick(); };
+document.getElementById('warnEnabled').onchange = (e) => { state.warnEnabled = e.target.checked; saveState(); tick(); };
+document.getElementById('weekendsOff').onchange = (e) => { state.weekendsOff = e.target.checked; saveState(); };
+document.getElementById('vol').oninput = (e) => { state.vol = parseInt(e.target.value); document.getElementById('volLbl').textContent = `${state.vol}%`; saveState(); };
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+renderSlots();
+tick();
+</script>
+
+</body>
+</html>
