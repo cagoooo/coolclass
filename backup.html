@@ -239,6 +239,7 @@ function exportAll() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 500);
   flash(`✓ 已下載 ${(json.length / 1024).toFixed(1)} KB 備份`);
+  if (window.AkaiMarkBackup) window.AkaiMarkBackup();  // v3.6：通知 sw-update 重置提醒
 }
 
 async function copyToClipboard() {
@@ -247,6 +248,7 @@ async function copyToClipboard() {
   try {
     await navigator.clipboard.writeText(json);
     flash('✓ 備份已複製到剪貼簿');
+    if (window.AkaiMarkBackup) window.AkaiMarkBackup();
   } catch {
     // fallback
     const ta = document.createElement('textarea');

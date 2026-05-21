@@ -350,6 +350,16 @@
         <button onclick="quickAdd('📅 下週活動預告：')">📅 預告</button>
         <button onclick="quickAdd('🍎 健康小提醒：多喝水、勤洗手')">🍎 健康</button>
       </div>
+
+      <div style="border-top:2px dashed var(--ink);padding-top:14px;margin-top:14px;">
+        <button class="btn primary lg" onclick="autoReadToday()" style="width:100%;font-size:1.05em;">
+          ✨ 自動讀今日重點
+        </button>
+        <div style="font-size:.85em;color:var(--ink-soft,#5a4f7a);text-align:center;margin-top:8px;line-height:1.5;">
+          一鍵從今日能量卡 / 生日 / 情緒打卡 / 待辦 / 行為記錄<br>
+          自動產生 3〜5 則跑馬燈訊息
+        </div>
+      </div>
     </section>
 
     <section class="block">
@@ -547,6 +557,156 @@ document.getElementById('newMsg').addEventListener('keydown', (e) => {
 function quickAdd(template) {
   document.getElementById('newMsg').value = template;
   document.getElementById('newMsg').focus();
+}
+
+// ===== v3.6 G+：自動讀今日重點 =====
+function autoReadToday() {
+  const generated = [];
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const month = today.getMonth() + 1;
+  const day = today.getDate();
+  const wk = ['日','一','二','三','四','五','六'];
+  const weekday = wk[today.getDay()];
+
+  // 0) 今日日期問候
+  generated.push(`📅 今天是 ${month} 月 ${day} 日 · 星期${weekday} ，新的一天加油！`);
+
+  // 1) 今日能量卡名言（akai_cards_v1：收藏陣列，每張卡有 quote）
+  try {
+    const cardsRaw = localStorage.getItem('akai_cards_v1');
+    if (cardsRaw) {
+      const cards = JSON.parse(cardsRaw);
+      if (Array.isArray(cards) && cards.length > 0) {
+        // 用日期當索引選一張當日固定的引言
+        const seed = today.getFullYear() * 10000 + month * 100 + day;
+        const card = cards[seed % cards.length];
+        if (card && card.quote) {
+          generated.push(`🌈 今日能量卡：${card.quote}`);
+        }
+      }
+    }
+  } catch {}
+
+  // 2) 今日壽星（akai_birthday_v1：{ dates: { num: 'YYYY-MM-DD' } }）
+  try {
+    const bdayRaw = localStorage.getItem('akai_birthday_v1');
+    if (bdayRaw) {
+      const bday = JSON.parse(bdayRaw);
+      const dates = bday.dates || {};
+      const todays = [];
+      Object.keys(dates).forEach(num => {
+        const d = dates[num];
+        if (!d) return;
+        const [, m, dd] = d.split('-').map(Number);
+        if (m === month && dd === day) {
+          let name = num + ' 號';
+          try {
+            if (window.AkaiRoster) {
+              const n = AkaiRoster.getName(parseInt(num));
+              if (n) name = n;
+            }
+          } catch {}
+          todays.push(name);
+        }
+      });
+      if (todays.length > 0) {
+        generated.push(`🎂 生日快樂！今天的壽星是：${todays.join('、')} 🎉`);
+      }
+    }
+  } catch {}
+
+  // 3) 今日情緒打卡統計（akai_emotion_v1：records[YYYY-MM-DD][num] = {emo}）
+  try {
+    const emoRaw = localStorage.getItem('akai_emotion_v1');
+    if (emoRaw) {
+      const emoObj = JSON.parse(emoRaw);
+      const rec = (emoObj.records || {})[todayStr] || {};
+      const count = Object.keys(rec).length;
+      if (count > 0) {
+        // 統計各情緒
+        const counts = {};
+        Object.values(rec).forEach(v => {
+          const e = (v && v.emo) || v;
+          if (e) counts[e] = (counts[e] || 0) + 1;
+        });
+        const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+        if (top) {
+          generated.push(`💗 今日已有 ${count} 位同學打卡，最多人選的心情是 ${top[0]}`);
+        } else {
+          generated.push(`💗 今日已有 ${count} 位同學完成情緒打卡`);
+        }
+      }
+    }
+  } catch {}
+
+  // 4) 今日待辦事項摘要（akai_todo_v1：{ red, yellow, green }）
+  try {
+    const todoRaw = localStorage.getItem('akai_todo_v1');
+    if (todoRaw) {
+      const todo = JSON.parse(todoRaw);
+      const red = (todo.red || []).filter(t => !(t && t.done)).length;
+      const yellow = (todo.yellow || []).filter(t => !(t && t.done)).length;
+      if (red > 0) {
+        generated.push(`🔴 提醒：有 ${red} 件「重要」待辦事項要完成`);
+      } else if (yellow > 0) {
+        generated.push(`🟡 還有 ${yellow} 件待辦事項，慢慢來、一件一件處理`);
+      }
+    }
+  } catch {}
+
+  // 5) 本月行為觀察星星（akai_behavior_v1：logs[]）
+  try {
+    const bhRaw = localStorage.getItem('akai_behavior_v1');
+    if (bhRaw) {
+      const bh = JSON.parse(bhRaw);
+      const logs = bh.logs || [];
+      const monthPrefix = todayStr.slice(0, 7);
+      const monthLogs = logs.filter(l => (l.date || '').startsWith(monthPrefix));
+      const pos = monthLogs.filter(l => l.type === 'pos').length;
+      if (pos > 0) {
+        generated.push(`⭐ 本月累積 ${pos} 個正向行為觀察，繼續加油！`);
+      }
+    }
+  } catch {}
+
+  // 6) 班級積點榜冠軍（akai_points_v1：points[num] = number）
+  try {
+    const ptsRaw = localStorage.getItem('akai_points_v1');
+    if (ptsRaw) {
+      const pts = JSON.parse(ptsRaw);
+      const map = pts.points || {};
+      const entries = Object.entries(map).filter(([,v]) => v > 0).sort((a,b) => b[1]-a[1]);
+      if (entries.length > 0) {
+        const [num, score] = entries[0];
+        let name = num + ' 號';
+        try {
+          if (window.AkaiRoster) {
+            const n = AkaiRoster.getName(parseInt(num));
+            if (n) name = n;
+          }
+        } catch {}
+        generated.push(`🏆 積點榜冠軍：${name}（${score} 分），大家一起追上！`);
+      }
+    }
+  } catch {}
+
+  if (generated.length <= 1) {
+    flash('⚠ 找不到今日資料，請先在其他工具建立資料');
+    return;
+  }
+
+  // 預覽 + 確認加入
+  const preview = generated.map((m, i) => `${i+1}. ${m}`).join('\n');
+  if (!confirm(`將自動加入 ${generated.length} 則跑馬燈訊息：\n\n${preview}\n\n是否加入？`)) return;
+
+  generated.forEach(text => {
+    state.messages.push({ text, on: true });
+  });
+  saveState();
+  renderMessages();
+  renderTrack();
+  flash(`✓ 已加入 ${generated.length} 則今日重點訊息`);
 }
 
 function renderTrack() {
