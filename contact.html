@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>親師溝通記錄 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b070ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="親師溝通記錄 · 教室小幫手">
+<meta property="og:description" content="每位家長的聯繫日誌（電話/LINE/Email/面談）。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .add-form {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .add-form h2 { margin: 0 0 12px; color: var(--y); font-weight: 900; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 140px 110px 110px 1fr auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .form-grid label { font-size: 11px; font-weight: 700; color: var(--y); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .form-grid input, .form-grid select, .form-grid textarea {
+    width: 100%;
+    background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+  }
+  .form-grid textarea { min-height: 38px; resize: vertical; font-weight: 500; }
+  .form-grid .add-btn {
+    background: var(--y); color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 10px 18px;
+    font-weight: 900; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 3px 3px 0 #000;
+  }
+
+  /* 篩選 + 統計 */
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 14px;
+  }
+  .filter-bar select {
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 14px;
+    font-family: inherit; font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+    background: #fff;
+  }
+
+  /* 紀錄列表 */
+  .log-list { display: flex; flex-direction: column; gap: 10px; }
+  .log {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 14px 18px;
+    box-shadow: 3px 3px 0 var(--ink);
+    border-left-width: 6px;
+  }
+  .log[data-type="phone"]   { border-left-color: var(--g); }
+  .log[data-type="line"]    { border-left-color: #00c300; }
+  .log[data-type="email"]   { border-left-color: var(--b); }
+  .log[data-type="meeting"] { border-left-color: var(--p); }
+  .log[data-type="other"]   { border-left-color: var(--orange); }
+
+  .log .head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .log .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 12px; font-weight: 900;
+  }
+  .log .student-name { font-weight: 900; font-size: 16px; }
+  .log .type-chip {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+  .log[data-type="phone"]   .type-chip { background: var(--g); color: #fff; }
+  .log[data-type="line"]    .type-chip { background: #00c300; color: #fff; }
+  .log[data-type="email"]   .type-chip { background: var(--b); color: #fff; }
+  .log[data-type="meeting"] .type-chip { background: var(--p); color: #fff; }
+  .log[data-type="other"]   .type-chip { background: var(--orange); color: #fff; }
+
+  .log .date {
+    font-family: 'Fraunces', serif; font-style: italic;
+    color: var(--muted); font-size: 13px;
+  }
+  .log .delete {
+    margin-left: auto;
+    background: transparent;
+    border: 2px solid transparent;
+    cursor: pointer; padding: 4px 10px;
+    color: var(--mute-2);
+    border-radius: 999px;
+    font-family: inherit;
+  }
+  .log .delete:hover { background: var(--r); color: #fff; border-color: var(--r); }
+  .log .content {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.7;
+    margin: 6px 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .log .followup {
+    background: var(--paper-2);
+    border: 2px dashed var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .add-form, .filter-bar, footer.f, .bg-deco, .akai-tweaks-fab { display: none !important; }
+    .log { box-shadow: none !important; border-width: 2px; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 700px) {
+    .form-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .form-grid .add-btn { grid-column: 1 / -1; }
+    .form-grid textarea { grid-column: 1 / -1; }
+    .log { padding: 12px 14px; }
+    .log .head { gap: 6px; }
+    .log .student-name { font-size: 14px; }
+    .log .type-chip { font-size: 10px; padding: 1px 8px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-p"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">CONTACT · 親師溝通記錄</span>
+      <h1>每一次<em>聯繫</em>都留下軌跡，<br>家長會更安心。</h1>
+      <p class="sub">
+        <span class="badge">電話 / LINE / Email / 面談</span>
+        <span class="badge">可依學生篩選</span>
+        <span class="badge">可列印 / 匯出</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalCount">0</span>
+      <span class="sml">筆紀錄</span>
+    </div>
+  </section>
+
+  <!-- 新增 -->
+  <div class="add-form">
+    <h2>📝 新增聯繫紀錄</h2>
+    <form id="addForm" onsubmit="addLog(event)">
+      <div class="form-grid">
+        <div>
+          <label>學生</label>
+          <select id="fStudent" required></select>
+        </div>
+        <div>
+          <label>日期</label>
+          <input type="date" id="fDate" required>
+        </div>
+        <div>
+          <label>方式</label>
+          <select id="fType" required>
+            <option value="phone">📞 電話</option>
+            <option value="line">💬 LINE</option>
+            <option value="email">📧 Email</option>
+            <option value="meeting">🤝 面談</option>
+            <option value="other">📝 其他</option>
+          </select>
+        </div>
+        <div>
+          <label>內容摘要</label>
+          <textarea id="fContent" placeholder="這次聊了什麼、家長提出什麼問題、討論結論..." required></textarea>
+        </div>
+        <button class="add-btn" type="submit">＋ 記下來</button>
+      </div>
+      <div style="margin-top:8px;">
+        <label style="font-size:11px;font-weight:700;color:var(--y);letter-spacing:1px;display:block;margin-bottom:4px;">後續追蹤（選填）</label>
+        <input type="text" id="fFollowup" placeholder="例：下週四再電話確認小明寫作業狀況" style="width:100%;background:#fff;color:var(--ink);border:3px solid var(--y);border-radius:var(--rad-sm);padding:8px 10px;font-family:inherit;font-weight:500;font-size:14px;">
+      </div>
+    </form>
+  </div>
+
+  <!-- 篩選 -->
+  <div class="filter-bar">
+    <label style="font-weight:700;">篩選：</label>
+    <select id="filterStudent">
+      <option value="">全部學生</option>
+    </select>
+    <select id="filterType">
+      <option value="">全部方式</option>
+      <option value="phone">📞 電話</option>
+      <option value="line">💬 LINE</option>
+      <option value="email">📧 Email</option>
+      <option value="meeting">🤝 面談</option>
+      <option value="other">📝 其他</option>
+    </select>
+    <span style="margin-left:auto;color:var(--muted);font-size:13px;" id="filterStat">—</span>
+    <button class="btn y sm" onclick="window.print()">🖨️ 列印</button>
+    <button class="btn sm" onclick="exportCSV()">📊 CSV</button>
+  </div>
+
+  <!-- 紀錄 -->
+  <div class="log-list" id="logList"></div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_contact_v1';
+let state = loadState();
+let filterStudent = '';
+let filterType = '';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { logs: obj.logs || [] };
+  } catch { return { logs: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  const now = new Date();
+  document.getElementById('fDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  fillSelects();
+  render();
+}
+
+function fillSelects() {
+  const r = AkaiRoster.load();
+  const n = r.count || 30;
+  const f = document.getElementById('fStudent');
+  const fs = document.getElementById('filterStudent');
+  f.innerHTML = '';
+  fs.innerHTML = '<option value="">全部學生</option>';
+  for (let i = 1; i <= n; i++) {
+    const name = AkaiRoster.getName(i);
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = name ? `${i} 號 · ${name}` : `${i} 號`;
+    f.appendChild(o);
+    fs.appendChild(o.cloneNode(true));
+  }
+}
+
+function addLog(ev) {
+  ev.preventDefault();
+  const log = {
+    id: 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    num: parseInt(document.getElementById('fStudent').value),
+    date: document.getElementById('fDate').value,
+    type: document.getElementById('fType').value,
+    content: document.getElementById('fContent').value.trim(),
+    followup: document.getElementById('fFollowup').value.trim(),
+    ts: Date.now(),
+  };
+  if (!log.content) return;
+  state.logs.push(log);
+  saveState();
+  document.getElementById('fContent').value = '';
+  document.getElementById('fFollowup').value = '';
+  flash(`✓ ${log.num} 號 紀錄已存`);
+  render();
+}
+
+function delLog(id) {
+  if (!confirm('刪除這筆紀錄？')) return;
+  state.logs = state.logs.filter(l => l.id !== id);
+  saveState();
+  render();
+}
+
+function render() {
+  document.getElementById('totalCount').textContent = state.logs.length;
+  document.getElementById('filterStudent').onchange = (e) => { filterStudent = e.target.value; render(); };
+  document.getElementById('filterType').onchange = (e) => { filterType = e.target.value; render(); };
+
+  // 篩選
+  let list = [...state.logs].sort((a, b) => b.ts - a.ts);
+  if (filterStudent) list = list.filter(l => l.num === parseInt(filterStudent));
+  if (filterType) list = list.filter(l => l.type === filterType);
+
+  document.getElementById('filterStat').textContent = `顯示 ${list.length} / ${state.logs.length} 筆`;
+
+  const wrap = document.getElementById('logList');
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty">沒有符合條件的紀錄。從上方新增第一筆吧 📝</div>';
+    return;
+  }
+  const typeLabel = { phone: '📞 電話', line: '💬 LINE', email: '📧 Email', meeting: '🤝 面談', other: '📝 其他' };
+  wrap.innerHTML = list.map(l => {
+    const name = AkaiRoster.getName(l.num) || '—';
+    return `
+      <div class="log" data-type="${l.type}">
+        <div class="head">
+          <span class="num">${l.num} 號</span>
+          <span class="student-name">${escapeHtml(name)}</span>
+          <span class="type-chip">${typeLabel[l.type]}</span>
+          <span class="date">📅 ${l.date}</span>
+          <button class="delete" onclick="delLog('${l.id}')">✕</button>
+        </div>
+        <div class="content">${escapeHtml(l.content)}</div>
+        ${l.followup ? `<div class="followup">📌 後續追蹤：${escapeHtml(l.followup)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function exportCSV() {
+  if (state.logs.length === 0) { alert('沒有紀錄可匯出'); return; }
+  const rows = [['日期', '座號', '姓名', '方式', '內容', '後續追蹤']];
+  state.logs.forEach(l => {
+    rows.push([
+      l.date,
+      l.num,
+      AkaiRoster.getName(l.num) || '',
+      ({ phone: '電話', line: 'LINE', email: 'Email', meeting: '面談', other: '其他' })[l.type],
+      l.content,
+      l.followup || '',
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `親師溝通記錄_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  flash('✓ CSV 已下載');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') { fillSelects(); render(); } });
+init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>代課老師交接單 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="代課老師交接單 · 教室小幫手">
+<meta property="og:description" content="一頁式交接：今日重點、課表、特殊學生注意、緊急聯絡。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .sub-block {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 20px 24px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow);
+  }
+  .sub-block h2 {
+    margin: 0 0 12px;
+    font-weight: 900; font-size: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sub-block h2::before {
+    content: ''; width: 6px; height: 22px;
+    background: var(--y); border-radius: 3px;
+  }
+  .sub-block textarea, .sub-block input {
+    width: 100%;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    font-family: inherit; font-size: 14px;
+    background: #fff;
+    line-height: 1.7;
+  }
+  .sub-block textarea { min-height: 80px; resize: vertical; }
+  .sub-block textarea:focus, .sub-block input:focus { outline: none; box-shadow: 0 0 0 3px var(--y); }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .field-row label {
+    font-weight: 900; font-size: 14px;
+  }
+
+  .student-tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .student-tag {
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .student-tag.on { background: var(--r); color: #fff; border-color: var(--r); }
+  .student-tag:hover { transform: translate(-1px,-1px); }
+
+  /* 列印用 — A4 一頁式 */
+  .print-only { display: none; }
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .btn-bar, footer.f, .bg-deco, .akai-tweaks-fab { display: none !important; }
+    .sub-block { box-shadow: none !important; border-width: 2px; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    textarea, input { border-color: #888 !important; }
+    .student-tags .student-tag { border-color: #888; }
+    .student-tag:not(.on) { display: none; }
+  }
+  @media (max-width: 600px) {
+    .sub-block { padding: 14px 16px; }
+    .field-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">SUBSTITUTE · 代課交接</span>
+      <h1>請假當天<em>5 分鐘</em>填好，<br>代課老師看了就上手。</h1>
+      <p class="sub">
+        <span class="badge">一頁式 A4 表單</span>
+        <span class="badge">特殊學生提醒</span>
+        <span class="badge">緊急聯絡</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="dateBig">—</span>
+      <span class="sml">交接日期</span>
+    </div>
+  </section>
+
+  <div class="btn-bar" style="margin-bottom:18px;">
+    <button class="btn primary" onclick="loadTemplate()">📋 套用範本</button>
+    <button class="btn y" onclick="window.print()">🖨️ 列印 A4</button>
+    <a class="btn" href="seating.html">🪑 看座位表</a>
+    <a class="btn" href="schedule.html">📅 看課表</a>
+    <button class="btn r sm" onclick="resetAll()" style="margin-left:auto;">🔄 清空</button>
+  </div>
+
+  <!-- 1. 基本 -->
+  <div class="sub-block">
+    <h2>📅 基本資訊</h2>
+    <div class="field-row">
+      <label>日期</label>
+      <input type="date" id="fDate">
+    </div>
+    <div class="field-row">
+      <label>原班導師</label>
+      <input type="text" id="fTeacher" placeholder="例：王小明" maxlength="20">
+    </div>
+    <div class="field-row">
+      <label>代課老師</label>
+      <input type="text" id="fSub" placeholder="例：李代課" maxlength="20">
+    </div>
+    <div class="field-row">
+      <label>班級</label>
+      <input type="text" id="fClass" placeholder="例：五年甲班">
+    </div>
+  </div>
+
+  <!-- 2. 今日重點 -->
+  <div class="sub-block">
+    <h2>🎯 今日教學重點</h2>
+    <textarea id="fFocus" placeholder="例：
+1. 第一節國語：第 5 課課文朗讀 + 生字練習
+2. 第三節數學：習作 p.42 第 3-7 題
+3. 自然：自學 + 抄筆記
+4. 下課要提醒學生喝水
+"></textarea>
+  </div>
+
+  <!-- 3. 需特別注意的學生 -->
+  <div class="sub-block">
+    <h2>⚠️ 需特別注意的學生</h2>
+    <p style="margin:0 0 10px;color:var(--muted);font-size:13px;">點學生標籤打勾，列印時只會顯示有勾選的</p>
+    <div class="student-tags" id="studentTags"></div>
+    <textarea id="fStudentNotes" style="margin-top:10px;" placeholder="例：
+• 12 號小華：對花生過敏，午餐要特別檢查
+• 7 號小明：情緒容易激動，提早給他緩衝時間
+• 23 號小美：請假中
+"></textarea>
+  </div>
+
+  <!-- 4. 教室物品位置 -->
+  <div class="sub-block">
+    <h2>🔑 教室物品位置</h2>
+    <textarea id="fItems" placeholder="例：
+• 班級電腦密碼貼在白板下方
+• 第一節要用的彩色筆在我的抽屜第二格
+• 投影機遙控器在講桌
+• 教室鑰匙交給班長
+"></textarea>
+  </div>
+
+  <!-- 5. 突發狀況處理 -->
+  <div class="sub-block">
+    <h2>🚨 突發狀況處理</h2>
+    <textarea id="fEmergency" placeholder="例：
+• 受傷送健康中心：陳護理師（分機 220）
+• 學生情緒失控：通知學務處（分機 200）
+• 火警 / 地震：依平時演練路線到操場
+• 家長來電：可請對方留言或請學務處轉接
+"></textarea>
+  </div>
+
+  <!-- 6. 緊急聯絡 -->
+  <div class="sub-block">
+    <h2>📞 緊急聯絡電話</h2>
+    <div class="field-row">
+      <label>導師手機</label>
+      <input type="text" id="fPhoneTeacher" placeholder="如果代課老師遇到大狀況可打">
+    </div>
+    <div class="field-row">
+      <label>學務處</label>
+      <input type="text" id="fPhoneAdmin" placeholder="校內分機">
+    </div>
+    <div class="field-row">
+      <label>健康中心</label>
+      <input type="text" id="fPhoneHealth" placeholder="校內分機">
+    </div>
+  </div>
+
+  <!-- 7. 給學生的話 -->
+  <div class="sub-block">
+    <h2>💬 給學生的話（可投影）</h2>
+    <textarea id="fStudentMsg" placeholder="例：
+今天老師請假，由 OO 老師代課。
+請大家配合老師、認真聽課，不要影響班級榮譽。
+我明天回來會跟代課老師確認大家的表現，表現好的同學會 +5 積點 ❤️
+"></textarea>
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_substitute_v1';
+let state = loadState();
+let saveT;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      date: obj.date || '',
+      teacher: obj.teacher || '',
+      sub: obj.sub || '',
+      className: obj.className || '',
+      focus: obj.focus || '',
+      studentFlags: obj.studentFlags || {},
+      studentNotes: obj.studentNotes || '',
+      items: obj.items || '',
+      emergency: obj.emergency || '',
+      phoneTeacher: obj.phoneTeacher || '',
+      phoneAdmin: obj.phoneAdmin || '',
+      phoneHealth: obj.phoneHealth || '',
+      studentMsg: obj.studentMsg || '',
+    };
+  } catch { return {}; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function autosave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { saveState(); flash('✓ 已存檔'); }, 600);
+}
+
+function bindField(id, key) {
+  const el = document.getElementById(id);
+  el.value = state[key] || '';
+  el.oninput = () => { state[key] = el.value; autosave(); if (id === 'fDate') updateDateBig(); };
+}
+
+function updateDateBig() {
+  const d = state.date;
+  if (!d) { document.getElementById('dateBig').textContent = '—'; return; }
+  const dt = new Date(d + 'T00:00');
+  document.getElementById('dateBig').textContent = `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+
+function renderStudentTags() {
+  const r = AkaiRoster.load();
+  const wrap = document.getElementById('studentTags');
+  wrap.innerHTML = '';
+  for (let i = 1; i <= (r.count || 30); i++) {
+    const name = AkaiRoster.getName(i);
+    const tag = document.createElement('div');
+    tag.className = 'student-tag' + (state.studentFlags[String(i)] ? ' on' : '');
+    tag.textContent = name ? `${i} ${name}` : `${i} 號`;
+    tag.onclick = () => {
+      if (state.studentFlags[String(i)]) delete state.studentFlags[String(i)];
+      else state.studentFlags[String(i)] = true;
+      tag.classList.toggle('on');
+      saveState();
+    };
+    wrap.appendChild(tag);
+  }
+}
+
+function loadTemplate() {
+  if (Object.values(state).some(v => v && typeof v === 'string') && !confirm('要套用範本嗎？目前內容會被覆蓋。')) return;
+  state.focus = '1. 第一節：__________\n2. 第二節：__________\n3. 第三節：__________\n4. 第四節：__________';
+  state.items = '• 班級電腦密碼：__________\n• 投影機遙控器位置：__________\n• 教室鑰匙：__________';
+  state.emergency = '• 學生受傷送健康中心\n• 學生情緒失控通知學務處\n• 火警 / 地震依平時演練路線';
+  state.studentMsg = '今天老師請假由代課老師代課，請大家配合、認真聽課。\n我回來後會跟代課老師確認大家的表現。\n表現好的同學會 +5 積點 ❤️';
+  // 從 roster 自動帶班級名稱
+  const r = AkaiRoster.load();
+  if (r.className && !state.className) state.className = r.className;
+  saveState();
+  init();
+  flash('✓ 範本已套用');
+}
+
+function resetAll() {
+  if (!confirm('要清空整個交接單嗎？')) return;
+  state = {};
+  saveState();
+  init();
+}
+
+function init() {
+  // 預設今天
+  if (!state.date) state.date = new Date().toISOString().slice(0,10);
+  bindField('fDate', 'date');
+  bindField('fTeacher', 'teacher');
+  bindField('fSub', 'sub');
+  bindField('fClass', 'className');
+  bindField('fFocus', 'focus');
+  bindField('fStudentNotes', 'studentNotes');
+  bindField('fItems', 'items');
+  bindField('fEmergency', 'emergency');
+  bindField('fPhoneTeacher', 'phoneTeacher');
+  bindField('fPhoneAdmin', 'phoneAdmin');
+  bindField('fPhoneHealth', 'phoneHealth');
+  bindField('fStudentMsg', 'studentMsg');
+  if (!state.className) {
+    const r = AkaiRoster.load();
+    if (r.className) {
+      state.className = r.className;
+      document.getElementById('fClass').value = r.className;
+    }
+  }
+  renderStudentTags();
+  updateDateBig();
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') renderStudentTags(); });
+init();
+</script>
+
+</body>
+</html>

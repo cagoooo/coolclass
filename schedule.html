@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>課表 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="課表 · 教室小幫手">
+<meta property="og:description" content="一週課表，配合上下課鈴聲；本節 / 下節即時顯示。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 當前/下節 widget */
+  .now-bar {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 22px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .now-bar > div {
+    border-right: 2px dashed rgba(255,255,255,0.2);
+    padding-right: 18px;
+  }
+  .now-bar > div:last-child { border-right: none; padding-right: 0; }
+  .now-bar .lbl {
+    font-size: 12px; color: var(--y);
+    letter-spacing: 2px; font-weight: 900;
+  }
+  .now-bar .subject {
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 900;
+    margin: 6px 0;
+  }
+  .now-bar .meta {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 14px; color: var(--paper); opacity: .8;
+  }
+
+  /* 課表 */
+  .timetable {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    padding: 14px;
+  }
+  .tt-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(5, 1fr);
+    gap: 6px;
+    min-width: 600px;
+  }
+  .tt-head {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad-sm);
+    padding: 8px;
+    text-align: center;
+    font-weight: 900;
+    font-size: 14px;
+  }
+  .tt-head.today { background: var(--y); color: var(--ink); }
+  .tt-period {
+    background: var(--paper-2);
+    border-radius: var(--rad-sm);
+    padding: 6px;
+    text-align: center;
+    font-size: 12px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+    color: var(--ink);
+    display: flex; flex-direction: column;
+    justify-content: center;
+  }
+  .tt-period .num { font-size: 16px; }
+  .tt-period .time { font-size: 10px; opacity: .7; }
+  .tt-cell {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px;
+    text-align: center;
+    min-height: 56px;
+    cursor: text;
+    transition: all .12s;
+  }
+  .tt-cell:hover { background: var(--paper-2); }
+  .tt-cell:focus-within { background: var(--y); box-shadow: 0 0 0 3px var(--ink); }
+  .tt-cell input {
+    width: 100%; background: transparent;
+    border: none; outline: none;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    text-align: center; color: var(--ink);
+  }
+  .tt-cell .room {
+    display: block;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .tt-cell .room input { font-size: 11px; color: var(--muted); }
+  .tt-cell.current { background: var(--y); border-color: var(--ink); }
+  .tt-cell.current::before {
+    content: '⬤';
+    color: var(--r);
+    position: absolute;
+    margin-left: -90px;
+    font-size: 10px;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+
+  /* 科目色 hint */
+  .tt-cell[data-color="g"]  { background: linear-gradient(180deg, #fff 50%, #e8f5e9 100%); }
+  .tt-cell[data-color="b"]  { background: linear-gradient(180deg, #fff 50%, #e3f2fd 100%); }
+  .tt-cell[data-color="r"]  { background: linear-gradient(180deg, #fff 50%, #ffebee 100%); }
+  .tt-cell[data-color="y"]  { background: linear-gradient(180deg, #fff 50%, #fff8e1 100%); }
+  .tt-cell[data-color="p"]  { background: linear-gradient(180deg, #fff 50%, #f3e5f5 100%); }
+
+  @media print {
+    @page { size: A4 landscape; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .now-bar, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar { display: none !important; }
+    .timetable { box-shadow: none !important; border-width: 2px; }
+    .tt-cell { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .now-bar { padding: 14px 16px; grid-template-columns: 1fr; gap: 10px; }
+    .now-bar > div { border-right: none; padding-right: 0; border-bottom: 2px dashed rgba(255,255,255,0.2); padding-bottom: 10px; }
+    .now-bar > div:last-child { border-bottom: none; padding-bottom: 0; }
+    .now-bar .subject { font-size: 22px; }
+    .timetable { padding: 8px; }
+    .tt-grid { grid-template-columns: 50px repeat(5, 1fr); gap: 3px; min-width: 480px; }
+    .tt-head { padding: 6px 2px; font-size: 11px; }
+    .tt-period .num { font-size: 13px; }
+    .tt-period .time { font-size: 9px; }
+    .tt-cell { padding: 4px; min-height: 44px; }
+    .tt-cell input { font-size: 12px; }
+    .tt-cell .room input { font-size: 10px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-g"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">SCHEDULE · 課表</span>
+      <h1>看一眼就知道<br><em>本節 / 下節</em>是什麼。</h1>
+      <p class="sub">
+        <span class="badge" id="todayBadge">— 星期</span>
+        <span class="badge">自動偵測現在時段</span>
+        <span class="badge">配合上下課鈴聲</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="periodCount">8</span>
+      <span class="sml">節 / 天</span>
+    </div>
+  </section>
+
+  <!-- 當前 / 下節 widget -->
+  <div class="now-bar">
+    <div>
+      <div class="lbl">⬤ 現在這節</div>
+      <div class="subject" id="nowSubject">—</div>
+      <div class="meta" id="nowMeta">課表未設定</div>
+    </div>
+    <div>
+      <div class="lbl">▶ 下一節</div>
+      <div class="subject" id="nextSubject">—</div>
+      <div class="meta" id="nextMeta">—</div>
+    </div>
+  </div>
+
+  <!-- 工具列 -->
+  <div class="btn-bar" style="margin-bottom:14px;">
+    <button class="btn primary" onclick="loadDefaultTime()">📐 套用台灣國小時間</button>
+    <button class="btn y" onclick="window.print()">🖨️ 列印</button>
+    <a class="btn b" href="bell.html">🔔 鈴聲設定</a>
+    <button class="btn r sm" onclick="clearAll()" style="margin-left:auto;">🧹 全部清除</button>
+  </div>
+
+  <!-- 課表本體 -->
+  <div class="timetable">
+    <div class="tt-grid" id="ttGrid"></div>
+  </div>
+
+  <p style="margin-top:14px;color:var(--muted);font-size:13px;text-align:center;">
+    💡 提示：點任一格直接編輯科目名稱，下方小字輸入教室位置。
+  </p>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_schedule_v1';
+const BELL_KEY = 'akai_bell_v1';
+const DAYS = ['一', '二', '三', '四', '五'];
+const DEFAULT_TIME = [
+  { start: '08:40', end: '09:20' },
+  { start: '09:30', end: '10:10' },
+  { start: '10:30', end: '11:10' },
+  { start: '11:20', end: '12:00' },
+  { start: '13:30', end: '14:10' },
+  { start: '14:20', end: '15:00' },
+  { start: '15:00', end: '15:30' },
+  { start: '15:40', end: '16:20' },
+];
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      slots: obj.slots || makeEmptySlots(8),  // { "day-period": { subject, room } }
+      times: obj.times || [],                   // 若空，從 bell.html 讀
+    };
+  } catch { return { slots: makeEmptySlots(8), times: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function makeEmptySlots(n) {
+  const o = {};
+  for (let d = 0; d < 5; d++) for (let p = 0; p < n; p++) o[`${d}-${p}`] = { subject: '', room: '' };
+  return o;
+}
+
+function getTimes() {
+  // 優先用 schedule 自己存的；否則讀 bell.html 設定
+  if (state.times && state.times.length) return state.times;
+  try {
+    const bell = JSON.parse(localStorage.getItem(BELL_KEY) || '{}');
+    const slots = bell.slots || [];
+    if (slots.length > 0) return slots.map(s => ({ start: s.start, end: s.end }));
+  } catch {}
+  return DEFAULT_TIME;
+}
+
+function loadDefaultTime() {
+  state.times = [...DEFAULT_TIME];
+  saveState();
+  render();
+  flash('✓ 已套用台灣國小預設時間');
+}
+
+function clearAll() {
+  if (!confirm('要清空整個課表嗎？')) return;
+  const times = getTimes();
+  state.slots = makeEmptySlots(times.length);
+  saveState();
+  render();
+}
+
+function render() {
+  const times = getTimes();
+  document.getElementById('periodCount').textContent = times.length;
+
+  // Header
+  const today = new Date().getDay();
+  const todayIdx = (today >= 1 && today <= 5) ? today - 1 : -1;
+  document.getElementById('todayBadge').textContent = `📅 星期${DAYS[todayIdx] || '六/日'}`;
+
+  const grid = document.getElementById('ttGrid');
+  grid.innerHTML = '';
+  // 左上角空
+  const corner = document.createElement('div');
+  corner.className = 'tt-head';
+  corner.textContent = '節次';
+  grid.appendChild(corner);
+  // 星期 header
+  DAYS.forEach((d, i) => {
+    const h = document.createElement('div');
+    h.className = 'tt-head' + (i === todayIdx ? ' today' : '');
+    h.textContent = `星期${d}`;
+    grid.appendChild(h);
+  });
+
+  // 每節
+  times.forEach((t, p) => {
+    const p1 = document.createElement('div');
+    p1.className = 'tt-period';
+    p1.innerHTML = `<span class="num">第 ${p+1} 節</span><span class="time">${t.start}<br>${t.end}</span>`;
+    grid.appendChild(p1);
+
+    // 5 天
+    for (let d = 0; d < 5; d++) {
+      const key = `${d}-${p}`;
+      const slot = state.slots[key] || { subject: '', room: '' };
+      const cell = document.createElement('div');
+      cell.className = 'tt-cell';
+      if (slot.subject) cell.dataset.color = pickColor(slot.subject);
+      // 當前節
+      if (isCurrentPeriod(d, p)) cell.classList.add('current');
+      cell.innerHTML = `
+        <input type="text" placeholder="科目" maxlength="6">
+        <span class="room"><input type="text" placeholder="教室" maxlength="10"></span>
+      `;
+      const subjIn = cell.querySelector('input[type="text"]');
+      const roomIn = cell.querySelector('.room input');
+      subjIn.value = slot.subject;
+      roomIn.value = slot.room;
+      subjIn.onchange = () => { state.slots[key].subject = subjIn.value.trim(); saveState(); render(); };
+      roomIn.onchange = () => { state.slots[key].room = roomIn.value.trim(); saveState(); render(); };
+      grid.appendChild(cell);
+    }
+  });
+
+  updateNowBar();
+}
+
+function pickColor(subject) {
+  const colors = ['g', 'b', 'r', 'y', 'p'];
+  let hash = 0;
+  for (let i = 0; i < subject.length; i++) hash = (hash * 31 + subject.charCodeAt(i)) >>> 0;
+  return colors[hash % colors.length];
+}
+
+function timeToMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function isCurrentPeriod(day, period) {
+  const now = new Date();
+  if (now.getDay() === 0 || now.getDay() === 6) return false;
+  if (day !== now.getDay() - 1) return false;
+  const times = getTimes();
+  if (!times[period]) return false;
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  return nowMin >= timeToMin(times[period].start) && nowMin < timeToMin(times[period].end);
+}
+
+function getNowAndNext() {
+  const now = new Date();
+  const wk = now.getDay();
+  if (wk === 0 || wk === 6) return { now: null, next: null };
+  const day = wk - 1;
+  const times = getTimes();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let currentP = -1, nextP = -1;
+  for (let p = 0; p < times.length; p++) {
+    const t = times[p];
+    if (nowMin >= timeToMin(t.start) && nowMin < timeToMin(t.end)) {
+      currentP = p;
+      break;
+    }
+    if (nowMin < timeToMin(t.start) && nextP < 0) {
+      nextP = p;
+    }
+  }
+  // 如果在某節中，下一節 = current + 1
+  if (currentP >= 0 && nextP < 0) nextP = currentP + 1;
+  return {
+    now: currentP >= 0 ? { day, p: currentP, t: times[currentP], slot: state.slots[`${day}-${currentP}`] } : null,
+    next: nextP >= 0 && nextP < times.length ? { day, p: nextP, t: times[nextP], slot: state.slots[`${day}-${nextP}`] } : null,
+  };
+}
+
+function updateNowBar() {
+  const { now, next } = getNowAndNext();
+  const nowEl = document.getElementById('nowSubject');
+  const nowMeta = document.getElementById('nowMeta');
+  if (now) {
+    nowEl.textContent = now.slot?.subject || '（未填）';
+    nowMeta.textContent = `第 ${now.p + 1} 節 · ${now.t.start} – ${now.t.end}${now.slot?.room ? ' · ' + now.slot.room : ''}`;
+  } else {
+    const wk = new Date().getDay();
+    nowEl.textContent = (wk === 0 || wk === 6) ? '🎉 週末' : '休息中';
+    nowMeta.textContent = (wk === 0 || wk === 6) ? '今天放假' : '不在上課時間';
+  }
+  const nextEl = document.getElementById('nextSubject');
+  const nextMeta = document.getElementById('nextMeta');
+  if (next) {
+    nextEl.textContent = next.slot?.subject || '（未填）';
+    nextMeta.textContent = `第 ${next.p + 1} 節 · ${next.t.start} 開始${next.slot?.room ? ' · ' + next.slot.room : ''}`;
+  } else {
+    nextEl.textContent = '今天結束';
+    nextMeta.textContent = '已經沒有下一節了';
+  }
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+// 每分鐘更新「現在這節」
+setInterval(updateNowBar, 60000);
+
+render();
+</script>
+
+</body>
+</html>

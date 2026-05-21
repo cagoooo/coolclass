@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教案備忘 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4ec5d8">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="教案備忘 · 教室小幫手">
+<meta property="og:description" content="每節課的教學重點、所需教材、上完心得，給未來的自己看。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .add-form {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+  }
+  .add-form h2 { margin: 0 0 12px; color: var(--y); font-weight: 900; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 130px 110px 120px 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .form-grid input, .form-grid select, .form-grid textarea {
+    width: 100%; background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+  }
+  .add-form textarea { min-height: 80px; resize: vertical; font-weight: 500; line-height: 1.6; }
+
+  /* 教案卡 */
+  .lesson-card {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .lesson-card .head {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .lesson-card .date {
+    background: var(--ink); color: var(--y);
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 13px;
+  }
+  .lesson-card .subject {
+    background: var(--y); color: var(--ink);
+    padding: 2px 12px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 900;
+    border: 2px solid var(--ink);
+  }
+  .lesson-card .title {
+    font-weight: 900; font-size: 17px;
+    flex: 1; min-width: 200px;
+  }
+  .lesson-card .del {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--mute-2); font-size: 16px;
+    padding: 4px 10px;
+  }
+  .lesson-card .del:hover { color: var(--r); }
+  .lesson-card .section {
+    margin-bottom: 10px;
+  }
+  .lesson-card .section h4 {
+    margin: 0 0 4px;
+    font-size: 12px; font-weight: 900;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .lesson-card .section .body {
+    background: var(--paper-2);
+    border: 2px dashed var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    font-size: 14px; line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .lesson-card .section .body:empty::before {
+    content: '（未填）';
+    color: var(--mute-2);
+    font-style: italic;
+  }
+  .lesson-card .reflect {
+    border-left: 5px solid var(--g);
+    padding-left: 14px;
+    margin-top: 12px;
+  }
+  .lesson-card .reflect .body {
+    background: #e8f5e9;
+    border-color: var(--g);
+  }
+
+  /* 篩選 */
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 14px;
+  }
+  .filter-bar select {
+    padding: 8px 12px;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    font-family: inherit; font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+    background: #fff;
+  }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .add-form, .filter-bar, footer.f, .bg-deco, .akai-tweaks-fab, .lesson-card .del { display: none !important; }
+    .lesson-card { box-shadow: none !important; border-width: 2px; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 700px) {
+    .form-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .lesson-card { padding: 14px 16px; }
+    .lesson-card .head { gap: 8px; }
+    .lesson-card .title { font-size: 15px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">LESSON · 教案備忘</span>
+      <h1>每節課<em>留下軌跡</em>，<br>下次教得更好。</h1>
+      <p class="sub">
+        <span class="badge">課前準備</span>
+        <span class="badge">上完心得</span>
+        <span class="badge">給未來的自己</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalCount">0</span>
+      <span class="sml">節已記</span>
+    </div>
+  </section>
+
+  <!-- 新增 -->
+  <div class="add-form">
+    <h2>📝 新增教案</h2>
+    <form onsubmit="addLesson(event)">
+      <div class="form-grid">
+        <input type="date" id="fDate" required>
+        <input type="text" id="fSubject" placeholder="科目 (國語/數學)" maxlength="10" required>
+        <input type="text" id="fPeriod" placeholder="第 N 節" maxlength="8">
+        <input type="text" id="fTitle" placeholder="課題（例：5-1 分數的加減）" required>
+      </div>
+      <textarea id="fObjectives" placeholder="🎯 教學目標：學生上完這節課要學會什麼...（選填）" style="margin-bottom:8px;"></textarea>
+      <textarea id="fMaterials" placeholder="📦 所需教材 / 簡報 / 學習單...（選填）" style="margin-bottom:8px;"></textarea>
+      <textarea id="fSteps" placeholder="📋 教學流程：引導 → 主活動 → 統整...（選填）" style="margin-bottom:8px;"></textarea>
+      <button class="btn y" style="background:var(--y);color:var(--ink);border-color:var(--y);">＋ 加入教案</button>
+    </form>
+  </div>
+
+  <!-- 篩選 -->
+  <div class="filter-bar">
+    <label style="font-weight:700;">篩選科目：</label>
+    <select id="filterSubject">
+      <option value="">全部科目</option>
+    </select>
+    <label style="font-weight:700;margin-left:10px;">月份：</label>
+    <input type="month" id="filterMonth" style="padding:8px 12px;border:3px solid var(--ink);border-radius:var(--rad-sm);font-family:inherit;font-weight:700;box-shadow:2px 2px 0 var(--ink);background:#fff;">
+    <button class="btn sm" onclick="clearFilter()">清除篩選</button>
+    <button class="btn y sm" onclick="window.print()" style="margin-left:auto;">🖨️ 列印</button>
+  </div>
+
+  <!-- 教案列表 -->
+  <div id="lessonList"></div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_lesson_v1';
+let state = loadState();
+let filterSubject = '';
+let filterMonth = '';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { lessons: obj.lessons || [] };
+  } catch { return { lessons: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  const now = new Date();
+  document.getElementById('fDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('filterSubject').onchange = (e) => { filterSubject = e.target.value; render(); };
+  document.getElementById('filterMonth').onchange = (e) => { filterMonth = e.target.value; render(); };
+  render();
+}
+
+function clearFilter() {
+  filterSubject = ''; filterMonth = '';
+  document.getElementById('filterSubject').value = '';
+  document.getElementById('filterMonth').value = '';
+  render();
+}
+
+function addLesson(ev) {
+  ev.preventDefault();
+  const l = {
+    id: 'l_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    date: document.getElementById('fDate').value,
+    subject: document.getElementById('fSubject').value.trim(),
+    period: document.getElementById('fPeriod').value.trim(),
+    title: document.getElementById('fTitle').value.trim(),
+    objectives: document.getElementById('fObjectives').value.trim(),
+    materials: document.getElementById('fMaterials').value.trim(),
+    steps: document.getElementById('fSteps').value.trim(),
+    reflect: '',
+    ts: Date.now(),
+  };
+  if (!l.title || !l.subject) return;
+  state.lessons.push(l);
+  saveState();
+  // 清空表單
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fObjectives').value = '';
+  document.getElementById('fMaterials').value = '';
+  document.getElementById('fSteps').value = '';
+  flash(`✓ 已加入：${l.subject} · ${l.title}`);
+  render();
+}
+
+function delLesson(id) {
+  if (!confirm('刪除這份教案？')) return;
+  state.lessons = state.lessons.filter(l => l.id !== id);
+  saveState(); render();
+}
+
+function updateField(id, field, value) {
+  const l = state.lessons.find(x => x.id === id);
+  if (!l) return;
+  l[field] = value;
+  saveState();
+}
+
+function render() {
+  document.getElementById('totalCount').textContent = state.lessons.length;
+  // 補科目選項
+  const subjectsSet = new Set(state.lessons.map(l => l.subject));
+  const subSel = document.getElementById('filterSubject');
+  const cur = subSel.value;
+  subSel.innerHTML = '<option value="">全部科目</option>' + [...subjectsSet].map(s => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join('');
+  subSel.value = cur;
+
+  // 篩選
+  let list = [...state.lessons].sort((a,b) => b.ts - a.ts);
+  if (filterSubject) list = list.filter(l => l.subject === filterSubject);
+  if (filterMonth) list = list.filter(l => l.date.startsWith(filterMonth));
+
+  const wrap = document.getElementById('lessonList');
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty">尚無符合條件的教案。從上方表單加一份吧 📚</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  list.forEach(l => {
+    const card = document.createElement('div');
+    card.className = 'lesson-card';
+    card.innerHTML = `
+      <div class="head">
+        <span class="date">${l.date}</span>
+        <span class="subject">${escapeHtml(l.subject)}</span>
+        ${l.period ? `<span style="color:var(--muted);font-family:Fraunces,serif;font-style:italic;">${escapeHtml(l.period)}</span>` : ''}
+        <span class="title">${escapeHtml(l.title)}</span>
+        <button class="del" onclick="delLesson('${l.id}')">✕</button>
+      </div>
+      ${l.objectives ? `<div class="section"><h4>🎯 教學目標</h4><div class="body">${escapeHtml(l.objectives)}</div></div>` : ''}
+      ${l.materials ? `<div class="section"><h4>📦 所需教材</h4><div class="body">${escapeHtml(l.materials)}</div></div>` : ''}
+      ${l.steps ? `<div class="section"><h4>📋 教學流程</h4><div class="body">${escapeHtml(l.steps)}</div></div>` : ''}
+      <div class="reflect">
+        <h4 style="margin:0 0 4px;font-size:12px;font-weight:900;color:var(--g);letter-spacing:1px;">✏️ 上完心得（可隨時補寫）</h4>
+        <textarea data-id="${l.id}" data-field="reflect" class="reflect-input" style="width:100%;background:#e8f5e9;border:2px solid var(--g);border-radius:var(--rad-sm);padding:10px 14px;font-family:inherit;font-size:14px;line-height:1.7;min-height:60px;resize:vertical;" placeholder="哪部分學生反應好？哪部分要調整？下次怎麼教更好？...">${escapeHtml(l.reflect || '')}</textarea>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+  // 綁定 reflect 自動存
+  wrap.querySelectorAll('.reflect-input').forEach(ta => {
+    let t;
+    ta.oninput = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        updateField(ta.dataset.id, ta.dataset.field, ta.value);
+        flash('✓ 已存');
+      }, 500);
+    };
+  });
+}
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>午餐點餐 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="午餐點餐 · 教室小幫手">
+<meta property="og:description" content="每日勾選誰要訂便當/自備/過敏，月底結算自動匯出 CSV。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .day-toolbar {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 14px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .day-toolbar label { font-size: 12px; font-weight: 700; color: var(--y); letter-spacing: 1px; }
+  .day-toolbar input[type="date"] {
+    background: #fff; color: var(--ink);
+    border: 2px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 6px 10px;
+    font-family: inherit; font-weight: 700;
+  }
+  .day-toolbar input[type="number"] {
+    background: #fff; color: var(--ink);
+    border: 2px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 6px 10px;
+    font-family: inherit; font-weight: 700;
+    width: 80px;
+  }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-bottom: 18px;
+  }
+  .stat-box {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 14px;
+    text-align: center;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .stat-box.order  { background: #fff8e1; }
+  .stat-box.self   { background: #e8f5e9; }
+  .stat-box.allergy { background: #fce4ec; }
+  .stat-box.none   { background: #ffebee; }
+  .stat-box .cnt {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 32px; line-height: 1;
+  }
+  .stat-box .lbl { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: 1px; margin-top: 4px; }
+
+  /* 學生 grid */
+  .stu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+  }
+  .stu-row {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 6px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .stu-row .top { display: flex; align-items: center; gap: 6px; }
+  .stu-row .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+    font-size: 11px;
+  }
+  .stu-row .name {
+    font-weight: 900; font-size: 14px;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .stu-row .options {
+    display: flex; gap: 3px;
+  }
+  .stu-row .options button {
+    flex: 1;
+    border: 2px solid var(--ink);
+    background: #fff;
+    cursor: pointer;
+    padding: 6px 4px;
+    font-family: inherit; font-weight: 700;
+    font-size: 11px;
+    border-radius: var(--rad-sm);
+    color: var(--ink);
+  }
+  .stu-row .options button.on[data-v="order"]   { background: var(--y); color: var(--ink); border-color: var(--ink); box-shadow: 2px 2px 0 var(--ink); }
+  .stu-row .options button.on[data-v="self"]    { background: var(--g); color: #fff; }
+  .stu-row .options button.on[data-v="allergy"] { background: var(--pink); color: var(--ink); }
+  .stu-row .options button.on[data-v="none"]    { background: var(--r); color: #fff; }
+  .stu-row.has-status[data-status="order"]   { background: linear-gradient(180deg, #fff 60%, #fff8e1 100%); }
+  .stu-row.has-status[data-status="self"]    { background: linear-gradient(180deg, #fff 60%, #e8f5e9 100%); }
+  .stu-row.has-status[data-status="allergy"] { background: linear-gradient(180deg, #fff 60%, #fce4ec 100%); }
+  .stu-row.has-status[data-status="none"]    { background: linear-gradient(180deg, #fff 60%, #ffebee 100%); }
+
+  /* 月結 */
+  .month-summary {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .month-summary h3 { margin: 0 0 12px; font-weight: 900; }
+  .month-summary table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px;
+  }
+  .month-summary th, .month-summary td {
+    padding: 6px 8px;
+    border-bottom: 1px dashed var(--ink);
+    text-align: center;
+  }
+  .month-summary th {
+    background: var(--paper-2);
+    font-weight: 900; font-size: 12px;
+  }
+  .month-summary td.name { text-align: left; font-weight: 700; }
+  .month-summary tr:last-child td { border-bottom: none; }
+  .month-summary tr.totals { background: var(--y); font-weight: 900; }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .day-toolbar, .stu-grid, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar { display: none !important; }
+    .month-summary { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 600px) {
+    .day-toolbar { padding: 10px 14px; }
+    .day-toolbar input[type="number"] { width: 60px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-box { padding: 10px; box-shadow: 2px 2px 0 var(--ink); }
+    .stat-box .cnt { font-size: 24px; }
+    .stu-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stu-row { padding: 8px; box-shadow: 2px 2px 0 var(--ink); }
+    .stu-row .name { font-size: 12px; }
+    .stu-row .options button { font-size: 10px; padding: 5px 2px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-y"></span>
+  <span class="blob blob-pink"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">LUNCH · 午餐點餐</span>
+      <h1>每天勾一勾，<br><em>月底結算</em>不用查記帳本。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge">訂便當 / 自備 / 過敏</span>
+        <span class="badge">月結 CSV 匯出</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="todayOrders">0</span>
+      <span class="sml">今日訂餐</span>
+    </div>
+  </section>
+
+  <!-- 日期 + 單價 -->
+  <div class="day-toolbar">
+    <label>日期：</label>
+    <input type="date" id="dayPick">
+    <label>單價：</label>
+    <input type="number" id="unitPrice" min="0" value="55" step="5">
+    <button class="btn y" onclick="loadDay()">📅 載入</button>
+    <button class="btn primary" onclick="quickFill('order')">全班 ✓ 訂餐</button>
+    <button class="btn r sm" onclick="clearDay()">清空今日</button>
+    <span style="margin-left:auto;"></span>
+    <label>月份：</label>
+    <input type="month" id="monthPick">
+    <button class="btn y" onclick="exportMonthCSV()">📊 匯出本月 CSV</button>
+  </div>
+
+  <!-- 今日統計 -->
+  <div class="stats-row">
+    <div class="stat-box order">
+      <div class="cnt" id="cntOrder">0</div>
+      <div class="lbl">🍱 訂便當</div>
+    </div>
+    <div class="stat-box self">
+      <div class="cnt" id="cntSelf">0</div>
+      <div class="lbl">🥗 自備</div>
+    </div>
+    <div class="stat-box allergy">
+      <div class="cnt" id="cntAllergy">0</div>
+      <div class="lbl">⚠️ 過敏 / 特殊</div>
+    </div>
+    <div class="stat-box none">
+      <div class="cnt" id="cntNone">0</div>
+      <div class="lbl">❌ 不在校 / 缺席</div>
+    </div>
+  </div>
+
+  <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;" id="todayTotal">
+    今日總金額：—
+  </p>
+
+  <!-- 學生 grid -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📋</div>
+      <h2>今日點餐勾選</h2>
+      <span class="tail" id="dayLabel">—</span>
+    </div>
+    <div class="stu-grid" id="stuGrid"></div>
+  </section>
+
+  <!-- 月結 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📊</div>
+      <h2>本月結算</h2>
+      <span class="tail" id="monthLabel">—</span>
+    </div>
+    <div class="month-summary">
+      <table id="monthTable">
+        <thead>
+          <tr>
+            <th>座號</th><th>姓名</th>
+            <th>🍱 訂餐</th><th>🥗 自備</th><th>⚠️ 過敏</th><th>❌ 缺</th>
+            <th>$ 訂餐總額</th>
+          </tr>
+        </thead>
+        <tbody id="monthTbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_lunch_v1';
+let state = loadState();
+let dayKey = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      records: obj.records || {},  // { YYYY-MM-DD: { num: 'order'|'self'|'allergy'|'none' } }
+      unitPrice: obj.unitPrice || 55,
+    };
+  } catch { return { records: {}, unitPrice: 55 }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  const now = new Date();
+  document.getElementById('dayPick').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('monthPick').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  document.getElementById('unitPrice').value = state.unitPrice;
+  loadDay();
+}
+
+function loadDay() {
+  dayKey = document.getElementById('dayPick').value;
+  state.unitPrice = parseInt(document.getElementById('unitPrice').value) || 55;
+  saveState();
+  document.getElementById('dayLabel').textContent = formatDate(dayKey);
+  render();
+}
+
+function setStatus(num, status) {
+  if (!dayKey) return;
+  if (!state.records[dayKey]) state.records[dayKey] = {};
+  // 點同一個就取消
+  if (state.records[dayKey][num] === status) {
+    delete state.records[dayKey][num];
+  } else {
+    state.records[dayKey][num] = status;
+  }
+  saveState();
+  render();
+}
+
+function quickFill(status) {
+  if (!dayKey) return;
+  if (!confirm(`要把全班都設成「${labelOf(status)}」嗎？（已有設定的會被覆蓋）`)) return;
+  const r = AkaiRoster.load();
+  if (!state.records[dayKey]) state.records[dayKey] = {};
+  for (let i = 1; i <= (r.count || 30); i++) state.records[dayKey][i] = status;
+  saveState();
+  render();
+}
+
+function clearDay() {
+  if (!dayKey) return;
+  if (!confirm('要清空今日所有點餐紀錄嗎？')) return;
+  delete state.records[dayKey];
+  saveState();
+  render();
+}
+
+function labelOf(s) {
+  return ({ order: '🍱 訂餐', self: '🥗 自備', allergy: '⚠️ 過敏', none: '❌ 缺' })[s] || '';
+}
+
+function render() {
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  document.getElementById('classBadge').textContent = r.className ? `🏫 ${r.className} · ${count} 人` : `👥 ${count} 人`;
+
+  const today = state.records[dayKey] || {};
+  const counts = { order: 0, self: 0, allergy: 0, none: 0 };
+  for (let i = 1; i <= count; i++) {
+    const s = today[i];
+    if (counts[s] !== undefined) counts[s]++;
+  }
+  document.getElementById('cntOrder').textContent = counts.order;
+  document.getElementById('cntSelf').textContent = counts.self;
+  document.getElementById('cntAllergy').textContent = counts.allergy;
+  document.getElementById('cntNone').textContent = counts.none;
+  document.getElementById('todayOrders').textContent = counts.order;
+  document.getElementById('todayTotal').innerHTML = `今日訂餐總金額：<b style="font-family:Fraunces,serif;font-style:italic;font-size:18px;color:var(--ink);">$${(counts.order * state.unitPrice).toLocaleString()}</b>（${counts.order} 份 × $${state.unitPrice}）`;
+
+  // Grid
+  const grid = document.getElementById('stuGrid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const name = AkaiRoster.getName(i) || '—';
+    const cur = today[i] || '';
+    const row = document.createElement('div');
+    row.className = 'stu-row' + (cur ? ' has-status' : '');
+    if (cur) row.dataset.status = cur;
+    row.innerHTML = `
+      <div class="top">
+        <span class="num">${i}</span>
+        <span class="name">${escapeHtml(name)}</span>
+      </div>
+      <div class="options">
+        <button data-v="order"   class="${cur === 'order' ? 'on' : ''}" title="訂便當">🍱</button>
+        <button data-v="self"    class="${cur === 'self' ? 'on' : ''}" title="自備">🥗</button>
+        <button data-v="allergy" class="${cur === 'allergy' ? 'on' : ''}" title="過敏">⚠️</button>
+        <button data-v="none"    class="${cur === 'none' ? 'on' : ''}" title="不在校">❌</button>
+      </div>
+    `;
+    row.querySelectorAll('.options button').forEach(b => {
+      b.onclick = () => setStatus(i, b.dataset.v);
+    });
+    grid.appendChild(row);
+  }
+
+  renderMonth();
+}
+
+function renderMonth() {
+  const month = document.getElementById('monthPick').value;
+  document.getElementById('monthLabel').textContent = month || '—';
+  if (!month) return;
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  const tbody = document.getElementById('monthTbody');
+  tbody.innerHTML = '';
+  let tOrder = 0, tSelf = 0, tAllergy = 0, tNone = 0, tAmount = 0;
+  for (let i = 1; i <= count; i++) {
+    const cnt = { order: 0, self: 0, allergy: 0, none: 0 };
+    Object.entries(state.records).forEach(([k, day]) => {
+      if (!k.startsWith(month)) return;
+      const s = day[i];
+      if (cnt[s] !== undefined) cnt[s]++;
+    });
+    const amount = cnt.order * state.unitPrice;
+    tOrder += cnt.order; tSelf += cnt.self; tAllergy += cnt.allergy; tNone += cnt.none;
+    tAmount += amount;
+    const name = AkaiRoster.getName(i) || '—';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i}</td><td class="name">${escapeHtml(name)}</td><td>${cnt.order}</td><td>${cnt.self}</td><td>${cnt.allergy}</td><td>${cnt.none}</td><td><b>$${amount.toLocaleString()}</b></td>`;
+    tbody.appendChild(tr);
+  }
+  // 總計
+  const tr = document.createElement('tr');
+  tr.className = 'totals';
+  tr.innerHTML = `<td colspan="2">本月總計</td><td>${tOrder}</td><td>${tSelf}</td><td>${tAllergy}</td><td>${tNone}</td><td>$${tAmount.toLocaleString()}</td>`;
+  tbody.appendChild(tr);
+}
+
+function exportMonthCSV() {
+  const month = document.getElementById('monthPick').value;
+  if (!month) return alert('請先選月份');
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  const rows = [['座號', '姓名', '訂便當', '自備', '過敏', '缺席', '訂餐總額']];
+  let tOrder = 0, tAmount = 0;
+  for (let i = 1; i <= count; i++) {
+    const cnt = { order: 0, self: 0, allergy: 0, none: 0 };
+    Object.entries(state.records).forEach(([k, day]) => {
+      if (!k.startsWith(month)) return;
+      const s = day[i];
+      if (cnt[s] !== undefined) cnt[s]++;
+    });
+    const amount = cnt.order * state.unitPrice;
+    rows.push([i, AkaiRoster.getName(i) || '', cnt.order, cnt.self, cnt.allergy, cnt.none, amount]);
+    tOrder += cnt.order;
+    tAmount += amount;
+  }
+  rows.push([]);
+  rows.push(['月份', month]);
+  rows.push(['單價', state.unitPrice]);
+  rows.push(['總訂餐份數', tOrder]);
+  rows.push(['總金額', tAmount]);
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `午餐統計_${month}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  flash('✓ CSV 已下載');
+}
+
+function formatDate(k) {
+  if (!k) return '—';
+  const d = new Date(k + 'T00:00');
+  return `${d.getMonth()+1}/${d.getDate()} (星期${'日一二三四五六'[d.getDay()]})`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+document.getElementById('monthPick').onchange = renderMonth;
+document.getElementById('unitPrice').onchange = (e) => {
+  state.unitPrice = parseInt(e.target.value) || 55;
+  saveState();
+  render();
+};
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') render(); });
+init();
+</script>
+
+</body>
+</html>

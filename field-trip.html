@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>戶外教學助手 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="戶外教學助手 · 教室小幫手">
+<meta property="og:description" content="集合點名 + 倒數 + 緊急聯絡（離線可用）。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 大狀態板 */
+  .status-panel {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad-lg);
+    padding: 28px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 22px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .status-panel.warn { background: var(--orange); }
+  .status-panel.danger { background: var(--r); animation: pulse 1s infinite; }
+  @keyframes pulse {
+    0%,100% { filter: brightness(1); }
+    50%     { filter: brightness(1.2); }
+  }
+  .status-panel .big-cnt {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+    font-size: clamp(60px, 14vw, 120px);
+    line-height: 1;
+    color: var(--y);
+    text-shadow: 4px 4px 0 var(--r);
+  }
+  .status-panel .lbl {
+    font-size: clamp(14px, 3vw, 18px);
+    color: var(--paper);
+    margin-top: 8px;
+    font-weight: 700;
+  }
+  .status-panel .countdown {
+    margin-top: 14px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: clamp(20px, 4vw, 28px);
+    color: var(--y);
+    font-weight: 900;
+  }
+
+  /* 點名 grid */
+  .checkin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 8px;
+  }
+  .stu-btn {
+    aspect-ratio: 1;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s, background .2s;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 6px;
+    user-select: none;
+  }
+  .stu-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+  .stu-btn .num {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 22px;
+    line-height: 1;
+  }
+  .stu-btn .name {
+    font-size: 11px; font-weight: 700;
+    margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; max-width: 100%;
+  }
+  .stu-btn.present {
+    background: var(--g);
+    color: #fff;
+    border-color: var(--g);
+  }
+  .stu-btn.present::before {
+    content: '✓';
+    position: absolute;
+    margin-top: -38px;
+    background: #fff;
+    color: var(--g);
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .field-row label { font-weight: 900; font-size: 14px; }
+  .field-row input, .field-row textarea {
+    width: 100%;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    background: #fff;
+  }
+
+  @media (max-width: 600px) {
+    .status-panel { padding: 18px; }
+    .checkin-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .stu-btn { box-shadow: 2px 2px 0 var(--ink); }
+    .stu-btn .num { font-size: 18px; }
+    .field-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-orange"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">FIELD-TRIP · 戶外教學助手</span>
+      <h1>集合點名 + <em>倒數</em>，<br>戶外不慌張。</h1>
+      <p class="sub">
+        <span class="badge">離線可用</span>
+        <span class="badge">大字觸控</span>
+        <span class="badge">緊急聯絡電話</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="missingCount">—</span>
+      <span class="sml">人尚未到</span>
+    </div>
+  </section>
+
+  <!-- 集合狀態大板 -->
+  <div class="status-panel" id="statusPanel">
+    <div class="big-cnt" id="presentCnt">0</div>
+    <div class="lbl"><span id="totalLbl">/ —</span> 人已集合</div>
+    <div class="countdown" id="countdown" style="display:none;">⏰ 距集合還剩 <span id="cdValue">--:--</span></div>
+  </div>
+
+  <!-- 計時控制 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">⏰</div>
+      <h2>集合倒數</h2>
+    </div>
+    <div class="field-row">
+      <label>集合時間</label>
+      <input type="time" id="targetTime">
+    </div>
+    <div class="btn-bar">
+      <button class="btn primary" onclick="startCountdown()">⏰ 開始倒數</button>
+      <button class="btn r" onclick="stopCountdown()">⏹ 停止</button>
+      <button class="btn y sm" onclick="setQuick(5)">+5 分</button>
+      <button class="btn y sm" onclick="setQuick(10)">+10 分</button>
+      <button class="btn y sm" onclick="setQuick(15)">+15 分</button>
+      <button class="btn y sm" onclick="setQuick(30)">+30 分</button>
+    </div>
+  </section>
+
+  <!-- 點名 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">👥</div>
+      <h2>點名（點一下打勾）</h2>
+      <span class="tail" id="checkinTail">— / —</span>
+    </div>
+    <div class="checkin-grid" id="checkinGrid"></div>
+    <div class="btn-bar" style="margin-top:14px;border-top:2px dashed var(--ink);padding-top:14px;">
+      <button class="btn g" onclick="checkAll()">✅ 全部到齊</button>
+      <button class="btn" onclick="clearAll()">🧹 全部取消</button>
+      <button class="btn y" onclick="rollCall()">🗣️ 念名點名</button>
+      <a class="btn b" href="roster.html" style="margin-left:auto;">👥 編輯名單</a>
+    </div>
+  </section>
+
+  <!-- 緊急資訊 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📞</div>
+      <h2>緊急聯絡</h2>
+    </div>
+    <div class="field-row">
+      <label>導護老師</label>
+      <input type="tel" id="phoneHead" placeholder="輸入電話可一鍵撥打">
+    </div>
+    <div class="field-row">
+      <label>校內聯絡</label>
+      <input type="tel" id="phoneSchool" placeholder="例：學務處">
+    </div>
+    <div class="field-row">
+      <label>遊覽車司機</label>
+      <input type="tel" id="phoneDriver" placeholder="戶外教學專用">
+    </div>
+    <div class="field-row">
+      <label>備註</label>
+      <textarea id="notes" rows="3" placeholder="例：今天參觀地點、過敏學生提醒、午餐安排..."></textarea>
+    </div>
+    <div class="btn-bar" id="phoneActions" style="margin-top:8px;"></div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_fieldtrip_v1';
+let state = loadState();
+let countdownTimer = null;
+let saveT;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      present: obj.present || {},  // { num: true }
+      targetTime: obj.targetTime || '',
+      countdownActive: !!obj.countdownActive,
+      phoneHead: obj.phoneHead || '',
+      phoneSchool: obj.phoneSchool || '',
+      phoneDriver: obj.phoneDriver || '',
+      notes: obj.notes || '',
+    };
+  } catch { return {}; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function autosave() { clearTimeout(saveT); saveT = setTimeout(saveState, 400); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  document.getElementById('targetTime').value = state.targetTime || '';
+  document.getElementById('phoneHead').value = state.phoneHead;
+  document.getElementById('phoneSchool').value = state.phoneSchool;
+  document.getElementById('phoneDriver').value = state.phoneDriver;
+  document.getElementById('notes').value = state.notes;
+
+  ['phoneHead', 'phoneSchool', 'phoneDriver', 'notes'].forEach(id => {
+    document.getElementById(id).oninput = (e) => { state[id] = e.target.value; autosave(); renderPhoneActions(); };
+  });
+  document.getElementById('targetTime').onchange = (e) => { state.targetTime = e.target.value; saveState(); };
+
+  if (state.countdownActive) startCountdown();
+  render();
+}
+
+function render() {
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  const grid = document.getElementById('checkinGrid');
+  grid.innerHTML = '';
+  let presentN = 0;
+  for (let i = 1; i <= count; i++) {
+    const isPresent = !!state.present[i];
+    if (isPresent) presentN++;
+    const name = AkaiRoster.getName(i) || `${i} 號`;
+    const btn = document.createElement('button');
+    btn.className = 'stu-btn' + (isPresent ? ' present' : '');
+    btn.innerHTML = `<span class="num">${i}</span><span class="name">${escapeHtml(name)}</span>`;
+    btn.onclick = () => toggle(i);
+    grid.appendChild(btn);
+  }
+  document.getElementById('presentCnt').textContent = presentN;
+  document.getElementById('totalLbl').textContent = `/ ${count}`;
+  document.getElementById('missingCount').textContent = count - presentN;
+  document.getElementById('checkinTail').textContent = `${presentN} / ${count}`;
+  // 狀態板顏色
+  const panel = document.getElementById('statusPanel');
+  panel.classList.remove('warn', 'danger');
+  if (presentN < count && presentN > 0) panel.classList.add('warn');
+  if (presentN === 0 && count > 0) panel.classList.add('warn');
+
+  renderPhoneActions();
+}
+
+function renderPhoneActions() {
+  const wrap = document.getElementById('phoneActions');
+  const phones = [
+    { label: '☎️ 撥導護', n: state.phoneHead },
+    { label: '☎️ 撥校內', n: state.phoneSchool },
+    { label: '☎️ 撥司機', n: state.phoneDriver },
+  ].filter(p => p.n);
+  wrap.innerHTML = phones.map(p => `<a class="btn r" href="tel:${p.n}">${p.label}</a>`).join('');
+}
+
+function toggle(num) {
+  if (state.present[num]) delete state.present[num];
+  else state.present[num] = true;
+  saveState();
+  if (navigator.vibrate) navigator.vibrate(15);
+  render();
+}
+
+function checkAll() {
+  if (!confirm('要把全部學生標記為「已到」嗎？')) return;
+  const r = AkaiRoster.load();
+  for (let i = 1; i <= (r.count || 30); i++) state.present[i] = true;
+  saveState(); render();
+}
+function clearAll() {
+  if (!confirm('要把所有點名狀態取消嗎？')) return;
+  state.present = {};
+  saveState(); render();
+}
+
+function rollCall() {
+  if (!('speechSynthesis' in window)) { alert('此瀏覽器不支援語音'); return; }
+  const r = AkaiRoster.load();
+  const missing = [];
+  for (let i = 1; i <= (r.count || 30); i++) {
+    if (!state.present[i]) missing.push({ num: i, name: AkaiRoster.getName(i) });
+  }
+  if (missing.length === 0) { alert('全部已到 🎉'); return; }
+  // 念出每個未到學生
+  speechSynthesis.cancel();
+  missing.forEach(m => {
+    const u = new SpeechSynthesisUtterance(m.name ? `${m.num} 號，${m.name}` : `${m.num} 號`);
+    u.lang = 'zh-TW';
+    u.rate = 0.85;
+    speechSynthesis.speak(u);
+  });
+}
+
+// 倒數
+function startCountdown() {
+  const t = state.targetTime || document.getElementById('targetTime').value;
+  if (!t) { alert('請先設定集合時間'); return; }
+  state.targetTime = t;
+  state.countdownActive = true;
+  saveState();
+  document.getElementById('countdown').style.display = '';
+  tickCountdown();
+  countdownTimer = setInterval(tickCountdown, 1000);
+}
+function stopCountdown() {
+  state.countdownActive = false;
+  saveState();
+  if (countdownTimer) clearInterval(countdownTimer);
+  document.getElementById('countdown').style.display = 'none';
+  document.getElementById('statusPanel').classList.remove('danger');
+}
+function tickCountdown() {
+  const t = state.targetTime;
+  if (!t) return;
+  const [h, m] = t.split(':').map(Number);
+  const target = new Date();
+  target.setHours(h, m, 0, 0);
+  if (target < new Date()) target.setDate(target.getDate() + 1);
+  const diff = Math.max(0, target.getTime() - Date.now());
+  const mins = Math.floor(diff / 60000);
+  const secs = Math.floor((diff % 60000) / 1000);
+  document.getElementById('cdValue').textContent = `${pad(mins)}:${pad(secs)}`;
+  // 最後 60 秒 panel 變紅
+  if (diff < 60000 && diff > 0) {
+    document.getElementById('statusPanel').classList.add('danger');
+  } else {
+    document.getElementById('statusPanel').classList.remove('danger');
+  }
+  if (diff <= 0) {
+    document.getElementById('cdValue').textContent = '時間到！';
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 200]);
+    stopCountdown();
+  }
+}
+
+function setQuick(min) {
+  const d = new Date(Date.now() + min * 60000);
+  state.targetTime = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  document.getElementById('targetTime').value = state.targetTime;
+  saveState();
+  startCountdown();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') render(); });
+init();
+</script>
+
+</body>
+</html>

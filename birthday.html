@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生日榜 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff97c5">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="生日榜 · 教室小幫手">
+<meta property="og:description" content="全班生日一覽 + 本月壽星提醒 + 一鍵推到跑馬燈。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* 本月壽星區 */
+  .this-month {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--y) 100%);
+    border: 4px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .this-month::before {
+    content: '🎂';
+    position: absolute;
+    font-size: 200px;
+    top: -40px; right: -30px;
+    opacity: .15;
+  }
+  .this-month .lbl {
+    background: var(--ink); color: var(--y);
+    padding: 5px 14px;
+    border-radius: 999px;
+    font-size: 12px; font-weight: 900;
+    letter-spacing: 3px;
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+  .this-month h2 {
+    margin: 0;
+    font-size: clamp(24px, 4vw, 32px);
+    font-weight: 900;
+    color: var(--ink);
+  }
+  .this-month .stars {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .star-card {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 14px 16px;
+    text-align: center;
+    box-shadow: 4px 4px 0 var(--ink);
+    position: relative;
+  }
+  .star-card.today {
+    background: linear-gradient(135deg, var(--y), var(--orange));
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 4px 4px 0 var(--ink); }
+    50% { box-shadow: 6px 6px 0 var(--r); transform: scale(1.02); }
+  }
+  .star-card .num {
+    background: var(--ink); color: var(--y);
+    padding: 1px 10px; border-radius: 999px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 11px;
+  }
+  .star-card .name {
+    margin: 8px 0 4px;
+    font-size: 20px; font-weight: 900;
+    font-family: 'Caveat', cursive;
+    color: var(--p);
+  }
+  .star-card.today .name { color: var(--ink); }
+  .star-card .date {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 14px; color: var(--muted);
+    font-weight: 700;
+  }
+  .star-card .countdown {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 700;
+  }
+  .star-card.today .countdown {
+    color: var(--r);
+    font-weight: 900;
+    font-size: 13px;
+  }
+  .this-month .empty-state {
+    background: rgba(255,255,255,.6);
+    color: var(--ink);
+    padding: 20px;
+    border-radius: var(--rad-sm);
+    text-align: center;
+    border: 2px dashed var(--ink);
+  }
+
+  /* 月份切換 */
+  .month-tabs {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .month-tabs button {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit; font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .month-tabs button.on { background: var(--ink); color: var(--paper); }
+  .month-tabs button.has-birthday::after {
+    content: '🎂';
+    margin-left: 4px;
+  }
+
+  /* 全班輸入 */
+  .roster-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .birthday-cell {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .birthday-cell:focus-within {
+    background: var(--y);
+    transform: translate(-2px,-2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+  .birthday-cell .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .birthday-cell .name {
+    font-weight: 700; font-size: 13px;
+    flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .birthday-cell input[type="date"] {
+    flex: 1;
+    border: none; background: transparent;
+    font-family: inherit; font-weight: 700;
+    font-size: 12px;
+    outline: none;
+    color: var(--ink);
+  }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .btn-bar, footer.f, .bg-deco, .akai-tweaks-fab, .month-tabs { display: none !important; }
+    .this-month { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 600px) {
+    .this-month { padding: 20px 18px; }
+    .this-month::before { font-size: 120px; }
+    .stars { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+    .star-card { padding: 10px 12px; }
+    .star-card .name { font-size: 18px; }
+    .roster-list { grid-template-columns: 1fr 1fr; }
+    .birthday-cell { padding: 6px 10px; }
+    .birthday-cell .name { font-size: 12px; }
+    .birthday-cell input { font-size: 11px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-pink"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">BIRTHDAY · 生日榜</span>
+      <h1>每個孩子的<em>大日子</em>，<br>都不能錯過。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge">本月壽星自動提醒</span>
+        <span class="badge">一鍵推到跑馬燈</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="filledCount">0</span>
+      <span class="sml">已填生日</span>
+    </div>
+  </section>
+
+  <!-- 本月壽星 -->
+  <div class="this-month">
+    <span class="lbl">🎂 本月壽星</span>
+    <h2 id="monthTitle">— 月生日</h2>
+    <div class="stars" id="thisMonthStars"></div>
+  </div>
+
+  <!-- 月份切換 -->
+  <div class="month-tabs" id="monthTabs"></div>
+
+  <!-- 該月顯示 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📅</div>
+      <h2 id="selectedMonthTitle">— 月</h2>
+      <span class="tail" id="monthTail">—</span>
+    </div>
+    <div class="stars" id="monthStars" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(160px,1fr));gap:12px;">
+      <div class="empty" style="grid-column:1/-1;">本月沒有生日的學生</div>
+    </div>
+  </section>
+
+  <!-- 全班輸入 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📝</div>
+      <h2>全班生日輸入</h2>
+      <span class="tail">點任一格輸入生日（年份用學生實際出生年）</span>
+    </div>
+    <div class="roster-list" id="rosterList"></div>
+    <div class="btn-bar" style="margin-top:14px;border-top:2px dashed var(--ink);padding-top:14px;">
+      <button class="btn primary" onclick="pushToMarquee()" id="pushBtn">📢 推到跑馬燈（本月壽星）</button>
+      <button class="btn" onclick="exportJSON()">📤 匯出 JSON</button>
+      <button class="btn" onclick="importJSON()">📥 匯入 JSON</button>
+      <button class="btn r" onclick="resetAll()" style="margin-left:auto;">🔄 全部清除</button>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_birthday_v1';
+const MARQUEE_KEY = 'akai_marquee_v1';
+
+let state = loadState();
+let selectedMonth = (new Date()).getMonth() + 1;
+let saveT;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { dates: obj.dates || {} };  // { num: 'YYYY-MM-DD' }
+  } catch { return { dates: {} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function autosave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { saveState(); flash('✓ 已存檔'); render(); }, 500);
+}
+
+function getBirthdaysInMonth(month) {
+  const list = [];
+  const r = AkaiRoster.load();
+  for (let i = 1; i <= (r.count || 30); i++) {
+    const date = state.dates[String(i)];
+    if (!date) continue;
+    const [y, m, d] = date.split('-').map(Number);
+    if (m === month) {
+      list.push({ num: i, name: AkaiRoster.getName(i) || '—', date, day: d, year: y });
+    }
+  }
+  return list.sort((a, b) => a.day - b.day);
+}
+
+function daysUntil(month, day) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  let target = new Date(now.getFullYear(), month - 1, day);
+  if (target < today) target = new Date(now.getFullYear() + 1, month - 1, day);
+  return Math.round((target - today) / (1000 * 60 * 60 * 24));
+}
+
+function render() {
+  const r = AkaiRoster.load();
+  document.getElementById('classBadge').textContent = r.className ? `🏫 ${r.className} · ${r.count} 人` : `👥 ${r.count || 30} 人`;
+  document.getElementById('filledCount').textContent = Object.keys(state.dates).filter(k => state.dates[k]).length;
+
+  // 本月壽星
+  const now = new Date();
+  const thisMonth = now.getMonth() + 1;
+  document.getElementById('monthTitle').textContent = `${thisMonth} 月生日`;
+  const stars = getBirthdaysInMonth(thisMonth);
+  const starsBox = document.getElementById('thisMonthStars');
+  if (stars.length === 0) {
+    starsBox.innerHTML = '<div class="empty-state">這個月沒有壽星 🎈</div>';
+  } else {
+    starsBox.innerHTML = stars.map(s => {
+      const isToday = s.day === now.getDate();
+      const dUntil = daysUntil(thisMonth, s.day);
+      return `
+        <div class="star-card ${isToday ? 'today' : ''}">
+          <span class="num">${s.num} 號</span>
+          <div class="name">${escapeHtml(s.name)}</div>
+          <div class="date">🎂 ${thisMonth}/${s.day}</div>
+          <div class="countdown">${isToday ? '🎉 就是今天！' : `還有 ${dUntil} 天`}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 月份切換 chips
+  const tabs = document.getElementById('monthTabs');
+  tabs.innerHTML = '';
+  for (let m = 1; m <= 12; m++) {
+    const hasBirthday = getBirthdaysInMonth(m).length > 0;
+    const b = document.createElement('button');
+    b.className = (m === selectedMonth ? 'on ' : '') + (hasBirthday ? 'has-birthday' : '');
+    b.textContent = `${m} 月`;
+    b.onclick = () => { selectedMonth = m; render(); };
+    tabs.appendChild(b);
+  }
+
+  // 該月詳細
+  document.getElementById('selectedMonthTitle').textContent = `${selectedMonth} 月生日`;
+  const monthList = getBirthdaysInMonth(selectedMonth);
+  document.getElementById('monthTail').textContent = `${monthList.length} 位壽星`;
+  const monthStarsBox = document.getElementById('monthStars');
+  if (monthList.length === 0) {
+    monthStarsBox.innerHTML = '<div class="empty" style="grid-column:1/-1;">這個月沒有生日的學生</div>';
+  } else {
+    monthStarsBox.innerHTML = monthList.map(s => `
+      <div class="star-card">
+        <span class="num">${s.num} 號</span>
+        <div class="name">${escapeHtml(s.name)}</div>
+        <div class="date">🎂 ${selectedMonth}/${s.day}</div>
+        ${s.year ? `<div class="countdown">${s.year} 年生</div>` : ''}
+      </div>
+    `).join('');
+  }
+
+  // 全班輸入
+  const rosterList = document.getElementById('rosterList');
+  rosterList.innerHTML = '';
+  for (let i = 1; i <= (r.count || 30); i++) {
+    const name = AkaiRoster.getName(i) || '—';
+    const cell = document.createElement('div');
+    cell.className = 'birthday-cell';
+    cell.innerHTML = `
+      <span class="num">${i}</span>
+      <span class="name">${escapeHtml(name)}</span>
+      <input type="date" value="${state.dates[String(i)] || ''}">
+    `;
+    const inp = cell.querySelector('input');
+    inp.onchange = () => {
+      if (inp.value) state.dates[String(i)] = inp.value;
+      else delete state.dates[String(i)];
+      autosave();
+    };
+    rosterList.appendChild(cell);
+  }
+}
+
+function pushToMarquee() {
+  const thisMonth = (new Date()).getMonth() + 1;
+  const stars = getBirthdaysInMonth(thisMonth);
+  if (stars.length === 0) { alert('本月沒有壽星，無法推到跑馬燈'); return; }
+  if (!confirm(`要把「${thisMonth} 月 ${stars.length} 位壽星」推到跑馬燈嗎？`)) return;
+  try {
+    const m = JSON.parse(localStorage.getItem(MARQUEE_KEY) || '{}');
+    if (!m.messages) m.messages = [];
+    const text = `🎂 ${thisMonth} 月壽星：${stars.map(s => `${s.name}（${thisMonth}/${s.day}）`).join('、')}　祝生日快樂！🎉`;
+    // 移除舊的生日訊息（避免重複）
+    m.messages = m.messages.filter(msg => !msg.text.startsWith('🎂 ') || !msg.text.includes('月壽星：'));
+    m.messages.unshift({ text, on: true });
+    localStorage.setItem(MARQUEE_KEY, JSON.stringify(m));
+    flash('✓ 已加到跑馬燈訊息');
+  } catch (e) {
+    alert('推到跑馬燈失敗：' + e.message);
+  }
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `生日榜備份_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function importJSON() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  inp.onchange = () => {
+    const f = inp.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const obj = JSON.parse(r.result);
+        if (!confirm('要用這個檔案覆蓋目前的生日資料嗎？')) return;
+        state = { dates: obj.dates || {} };
+        saveState(); render();
+        flash('✓ 已匯入');
+      } catch { alert('檔案格式不對'); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+function resetAll() {
+  if (!confirm('要清掉所有生日資料嗎？')) return;
+  state = { dates: {} };
+  saveState();
+  render();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') render(); });
+render();
+</script>
+
+</body>
+</html>

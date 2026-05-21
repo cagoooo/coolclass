@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行為觀察記錄 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="行為觀察記錄 · 教室小幫手">
+<meta property="og:description" content="三色標記正向/中性/需關心，月底自動產行為報告。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .quick-add {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 16px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .quick-add h2 { margin: 0 0 12px; color: var(--y); font-weight: 900; }
+  .qa-grid {
+    display: grid; grid-template-columns: 130px 110px 1fr auto;
+    gap: 10px; align-items: end;
+  }
+  .qa-grid label { font-size: 11px; font-weight: 700; color: var(--y); letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .qa-grid select, .qa-grid input[type="text"] {
+    width: 100%;
+    background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+  }
+  .qa-grid .type-pick {
+    display: flex; gap: 4px;
+  }
+  .qa-grid .type-pick button {
+    flex: 1;
+    background: #fff;
+    border: 3px solid var(--y);
+    color: var(--ink);
+    padding: 8px 6px;
+    border-radius: var(--rad-sm);
+    cursor: pointer;
+    font-family: inherit; font-weight: 900; font-size: 16px;
+  }
+  .qa-grid .type-pick button.on[data-t="pos"]     { background: var(--g); color: #fff; border-color: var(--g); }
+  .qa-grid .type-pick button.on[data-t="neutral"] { background: var(--y); color: var(--ink); }
+  .qa-grid .type-pick button.on[data-t="concern"] { background: var(--r); color: #fff; border-color: var(--r); }
+  .qa-grid .add-btn {
+    background: var(--y); color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 10px 18px;
+    font-weight: 900; cursor: pointer; font-family: inherit;
+    box-shadow: 3px 3px 0 #000;
+  }
+
+  /* 學生統計 */
+  .stu-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+  .stu-stat {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px 14px;
+    box-shadow: 3px 3px 0 var(--ink);
+    position: relative;
+  }
+  .stu-stat .top {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 8px;
+  }
+  .stu-stat .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11px; font-weight: 900;
+  }
+  .stu-stat .name { font-weight: 900; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .stu-stat .bar {
+    display: flex; height: 8px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 6px;
+  }
+  .stu-stat .bar > div {
+    transition: flex .3s;
+  }
+  .stu-stat .bar .pos     { background: var(--g); }
+  .stu-stat .bar .neutral { background: var(--y); }
+  .stu-stat .bar .concern { background: var(--r); }
+  .stu-stat .counts {
+    display: flex; gap: 8px; font-size: 12px;
+  }
+  .stu-stat .counts span { font-weight: 700; }
+  .stu-stat .counts .pos     { color: var(--g); }
+  .stu-stat .counts .concern { color: var(--r); }
+  .stu-stat.needs-attention {
+    background: linear-gradient(180deg, #fff 60%, #ffe0e0 100%);
+    border-color: var(--r);
+    box-shadow: 4px 4px 0 var(--r);
+  }
+  .stu-stat.shining {
+    background: linear-gradient(180deg, #fff 60%, #fff8e1 100%);
+    border-color: var(--y);
+  }
+  .stu-stat.shining::before {
+    content: '⭐';
+    position: absolute;
+    top: -10px; right: -8px;
+    font-size: 22px;
+  }
+  .stu-stat.needs-attention::before {
+    content: '⚠️';
+    position: absolute;
+    top: -10px; right: -8px;
+    font-size: 18px;
+  }
+
+  /* 紀錄列表 */
+  .log-list { display: flex; flex-direction: column; gap: 8px; }
+  .log {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    box-shadow: 2px 2px 0 var(--ink);
+    border-left-width: 6px;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .log[data-t="pos"]     { border-left-color: var(--g); }
+  .log[data-t="neutral"] { border-left-color: var(--y); }
+  .log[data-t="concern"] { border-left-color: var(--r); }
+  .log .icon { font-size: 24px; flex-shrink: 0; }
+  .log .body { flex: 1; }
+  .log .meta {
+    display: flex; gap: 8px; margin-bottom: 4px;
+    flex-wrap: wrap; font-size: 12px;
+  }
+  .log .meta .num {
+    background: var(--ink); color: var(--y);
+    padding: 1px 8px; border-radius: 999px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900;
+  }
+  .log .meta .name { font-weight: 900; }
+  .log .meta .date { color: var(--muted); font-family: 'Fraunces', serif; font-style: italic; }
+  .log .note { color: var(--ink); font-size: 13px; line-height: 1.6; }
+  .log .del {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--mute-2); padding: 0 4px;
+    font-size: 16px;
+  }
+  .log .del:hover { color: var(--r); }
+
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .quick-add, .filter-bar, footer.f, .bg-deco, .akai-tweaks-fab { display: none !important; }
+    .stu-stat, .log { box-shadow: none !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 700px) {
+    .qa-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .qa-grid input[type="text"] { grid-column: 1 / -1; }
+    .qa-grid .add-btn { grid-column: 1 / -1; }
+    .stu-stats { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stu-stat { padding: 10px 12px; box-shadow: 2px 2px 0 var(--ink); }
+    .stu-stat .name { font-size: 13px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-g"></span>
+  <span class="blob blob-r"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">BEHAVIOR · 行為觀察</span>
+      <h1><em>三色標記</em>，<br>找出該被看見的孩子。</h1>
+      <p class="sub">
+        <span class="badge">🟢 正向</span>
+        <span class="badge">🟡 中性</span>
+        <span class="badge">🔴 需關心</span>
+        <span class="badge">月底自動產報告</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalCount">0</span>
+      <span class="sml">筆觀察</span>
+    </div>
+  </section>
+
+  <!-- 快速新增 -->
+  <div class="quick-add">
+    <h2>📝 快速記錄</h2>
+    <form id="addForm" onsubmit="addLog(event)">
+      <div class="qa-grid">
+        <div>
+          <label>學生</label>
+          <select id="fStudent" required></select>
+        </div>
+        <div>
+          <label>類型</label>
+          <div class="type-pick" id="typePick">
+            <button type="button" data-t="pos"     class="on">🟢</button>
+            <button type="button" data-t="neutral">🟡</button>
+            <button type="button" data-t="concern">🔴</button>
+          </div>
+        </div>
+        <div>
+          <label>觀察內容</label>
+          <input type="text" id="fNote" placeholder="例：主動幫同學擦黑板 / 上課傳紙條 / 數學突破" required>
+        </div>
+        <button class="add-btn" type="submit">＋ 記下</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- 月份篩選 -->
+  <div class="filter-bar" style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+    <label style="font-weight:700;">本月：</label>
+    <input type="month" id="monthPick" style="padding:8px 12px;border:3px solid var(--ink);border-radius:var(--rad-sm);font-family:inherit;font-weight:700;box-shadow:2px 2px 0 var(--ink);">
+    <button class="btn y sm" onclick="window.print()" style="margin-left:auto;">🖨️ 列印報告</button>
+    <button class="btn sm" onclick="exportCSV()">📊 CSV</button>
+  </div>
+
+  <!-- 學生統計卡 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">👥</div>
+      <h2>全班行為分布</h2>
+      <span class="tail" id="distTail">本月</span>
+    </div>
+    <div class="stu-stats" id="stuStats"></div>
+  </section>
+
+  <!-- 紀錄列表 -->
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📜</div>
+      <h2>本月所有觀察</h2>
+      <span class="tail" id="logTail">—</span>
+    </div>
+    <div class="log-list" id="logList"></div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_behavior_v1';
+let state = loadState();
+let currentType = 'pos';
+let currentMonth = '';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { logs: obj.logs || [] };
+  } catch { return { logs: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  const now = new Date();
+  currentMonth = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  document.getElementById('monthPick').value = currentMonth;
+  document.getElementById('monthPick').onchange = (e) => { currentMonth = e.target.value; render(); };
+  // type pick
+  document.querySelectorAll('#typePick button').forEach(b => {
+    b.onclick = () => {
+      currentType = b.dataset.t;
+      document.querySelectorAll('#typePick button').forEach(x => x.classList.toggle('on', x === b));
+    };
+  });
+  fillSelect();
+  render();
+}
+
+function fillSelect() {
+  const r = AkaiRoster.load();
+  const sel = document.getElementById('fStudent');
+  sel.innerHTML = '';
+  for (let i = 1; i <= (r.count || 30); i++) {
+    const name = AkaiRoster.getName(i);
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = name ? `${i} 號 · ${name}` : `${i} 號`;
+    sel.appendChild(o);
+  }
+}
+
+function addLog(ev) {
+  ev.preventDefault();
+  const log = {
+    id: 'b_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    num: parseInt(document.getElementById('fStudent').value),
+    type: currentType,
+    note: document.getElementById('fNote').value.trim(),
+    date: new Date().toISOString().slice(0,10),
+    ts: Date.now(),
+  };
+  if (!log.note) return;
+  state.logs.push(log);
+  saveState();
+  document.getElementById('fNote').value = '';
+  flash(`✓ ${log.num} 號 ${log.type === 'pos' ? '🟢' : log.type === 'concern' ? '🔴' : '🟡'} 已記`);
+  render();
+}
+
+function delLog(id) {
+  if (!confirm('刪除這筆觀察？')) return;
+  state.logs = state.logs.filter(l => l.id !== id);
+  saveState();
+  render();
+}
+
+function getMonthLogs() {
+  return state.logs.filter(l => l.date.startsWith(currentMonth));
+}
+
+function render() {
+  document.getElementById('totalCount').textContent = state.logs.length;
+  document.getElementById('distTail').textContent = currentMonth;
+
+  const monthLogs = getMonthLogs();
+
+  // 學生統計卡
+  const r = AkaiRoster.load();
+  const count = r.count || 30;
+  const stats = {};
+  for (let i = 1; i <= count; i++) stats[i] = { pos: 0, neutral: 0, concern: 0 };
+  monthLogs.forEach(l => {
+    if (stats[l.num]) stats[l.num][l.type]++;
+  });
+
+  const wrap = document.getElementById('stuStats');
+  wrap.innerHTML = '';
+  for (let i = 1; i <= count; i++) {
+    const s = stats[i];
+    const total = s.pos + s.neutral + s.concern;
+    const name = AkaiRoster.getName(i) || '—';
+    const isShining = s.pos >= 5 && s.concern === 0;
+    const needsAttention = s.concern >= 3;
+    const card = document.createElement('div');
+    card.className = 'stu-stat' + (isShining ? ' shining' : '') + (needsAttention ? ' needs-attention' : '');
+    card.innerHTML = `
+      <div class="top">
+        <span class="num">${i}</span>
+        <span class="name">${escapeHtml(name)}</span>
+      </div>
+      ${total > 0 ? `
+        <div class="bar">
+          <div class="pos" style="flex:${s.pos}"></div>
+          <div class="neutral" style="flex:${s.neutral}"></div>
+          <div class="concern" style="flex:${s.concern}"></div>
+        </div>
+      ` : '<div class="bar" style="opacity:.3;"><div style="flex:1;background:var(--paper-2)"></div></div>'}
+      <div class="counts">
+        <span class="pos">🟢 ${s.pos}</span>
+        <span class="neutral">🟡 ${s.neutral}</span>
+        <span class="concern">🔴 ${s.concern}</span>
+      </div>
+    `;
+    wrap.appendChild(card);
+  }
+
+  // 紀錄列表
+  const sorted = [...monthLogs].sort((a, b) => b.ts - a.ts);
+  document.getElementById('logTail').textContent = `${sorted.length} 筆`;
+  const logWrap = document.getElementById('logList');
+  if (sorted.length === 0) {
+    logWrap.innerHTML = '<div class="empty">本月還沒有任何觀察紀錄</div>';
+    return;
+  }
+  const icons = { pos: '🟢', neutral: '🟡', concern: '🔴' };
+  logWrap.innerHTML = sorted.map(l => {
+    const name = AkaiRoster.getName(l.num) || '—';
+    return `
+      <div class="log" data-t="${l.type}">
+        <span class="icon">${icons[l.type]}</span>
+        <div class="body">
+          <div class="meta">
+            <span class="num">${l.num}</span>
+            <span class="name">${escapeHtml(name)}</span>
+            <span class="date">📅 ${l.date}</span>
+          </div>
+          <div class="note">${escapeHtml(l.note)}</div>
+        </div>
+        <button class="del" onclick="delLog('${l.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function exportCSV() {
+  if (state.logs.length === 0) { alert('沒有紀錄可匯出'); return; }
+  const rows = [['日期', '座號', '姓名', '類型', '觀察內容']];
+  state.logs.forEach(l => {
+    rows.push([
+      l.date, l.num, AkaiRoster.getName(l.num) || '',
+      ({pos:'正向',neutral:'中性',concern:'需關心'})[l.type], l.note,
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `行為觀察_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  flash('✓ CSV 已下載');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => { if (e.key === 'akai_roster_v1') { fillSelect(); render(); } });
+init();
+</script>
+
+</body>
+</html>

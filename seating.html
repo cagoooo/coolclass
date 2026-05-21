@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>座位表 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="座位表 · 教室小幫手">
+<meta property="og:description" content="拖曳排座位、換座位歷史、印 A4 給代課老師。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .seating-toolbar {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 12px 18px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .seating-toolbar label { font-size: 12px; font-weight: 700; color: var(--y); letter-spacing: 1px; }
+  .seating-toolbar input[type="number"], .seating-toolbar select {
+    background: #fff; color: var(--ink);
+    border: 2px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 6px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    width: 70px;
+  }
+  .seating-toolbar .btn { padding: 6px 12px; font-size: 13px; }
+
+  /* 教師講桌 */
+  .teacher-desk {
+    background: var(--ink); color: var(--y);
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 14px 24px;
+    text-align: center;
+    margin: 0 auto 24px;
+    width: fit-content;
+    font-weight: 900; font-size: 16px;
+    letter-spacing: 4px;
+    box-shadow: var(--shadow);
+  }
+
+  /* 座位區 */
+  .classroom {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .seat-grid {
+    display: grid;
+    gap: 12px;
+    justify-content: center;
+    min-width: fit-content;
+  }
+  .seat {
+    width: 100px;
+    height: 80px;
+    background: var(--paper-2);
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 6px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: move;
+    text-align: center;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s;
+    position: relative;
+    user-select: none;
+  }
+  .seat:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); background: var(--y); }
+  .seat.dragging { opacity: .35; transform: scale(.95); }
+  .seat.drop-target { background: var(--g); border-color: var(--g); }
+  .seat.empty {
+    background: transparent;
+    border-style: dashed;
+    box-shadow: none;
+    color: var(--mute-2);
+  }
+  .seat .num {
+    background: var(--ink); color: var(--y);
+    border-radius: 999px;
+    padding: 1px 8px;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11px; font-weight: 900;
+    margin-bottom: 2px;
+  }
+  .seat.empty .num { background: transparent; color: var(--mute-2); }
+  .seat .name {
+    font-weight: 900; font-size: 14px;
+    line-height: 1.2;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .seat.empty .name { font-style: italic; opacity: .5; }
+
+  /* 未排座位學生 */
+  .unassigned {
+    background: var(--paper-2);
+    border: 3px dashed var(--ink);
+    border-radius: var(--rad);
+    padding: 18px;
+    margin-top: 18px;
+  }
+  .unassigned h3 { margin: 0 0 12px; font-size: 16px; }
+  .unassigned-list {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .unassigned-list .stu-chip {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 8px 12px;
+    font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+    cursor: move;
+    user-select: none;
+  }
+  .unassigned-list .stu-chip:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); background: var(--y); }
+
+  /* 歷史紀錄 */
+  .history-list {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .hist-card {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .hist-card .date {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 13px; color: var(--muted);
+  }
+  .hist-card .label { font-weight: 900; margin-top: 4px; font-size: 14px; }
+  .hist-card .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .hist-card .actions {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
+  .hist-card button {
+    flex: 1; padding: 6px; font-size: 12px;
+    border: 2px solid var(--ink); background: #fff;
+    cursor: pointer; font-family: inherit; font-weight: 700;
+    border-radius: var(--rad-sm);
+  }
+  .hist-card button:hover { background: var(--y); }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    body { background: #fff !important; }
+    .home-btn, .seating-toolbar, .unassigned, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar, #historySection { display: none !important; }
+    .classroom { box-shadow: none !important; border-width: 2px; }
+    .teacher-desk { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .seat { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  @media (max-width: 600px) {
+    .seating-toolbar { padding: 10px 14px; gap: 6px; }
+    .seating-toolbar input, .seating-toolbar select { padding: 5px 8px; font-size: 13px; width: 60px; }
+    .classroom { padding: 16px; }
+    .seat-grid { gap: 6px; }
+    .seat { width: 72px; height: 60px; padding: 4px; box-shadow: 2px 2px 0 var(--ink); }
+    .seat .num { font-size: 9px; padding: 0 6px; }
+    .seat .name { font-size: 11px; }
+    .teacher-desk { padding: 8px 18px; font-size: 13px; letter-spacing: 2px; margin-bottom: 14px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">SEATING · 座位表</span>
+      <h1><em>拖一拖</em>就能<br>排好今天的座位。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge">拖曳排座位</span>
+        <span class="badge">換座位歷史</span>
+        <span class="badge">印 A4 給代課老師</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="seatedNum">0</span>
+      <span class="sml">/ <span id="totalNum">—</span> 已就座</span>
+    </div>
+  </section>
+
+  <!-- 工具列 -->
+  <div class="seating-toolbar">
+    <label>排數：</label>
+    <input type="number" id="rows" min="1" max="10" value="5">
+    <label>每排：</label>
+    <input type="number" id="cols" min="1" max="10" value="6">
+    <button class="btn y" onclick="resetGrid()">📐 套用</button>
+    <button class="btn primary" onclick="randomFill()">🎲 隨機排座</button>
+    <button class="btn" onclick="clearAll()">🧹 清空座位</button>
+    <button class="btn g" onclick="saveSnapshot()">💾 存成歷史</button>
+    <a class="btn" style="margin-left:auto;" href="roster.html">👥 編輯名單</a>
+    <button class="btn y" onclick="window.print()">🖨️ 列印</button>
+  </div>
+
+  <!-- 教師講桌 -->
+  <div class="teacher-desk">👩‍🏫 老 師 講 桌</div>
+
+  <!-- 教室 -->
+  <div class="classroom">
+    <div class="seat-grid" id="seatGrid"></div>
+  </div>
+
+  <!-- 未排座位學生 -->
+  <div class="unassigned" id="unassignedBox">
+    <h3>👥 還沒入座的學生</h3>
+    <div class="unassigned-list" id="unassignedList"></div>
+  </div>
+
+  <!-- 歷史 -->
+  <section class="block" id="historySection" style="margin-top:22px;">
+    <div class="block-head">
+      <div class="step">📜</div>
+      <h2>換座位歷史</h2>
+      <span class="tail">保留最近 12 份</span>
+    </div>
+    <div class="history-list" id="historyList">
+      <div class="empty" style="grid-column:1/-1;">尚無歷史紀錄。點「💾 存成歷史」儲存目前座位表</div>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_seating_v1';
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      rows: obj.rows || 5,
+      cols: obj.cols || 6,
+      layout: obj.layout || {},  // { "r-c": num }
+      history: obj.history || [],
+    };
+  } catch { return { rows: 5, cols: 6, layout: {}, history: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function init() {
+  document.getElementById('rows').value = state.rows;
+  document.getElementById('cols').value = state.cols;
+  render();
+}
+
+function resetGrid() {
+  const rows = parseInt(document.getElementById('rows').value) || 5;
+  const cols = parseInt(document.getElementById('cols').value) || 6;
+  state.rows = Math.max(1, Math.min(10, rows));
+  state.cols = Math.max(1, Math.min(10, cols));
+  saveState();
+  render();
+}
+
+function clearAll() {
+  if (!confirm('要清空所有座位嗎？學生會回到未入座區。')) return;
+  state.layout = {};
+  saveState();
+  render();
+}
+
+function randomFill() {
+  if (!confirm('要隨機把所有學生排進座位嗎？會覆蓋目前佈局。')) return;
+  const r = AkaiRoster.load();
+  const nums = [];
+  for (let i = 1; i <= (r.count || 30); i++) nums.push(i);
+  // Fisher-Yates 洗牌
+  for (let i = nums.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [nums[i], nums[j]] = [nums[j], nums[i]];
+  }
+  state.layout = {};
+  let idx = 0;
+  for (let r = 0; r < state.rows; r++) {
+    for (let c = 0; c < state.cols; c++) {
+      if (idx >= nums.length) break;
+      state.layout[`${r}-${c}`] = nums[idx++];
+    }
+  }
+  saveState();
+  render();
+  flash('🎲 已隨機排座位');
+}
+
+function saveSnapshot() {
+  const snap = {
+    id: 's_' + Date.now(),
+    date: new Date().toISOString().slice(0,10),
+    label: prompt('給這份座位表一個名稱（如：5/21 國語小組討論）', `${new Date().toLocaleDateString('zh-TW')} 座位`) || '未命名',
+    rows: state.rows,
+    cols: state.cols,
+    layout: { ...state.layout },
+    ts: Date.now(),
+  };
+  state.history.unshift(snap);
+  if (state.history.length > 12) state.history.length = 12;
+  saveState();
+  render();
+  flash('💾 已存成歷史');
+}
+
+function loadSnapshot(id) {
+  const snap = state.history.find(h => h.id === id);
+  if (!snap) return;
+  if (!confirm(`要載入「${snap.label}」這份座位嗎？目前佈局會被覆蓋。`)) return;
+  state.rows = snap.rows;
+  state.cols = snap.cols;
+  state.layout = { ...snap.layout };
+  saveState();
+  init();
+  flash('✓ 已載入');
+}
+
+function deleteSnapshot(id) {
+  if (!confirm('刪除這份歷史紀錄？')) return;
+  state.history = state.history.filter(h => h.id !== id);
+  saveState();
+  render();
+}
+
+function render() {
+  const r = AkaiRoster.load();
+  document.getElementById('classBadge').textContent = r.className ? `🏫 ${r.className} · ${r.count} 人` : `👥 ${r.count || 30} 人`;
+  document.getElementById('totalNum').textContent = r.count || 30;
+  document.getElementById('seatedNum').textContent = Object.keys(state.layout).length;
+
+  // Grid
+  const grid = document.getElementById('seatGrid');
+  grid.style.gridTemplateColumns = `repeat(${state.cols}, auto)`;
+  grid.innerHTML = '';
+  for (let row = 0; row < state.rows; row++) {
+    for (let col = 0; col < state.cols; col++) {
+      const key = `${row}-${col}`;
+      const num = state.layout[key];
+      const seat = document.createElement('div');
+      seat.className = 'seat' + (num ? '' : ' empty');
+      seat.dataset.key = key;
+      seat.draggable = !!num;
+      if (num) {
+        const name = AkaiRoster.getName(num) || '—';
+        seat.innerHTML = `<span class="num">${num}</span><span class="name">${escapeHtml(name)}</span>`;
+      } else {
+        seat.innerHTML = `<span class="num">空位</span>`;
+      }
+      attachDnD(seat);
+      grid.appendChild(seat);
+    }
+  }
+
+  // 未排座位
+  const unassignedList = document.getElementById('unassignedList');
+  const seatedNums = new Set(Object.values(state.layout));
+  unassignedList.innerHTML = '';
+  const unassigned = [];
+  for (let i = 1; i <= (r.count || 30); i++) {
+    if (!seatedNums.has(i)) unassigned.push(i);
+  }
+  if (unassigned.length === 0) {
+    unassignedList.innerHTML = '<div style="color:var(--mute-2);padding:8px;">🎉 全員入座完畢</div>';
+  } else {
+    unassigned.forEach(num => {
+      const chip = document.createElement('div');
+      chip.className = 'stu-chip';
+      chip.draggable = true;
+      chip.dataset.num = num;
+      const name = AkaiRoster.getName(num);
+      chip.textContent = name ? `${num} ${name}` : `${num} 號`;
+      attachDnD(chip, true);
+      unassignedList.appendChild(chip);
+    });
+  }
+
+  // 歷史
+  const histList = document.getElementById('historyList');
+  if (state.history.length === 0) {
+    histList.innerHTML = '<div class="empty" style="grid-column:1/-1;">尚無歷史紀錄。點「💾 存成歷史」儲存目前座位表</div>';
+  } else {
+    histList.innerHTML = '';
+    state.history.forEach(h => {
+      const c = document.createElement('div');
+      c.className = 'hist-card';
+      c.innerHTML = `
+        <div class="date">${new Date(h.ts).toLocaleDateString('zh-TW')}</div>
+        <div class="label">${escapeHtml(h.label)}</div>
+        <div class="meta">${h.rows} × ${h.cols} · ${Object.keys(h.layout).length} 人入座</div>
+        <div class="actions">
+          <button onclick="loadSnapshot('${h.id}')">📂 載入</button>
+          <button onclick="deleteSnapshot('${h.id}')">✕</button>
+        </div>
+      `;
+      histList.appendChild(c);
+    });
+  }
+}
+
+// 拖曳實作
+let dragSource = null;  // { type: 'seat'|'chip', payload }
+function attachDnD(el, isChip = false) {
+  el.addEventListener('dragstart', (e) => {
+    if (isChip) {
+      dragSource = { type: 'chip', num: parseInt(el.dataset.num) };
+    } else {
+      const num = state.layout[el.dataset.key];
+      if (!num) { e.preventDefault(); return; }
+      dragSource = { type: 'seat', key: el.dataset.key, num };
+    }
+    el.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('dragging');
+    document.querySelectorAll('.drop-target').forEach(x => x.classList.remove('drop-target'));
+    dragSource = null;
+  });
+  el.addEventListener('dragover', (e) => {
+    if (!dragSource) return;
+    if (el.classList.contains('seat')) {
+      e.preventDefault();
+      el.classList.add('drop-target');
+    }
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drop-target'));
+  el.addEventListener('drop', (e) => {
+    e.preventDefault();
+    el.classList.remove('drop-target');
+    if (!dragSource) return;
+    if (!el.classList.contains('seat')) return;
+    const targetKey = el.dataset.key;
+    const targetNum = state.layout[targetKey];
+
+    if (dragSource.type === 'chip') {
+      // 從未排座位拖到座位
+      // 如果目標位置有人，把那人退回未排
+      state.layout[targetKey] = dragSource.num;
+    } else if (dragSource.type === 'seat') {
+      const sourceKey = dragSource.key;
+      // 交換或移動
+      delete state.layout[sourceKey];
+      if (targetNum) state.layout[sourceKey] = targetNum;  // 交換
+      state.layout[targetKey] = dragSource.num;
+    }
+    saveState();
+    render();
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1') render();
+});
+
+init();
+</script>
+
+</body>
+</html>
