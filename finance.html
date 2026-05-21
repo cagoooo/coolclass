@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>班費記帳 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="班費記帳 · 教室小幫手">
+<meta property="og:description" content="日期/項目/金額簡易記帳，月底總計，可匯出 CSV。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .summary-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 14px; margin-bottom: 22px;
+  }
+  .sum-card {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .sum-card.in    { background: linear-gradient(180deg, #d8f0d8 0%, #fff 100%); }
+  .sum-card.out   { background: linear-gradient(180deg, #ffd0d0 0%, #fff 100%); }
+  .sum-card.balance {
+    background: linear-gradient(180deg, var(--y) 0%, #fff 100%);
+    border-color: var(--ink);
+  }
+  .sum-card .lbl {
+    font-size: 12px; font-weight: 700; color: var(--muted);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .sum-card .num {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 42px; line-height: 1;
+    color: var(--ink); margin-top: 6px;
+  }
+  .sum-card .num.neg { color: var(--r); }
+  .sum-card .ctx {
+    font-size: 11px; color: var(--mute-2); margin-top: 4px;
+  }
+
+  .add-form {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 18px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 18px;
+    display: grid;
+    grid-template-columns: 130px 1fr 110px 70px 70px auto;
+    gap: 10px;
+    align-items: end;
+  }
+  .add-form label {
+    font-size: 11px; font-weight: 700; color: var(--y);
+    letter-spacing: 1px; display: block; margin-bottom: 4px;
+  }
+  .add-form input, .add-form select {
+    background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 8px 10px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    width: 100%;
+  }
+  .add-form input:focus, .add-form select:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,210,63,.4); }
+  .add-form .add-btn {
+    background: var(--y); color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 10px 18px;
+    font-weight: 900; cursor: pointer;
+    font-family: inherit;
+    box-shadow: 3px 3px 0 #000;
+    transition: transform .12s;
+  }
+  .add-form .add-btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #000; }
+
+  .records-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .records-table th, .records-table td {
+    padding: 10px 12px;
+    border-bottom: 2px dashed var(--ink);
+    text-align: left;
+    font-size: 14px;
+  }
+  .records-table th {
+    background: var(--paper-2);
+    font-weight: 900;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--ink);
+  }
+  .records-table tr:last-child td { border-bottom: none; }
+  .records-table tr.row-in    { background: rgba(107,203,119,.08); }
+  .records-table tr.row-out   { background: rgba(255,107,107,.08); }
+  .records-table .amount {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 16px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .records-table .amount.in    { color: var(--g); }
+  .records-table .amount.out   { color: var(--r); }
+  .records-table .del {
+    background: transparent;
+    border: 2px solid transparent;
+    color: var(--mute-2);
+    cursor: pointer; padding: 4px 8px;
+    border-radius: 999px;
+    font-family: inherit;
+  }
+  .records-table .del:hover {
+    background: var(--r); color: #fff; border-color: var(--r);
+  }
+  .empty-row td {
+    text-align: center; padding: 30px; color: var(--mute-2);
+  }
+
+  .month-filter {
+    display: flex; gap: 12px; align-items: center;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .month-filter label { font-weight: 700; font-size: 13px; }
+  .month-filter input[type="month"] {
+    padding: 8px 12px;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-sm);
+    font-family: inherit; font-weight: 700;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  @media (max-width: 700px) {
+    .summary-row { grid-template-columns: 1fr; gap: 10px; }
+    .sum-card { padding: 14px 18px; }
+    .sum-card .num { font-size: 32px; }
+
+    .add-form {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px; padding: 14px;
+    }
+    .add-form .add-btn { grid-column: 1 / -1; }
+    .add-form input, .add-form select { font-size: 13px; padding: 7px 9px; }
+
+    .records-table { font-size: 12px; }
+    .records-table th, .records-table td { padding: 7px 8px; font-size: 12px; }
+    .records-table .amount { font-size: 14px; }
+    /* 隱藏較不重要欄位 */
+    .records-table th.col-notes, .records-table td.col-notes { display: none; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-g"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">FINANCE · 班費記帳</span>
+      <h1>每一筆<em>都看得見</em>，<br>月底交差最安心。</h1>
+      <p class="sub">
+        <span class="badge">收入 / 支出</span>
+        <span class="badge">月份統計</span>
+        <span class="badge">CSV 匯出給家長</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="balanceBig">—</span>
+      <span class="sml">元 · 目前餘額</span>
+    </div>
+  </section>
+
+  <!-- 月份篩選 -->
+  <div class="month-filter">
+    <label>📅 篩選月份：</label>
+    <input type="month" id="monthPick">
+    <button class="btn sm" onclick="setAll()">全部紀錄</button>
+    <span style="flex:1;"></span>
+    <button class="btn y sm" onclick="exportCSV()">📊 匯出 CSV</button>
+    <button class="btn sm" onclick="exportJSON()">📤 匯出 JSON</button>
+    <button class="btn r sm" onclick="resetAll()">🗑️ 全部清除</button>
+  </div>
+
+  <!-- 摘要 -->
+  <div class="summary-row">
+    <div class="sum-card in">
+      <div class="lbl">總收入</div>
+      <div class="num" id="totalIn">$0</div>
+      <div class="ctx" id="ctxIn">—</div>
+    </div>
+    <div class="sum-card out">
+      <div class="lbl">總支出</div>
+      <div class="num" id="totalOut">$0</div>
+      <div class="ctx" id="ctxOut">—</div>
+    </div>
+    <div class="sum-card balance">
+      <div class="lbl">餘額</div>
+      <div class="num" id="balanceNum">$0</div>
+      <div class="ctx" id="ctxBal">—</div>
+    </div>
+  </div>
+
+  <!-- 新增表單 -->
+  <form class="add-form" id="addForm" onsubmit="addRecord(event)">
+    <div>
+      <label>日期</label>
+      <input type="date" id="fDate" required>
+    </div>
+    <div>
+      <label>項目（向誰收 / 買什麼）</label>
+      <input type="text" id="fItem" placeholder="例：5/16 戶外教學交通費" required>
+    </div>
+    <div>
+      <label>金額</label>
+      <input type="number" id="fAmount" placeholder="500" min="1" required>
+    </div>
+    <div>
+      <label>類別</label>
+      <select id="fType" required>
+        <option value="in">收入</option>
+        <option value="out">支出</option>
+      </select>
+    </div>
+    <div>
+      <label>類目</label>
+      <select id="fCat">
+        <option value="活動">活動</option>
+        <option value="文具">文具</option>
+        <option value="獎勵">獎勵</option>
+        <option value="餐飲">餐飲</option>
+        <option value="器材">器材</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <button class="add-btn" type="submit">＋ 加入</button>
+  </form>
+
+  <!-- 紀錄表 -->
+  <table class="records-table">
+    <thead>
+      <tr>
+        <th>日期</th>
+        <th>項目</th>
+        <th>類目</th>
+        <th style="text-align:right;">金額</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="recordsBody">
+      <tr class="empty-row"><td colspan="5">還沒有任何紀錄，從上方加一筆吧 💰</td></tr>
+    </tbody>
+  </table>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存檔</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_finance_v1';
+
+let state = loadState();
+let filterMonth = '';  // '' = all; otherwise 'YYYY-MM'
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      records: obj.records || [],  // [{id, date, item, amount, type:'in'|'out', cat}]
+    };
+  } catch { return { records: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function pad(n) { return String(n).padStart(2,'0'); }
+
+function init() {
+  const now = new Date();
+  document.getElementById('fDate').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('monthPick').value = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  filterMonth = document.getElementById('monthPick').value;
+  document.getElementById('monthPick').onchange = (e) => { filterMonth = e.target.value; render(); };
+  render();
+}
+
+function addRecord(ev) {
+  ev.preventDefault();
+  const rec = {
+    id: 't_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    date: document.getElementById('fDate').value,
+    item: document.getElementById('fItem').value.trim(),
+    amount: parseInt(document.getElementById('fAmount').value),
+    type: document.getElementById('fType').value,
+    cat: document.getElementById('fCat').value,
+  };
+  if (!rec.date || !rec.item || !rec.amount || rec.amount <= 0) return;
+  state.records.push(rec);
+  saveState();
+  // 清空表單部分
+  document.getElementById('fItem').value = '';
+  document.getElementById('fAmount').value = '';
+  flash(`✓ 已加入：${rec.item} ${rec.type === 'in' ? '+' : '-'}$${rec.amount}`);
+  render();
+}
+
+function delRecord(id) {
+  const rec = state.records.find(r => r.id === id);
+  if (!rec) return;
+  if (!confirm(`刪除這筆紀錄？\n\n${rec.date} · ${rec.item}\n${rec.type === 'in' ? '+' : '-'}$${rec.amount}`)) return;
+  state.records = state.records.filter(r => r.id !== id);
+  saveState();
+  render();
+  flash('已刪除');
+}
+
+function getFiltered() {
+  if (!filterMonth) return state.records;
+  return state.records.filter(r => r.date.startsWith(filterMonth));
+}
+
+function render() {
+  const records = getFiltered();
+  const sorted = [...records].sort((a,b) => b.date.localeCompare(a.date));
+
+  // 摘要
+  const totalIn = records.filter(r => r.type === 'in').reduce((s,r) => s + r.amount, 0);
+  const totalOut = records.filter(r => r.type === 'out').reduce((s,r) => s + r.amount, 0);
+  const balance = totalIn - totalOut;
+
+  // 全班餘額（所有時段）
+  const allIn = state.records.filter(r => r.type === 'in').reduce((s,r) => s + r.amount, 0);
+  const allOut = state.records.filter(r => r.type === 'out').reduce((s,r) => s + r.amount, 0);
+  const allBalance = allIn - allOut;
+
+  document.getElementById('totalIn').textContent = '$' + totalIn.toLocaleString();
+  document.getElementById('totalOut').textContent = '$' + totalOut.toLocaleString();
+  document.getElementById('balanceNum').textContent = (balance >= 0 ? '$' : '-$') + Math.abs(balance).toLocaleString();
+  document.getElementById('balanceNum').classList.toggle('neg', balance < 0);
+
+  const ctxLabel = filterMonth ? `${filterMonth} 月份` : '全部紀錄';
+  document.getElementById('ctxIn').textContent = `${ctxLabel} · ${records.filter(r => r.type === 'in').length} 筆收入`;
+  document.getElementById('ctxOut').textContent = `${ctxLabel} · ${records.filter(r => r.type === 'out').length} 筆支出`;
+  document.getElementById('ctxBal').textContent = filterMonth ? `本月差額（全班總餘額 $${allBalance.toLocaleString()}）` : `共 ${state.records.length} 筆紀錄`;
+  document.getElementById('balanceBig').textContent = allBalance.toLocaleString();
+
+  // 列表
+  const tbody = document.getElementById('recordsBody');
+  if (sorted.length === 0) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${filterMonth ? `${filterMonth} 沒有任何紀錄` : '還沒有任何紀錄，從上方加一筆吧 💰'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = sorted.map(r => `
+    <tr class="row-${r.type}">
+      <td>${r.date.slice(5)}</td>
+      <td><b>${escapeHtml(r.item)}</b></td>
+      <td><span class="pill ${r.type === 'in' ? 'g' : 'r'}" style="font-size:11px;">${escapeHtml(r.cat)}</span></td>
+      <td class="amount ${r.type}">${r.type === 'in' ? '+' : '-'}$${r.amount.toLocaleString()}</td>
+      <td><button class="del" onclick="delRecord('${r.id}')" title="刪除">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function setAll() {
+  filterMonth = '';
+  document.getElementById('monthPick').value = '';
+  render();
+}
+
+function exportCSV() {
+  const records = filterMonth ? getFiltered() : state.records;
+  if (records.length === 0) { alert('沒有資料可匯出'); return; }
+  const rows = [['日期','項目','類別','類目','金額']];
+  records.forEach(r => {
+    rows.push([
+      r.date,
+      r.item,
+      r.type === 'in' ? '收入' : '支出',
+      r.cat,
+      (r.type === 'in' ? '' : '-') + r.amount,
+    ]);
+  });
+  // 總計
+  rows.push([]);
+  rows.push(['總收入', '', '', '', records.filter(r => r.type === 'in').reduce((s,r) => s + r.amount, 0)]);
+  rows.push(['總支出', '', '', '', '-' + records.filter(r => r.type === 'out').reduce((s,r) => s + r.amount, 0)]);
+  const inSum = records.filter(r => r.type === 'in').reduce((s,r) => s + r.amount, 0);
+  const outSum = records.filter(r => r.type === 'out').reduce((s,r) => s + r.amount, 0);
+  rows.push(['餘額', '', '', '', inSum - outSum]);
+
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\r\n');
+  const BOM = '﻿';
+  const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `班費記帳_${filterMonth || '全部'}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+  flash('✓ CSV 已下載');
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  a.href = url;
+  a.download = `班費備份_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 500);
+}
+
+function resetAll() {
+  if (state.records.length === 0) return;
+  if (!confirm(`要清除全部 ${state.records.length} 筆紀錄嗎？建議先匯出備份。`)) return;
+  if (!confirm('再確認一次：真的要全部清除？')) return;
+  state.records = [];
+  saveState();
+  render();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+init();
+</script>
+
+</body>
+</html>

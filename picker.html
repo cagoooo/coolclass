@@ -281,6 +281,11 @@
         <span class="knob"></span>
         🔊 抽中時播放音效
       </label>
+      <label class="switch">
+        <input type="checkbox" id="voice">
+        <span class="knob"></span>
+        🗣️ 抽中時語音播報姓名
+      </label>
       <a href="roster.html" class="btn sm" style="margin-left:auto;">👥 編輯班級名單</a>
     </div>
   </section>
@@ -379,8 +384,9 @@ function loadState() {
       groupIdx: obj.groupIdx ?? 0,
       strategy: obj.strategy || 'random',           // 'random' | 'least'
       pickCounts: obj.pickCounts || {},             // { "5": 3 } 累積每號被抽次數
+      voice: !!obj.voice,                            // v3.3：語音播報
     };
-  } catch { return { history: [], excludeUsed: true, sound: true, day: todayKey(), scope: 'all', rangeFrom: 1, rangeTo: 10, groupIdx: 0, strategy: 'random', pickCounts: {} }; }
+  } catch { return { history: [], excludeUsed: true, sound: true, day: todayKey(), scope: 'all', rangeFrom: 1, rangeTo: 10, groupIdx: 0, strategy: 'random', pickCounts: {}, voice: false }; }
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
@@ -477,8 +483,33 @@ function pick() {
     spinning = false;
     document.getElementById('pickBtn').disabled = false;
     playSound();
+    // v3.3：語音播報
+    if (state.voice) speakStudent(picked, name);
     render();
   }, 1200);
+}
+
+/** v3.3：語音播報「N 號 ○○○」用 speechSynthesis（中文）*/
+function speakStudent(num, name) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();  // 取消佇列
+    const text = name ? `${num} 號，${name}` : `${num} 號`;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-TW';
+    u.rate = 0.95;
+    u.pitch = 1.05;
+    u.volume = 0.9;
+    // 偏好台灣中文女聲（若有）
+    const voices = window.speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => /zh-TW|zh_TW/i.test(v.lang)) || voices.find(v => /zh/i.test(v.lang));
+    if (zhVoice) u.voice = zhVoice;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+// 預載語音清單（有些瀏覽器要 onvoiceschanged 才會給）
+if ('speechSynthesis' in window) {
+  speechSynthesis.onvoiceschanged = () => {};
 }
 
 function undo() {
@@ -563,6 +594,8 @@ document.getElementById('excludeUsed').checked = state.excludeUsed;
 document.getElementById('sound').checked = state.sound;
 document.getElementById('excludeUsed').onchange = (e) => { state.excludeUsed = e.target.checked; saveState(); render(); };
 document.getElementById('sound').onchange = (e) => { state.sound = e.target.checked; saveState(); };
+document.getElementById('voice').checked = state.voice;
+document.getElementById('voice').onchange = (e) => { state.voice = e.target.checked; saveState(); if (e.target.checked) speakStudent(0, '已啟用語音'); };
 
 // ===== v3.1：範圍 + 策略 =====
 function syncScopeUI() {

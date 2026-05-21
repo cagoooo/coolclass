@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學生個人成長報告 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b070ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="學生個人成長報告 · 教室小幫手">
+<meta property="og:description" content="整合學生情緒/出勤/積點/被抽中歷史，給家長一頁式報告。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .student-toolbar {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad); padding: 14px 18px;
+    box-shadow: var(--shadow); margin-bottom: 18px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .student-toolbar label { font-weight: 700; color: var(--y); font-size: 13px; }
+  .student-toolbar select {
+    background: #fff; color: var(--ink); border: 3px solid var(--y);
+    border-radius: var(--rad-sm); padding: 8px 12px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    min-width: 160px;
+  }
+  .student-toolbar input[type="month"] {
+    background: #fff; color: var(--ink); border: 3px solid var(--y);
+    border-radius: var(--rad-sm); padding: 8px 12px;
+    font-family: inherit; font-weight: 700; font-size: 13px;
+  }
+
+  .report {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad-lg);
+    padding: 28px 32px;
+    box-shadow: var(--shadow-lg);
+  }
+  .student-head {
+    display: flex; align-items: center; gap: 18px;
+    border-bottom: 3px dashed var(--ink);
+    padding-bottom: 18px; margin-bottom: 22px;
+  }
+  .student-head .avatar {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--ink); color: var(--y);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 36px;
+    box-shadow: 4px 4px 0 var(--r);
+    flex-shrink: 0;
+  }
+  .student-head h1 {
+    margin: 0; font-size: 28px; font-weight: 900;
+  }
+  .student-head .sub {
+    color: var(--muted); font-size: 14px; margin-top: 4px;
+  }
+
+  .section { margin-bottom: 22px; }
+  .section h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section h2::before {
+    content: ''; display: inline-block;
+    width: 6px; height: 22px;
+    background: var(--y);
+    border-radius: 3px;
+  }
+
+  /* 情緒分布 */
+  .emo-stats {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+  }
+  .emo-stat {
+    background: var(--paper-2);
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .emo-stat .face { font-size: 28px; line-height: 1; }
+  .emo-stat .lbl { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 4px; }
+  .emo-stat .cnt {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 26px; line-height: 1; margin-top: 4px;
+  }
+
+  /* 情緒序列 */
+  .emo-seq {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    background: var(--paper-2);
+    border: 2px dashed var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px;
+  }
+  .emo-seq .day {
+    width: 38px; min-height: 48px;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .emo-seq .day.empty { background: transparent; border-style: dashed; opacity: .5; }
+  .emo-seq .day .d {
+    font-size: 9px; color: var(--muted);
+    font-family: 'Fraunces', serif; font-style: italic;
+  }
+  .emo-seq .day .f { font-size: 18px; line-height: 1; }
+
+  /* 出勤 */
+  .attn-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .attn-stat {
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .attn-stat.green   { background: #d8f0d8; }
+  .attn-stat.yellow  { background: #fff5b3; }
+  .attn-stat.purple  { background: #e2d3f4; }
+  .attn-stat.red     { background: #ffd0d0; }
+  .attn-stat .cnt {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 28px;
+  }
+  .attn-stat .lbl { font-size: 12px; font-weight: 700; }
+
+  /* 積點 */
+  .points-display {
+    background: linear-gradient(135deg, var(--y), var(--orange));
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 18px 24px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 18px;
+  }
+  .points-display .score {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-weight: 900; font-size: 64px; line-height: 1;
+    color: var(--ink);
+  }
+  .points-display .desc {
+    flex: 1;
+  }
+  .points-display .desc b { font-size: 16px; }
+  .points-display .desc small { font-size: 12px; color: var(--ink-2); display: block; margin-top: 2px; }
+
+  /* 老師的話 */
+  .teacher-note {
+    background: var(--paper-2);
+    border: 3px dashed var(--ink);
+    border-radius: var(--rad);
+    padding: 14px 16px;
+  }
+  .teacher-note textarea {
+    width: 100%;
+    min-height: 80px;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    background: #fff;
+  }
+  .teacher-note textarea:focus { outline: none; box-shadow: 0 0 0 3px var(--y); }
+
+  .empty-tip {
+    text-align: center; padding: 30px; color: var(--mute-2);
+    background: var(--paper-2); border: 2px dashed var(--ink);
+    border-radius: var(--rad-sm); font-size: 14px;
+  }
+
+  /* 列印 */
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff !important; }
+    .home-btn, .student-toolbar, footer.f, .bg-deco, .akai-tweaks-fab, .btn-bar { display: none !important; }
+    .report { box-shadow: none !important; border-width: 2px; padding: 0; }
+    .emo-stat, .attn-stat, .points-display { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  @media (max-width: 600px) {
+    .student-toolbar { padding: 12px 14px; gap: 8px; box-shadow: 4px 4px 0 var(--ink) !important; }
+    .student-toolbar select, .student-toolbar input { padding: 6px 10px; font-size: 13px; min-width: 120px; }
+    .student-toolbar .btn { padding: 8px 14px; font-size: 13px; }
+
+    .report { padding: 16px 18px; border-radius: var(--rad); }
+    .student-head { flex-direction: column; align-items: flex-start; gap: 10px; padding-bottom: 14px; margin-bottom: 16px; }
+    .student-head .avatar { width: 60px; height: 60px; font-size: 28px; }
+    .student-head h1 { font-size: 22px; }
+
+    .section h2 { font-size: 16px; }
+    .emo-stats { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+    .emo-stat { padding: 8px 4px; }
+    .emo-stat .face { font-size: 22px; }
+    .emo-stat .lbl { font-size: 10px; }
+    .emo-stat .cnt { font-size: 20px; }
+    .attn-stats { grid-template-columns: repeat(2, 1fr); }
+    .points-display { padding: 14px 16px; gap: 12px; }
+    .points-display .score { font-size: 48px; }
+    .emo-seq .day { width: 32px; min-height: 44px; }
+    .emo-seq .day .f { font-size: 16px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-p"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">STUDENT · 個人成長報告</span>
+      <h1><em>看見</em>每個孩子的<br>學期軌跡。</h1>
+      <p class="sub">
+        <span class="badge" id="classBadge">— 人</span>
+        <span class="badge">情緒 + 出勤 + 積點整合</span>
+        <span class="badge">可列印 PDF 給家長</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalStudents">—</span>
+      <span class="sml">位學生</span>
+    </div>
+  </section>
+
+  <!-- 工具列 -->
+  <div class="student-toolbar">
+    <label>選學生：</label>
+    <select id="studentSelect"></select>
+    <label>區間：</label>
+    <input type="month" id="monthPick">
+    <button class="btn primary" onclick="loadReport()">📊 載入</button>
+    <button class="btn y" onclick="window.print()" style="margin-left:auto;">🖨️ 列印 / 存 PDF</button>
+  </div>
+
+  <!-- 主報告 -->
+  <div class="report" id="report">
+    <div class="empty-tip">請從上方選一位學生，然後按「載入」</div>
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<script src="sw-update.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const EMOTIONS = [
+  { key: 'happy',   face: '😄', label: '開心', color: '#ffd23f' },
+  { key: 'angry',   face: '😠', label: '生氣', color: '#ff6b6b' },
+  { key: 'sad',     face: '😢', label: '難過', color: '#4d96ff' },
+  { key: 'nervous', face: '😬', label: '緊張', color: '#b070ff' },
+  { key: 'calm',    face: '😌', label: '平靜', color: '#6bcb77' },
+];
+const NOTE_KEY = 'akai_student_notes_v1';
+
+function loadJSON(k) { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch { return {}; } }
+function pad(n) { return String(n).padStart(2,'0'); }
+function todayKey() { return new Date().toISOString().slice(0,10); }
+
+function init() {
+  const r = AkaiRoster.load();
+  document.getElementById('classBadge').textContent = r.className ? `🏫 ${r.className} · ${r.count} 人` : `👥 ${r.count || 30} 人`;
+  document.getElementById('totalStudents').textContent = r.count || 30;
+
+  // 填學生下拉
+  const sel = document.getElementById('studentSelect');
+  sel.innerHTML = '';
+  for (let i = 1; i <= (r.count || 30); i++) {
+    const name = AkaiRoster.getName(i);
+    const o = document.createElement('option');
+    o.value = i;
+    o.textContent = name ? `${i} 號 · ${name}` : `${i} 號`;
+    sel.appendChild(o);
+  }
+
+  // 預設月份
+  const d = new Date();
+  document.getElementById('monthPick').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+}
+
+function loadReport() {
+  const num = parseInt(document.getElementById('studentSelect').value);
+  const ym = document.getElementById('monthPick').value;
+  if (!num || !ym) return;
+  renderReport(num, ym);
+}
+
+function renderReport(num, ym) {
+  const r = AkaiRoster.load();
+  const name = AkaiRoster.getName(num) || '（未填姓名）';
+  const [year, month] = ym.split('-').map(Number);
+  const ymKey = `${year}-${pad(month)}`;
+
+  // 1. 情緒打卡：本月該學生紀錄
+  const emo = loadJSON('akai_emotion_v1');
+  const records = emo.records || {};
+  const emoCounts = { happy:0, angry:0, sad:0, nervous:0, calm:0 };
+  const emoSeq = []; // [{date, mood}]
+  const daysInMonth = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const k = `${ymKey}-${pad(d)}`;
+    const mood = records[k]?.[num];
+    if (mood) {
+      if (emoCounts[mood] !== undefined) emoCounts[mood]++;
+      emoSeq.push({ date: d, mood });
+    } else {
+      emoSeq.push({ date: d, mood: null });
+    }
+  }
+  const totalEmo = Object.values(emoCounts).reduce((a,b)=>a+b, 0);
+
+  // 2. 出勤：本月該學生
+  const atn = loadJSON('akai_attendance_v1');
+  const sheet = atn.sheets?.[ymKey];
+  const attn = { present: 0, late: 0, leave: 0, absent: 0 };
+  if (sheet?.marks) {
+    for (let d = 1; d <= daysInMonth; d++) {
+      const k = `${ymKey}-${pad(d)}`;
+      const m = sheet.marks[k]?.[num];
+      if (m && attn[m] !== undefined) attn[m]++;
+    }
+  }
+  let upDays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const wk = new Date(year, month-1, d).getDay();
+    if (wk !== 0 && wk !== 6) upDays++;
+  }
+  const attnRate = upDays > 0 ? ((attn.present + attn.late) / upDays * 100).toFixed(1) : '—';
+
+  // 3. 積點
+  const points = loadJSON('akai_points_v1');
+  const pts = points.points?.[String(num)] || 0;
+  const lastChg = points.lastChange?.[String(num)];
+
+  // 4. 被抽中次數
+  const picker = loadJSON('akai_picker_v1');
+  const pickedToday = (picker.history || []).filter(n => n === num).length;
+  const allTimePick = picker.pickCounts?.[String(num)] || 0;
+
+  // 5. 老師備註
+  const notes = loadJSON(NOTE_KEY);
+  const note = notes[String(num)] || '';
+
+  // 渲染
+  const rep = document.getElementById('report');
+  rep.innerHTML = `
+    <div class="student-head">
+      <div class="avatar">${num}</div>
+      <div>
+        <h1>${escapeHtml(name)}</h1>
+        <div class="sub">${escapeHtml(r.className || '未命名班級')} · ${num} 號 · ${year}年${month}月 報告</div>
+      </div>
+    </div>
+
+    <!-- 情緒 -->
+    <div class="section">
+      <h2>😊 本月情緒分布</h2>
+      ${totalEmo === 0 ? '<div class="empty-tip">本月還沒有任何打卡紀錄</div>' : `
+        <div class="emo-stats" style="margin-bottom:14px;">
+          ${EMOTIONS.map(e => `
+            <div class="emo-stat" style="border-color:${e.color};">
+              <div class="face">${e.face}</div>
+              <div class="lbl">${e.label}</div>
+              <div class="cnt" style="color:${e.color === '#ffd23f' ? '#a07a00' : e.color};">${emoCounts[e.key]}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="emo-seq">
+          ${emoSeq.map(d => {
+            const e = EMOTIONS.find(x => x.key === d.mood);
+            return `<div class="day${e ? '' : ' empty'}"${e ? ` style="background:${e.color}30;border-color:${e.color};"` : ''}>
+              <span class="d">${d.date}</span>
+              <span class="f">${e ? e.face : '—'}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <p style="margin:10px 0 0;color:var(--muted);font-size:13px;">
+          📌 本月共有 <b style="color:var(--ink);">${totalEmo}</b> 天打卡。
+          ${(() => {
+            const top = Object.entries(emoCounts).sort((a,b)=>b[1]-a[1])[0];
+            const topEmo = EMOTIONS.find(x => x.key === top[0]);
+            return top[1] > 0 ? `最常出現：${topEmo.face} ${topEmo.label}` : '';
+          })()}
+        </p>
+      `}
+    </div>
+
+    <!-- 出勤 -->
+    <div class="section">
+      <h2>📋 本月出勤</h2>
+      ${sheet ? `
+        <div class="attn-stats">
+          <div class="attn-stat green"><div class="cnt">${attn.present}</div><div class="lbl">出席</div></div>
+          <div class="attn-stat yellow"><div class="cnt">${attn.late}</div><div class="lbl">遲到</div></div>
+          <div class="attn-stat purple"><div class="cnt">${attn.leave}</div><div class="lbl">請假</div></div>
+          <div class="attn-stat red"><div class="cnt">${attn.absent}</div><div class="lbl">缺席</div></div>
+        </div>
+        <p style="margin:10px 0 0;color:var(--muted);font-size:13px;">
+          📊 本月應到 <b style="color:var(--ink);">${upDays}</b> 天 · 出席率 <b style="color:var(--ink);font-family:Fraunces;font-style:italic;font-size:18px;">${attnRate}%</b>（出席+遲到）
+        </p>
+      ` : '<div class="empty-tip">本月還沒有出勤紀錄</div>'}
+    </div>
+
+    <!-- 積點 -->
+    <div class="section">
+      <h2>🏆 班級積點累積</h2>
+      <div class="points-display">
+        <div class="score">${pts > 0 ? '+' : ''}${pts}</div>
+        <div class="desc">
+          <b>目前積點</b>
+          <small>累積至 ${new Date().toLocaleDateString('zh-TW')}${lastChg ? ` · 最後加減分：${new Date(lastChg).toLocaleDateString('zh-TW')}` : ''}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- 課堂參與 -->
+    <div class="section">
+      <h2>🎯 課堂參與</h2>
+      <p style="font-size:14px;line-height:1.8;color:var(--ink);">
+        🎲 今日抽中 <b>${pickedToday}</b> 次 ·
+        累積被抽中 <b>${allTimePick}</b> 次
+      </p>
+    </div>
+
+    <!-- 老師的話 -->
+    <div class="section">
+      <h2>💬 老師的話（私密）</h2>
+      <div class="teacher-note">
+        <textarea id="noteArea" placeholder="寫下對這位孩子的觀察、進步、需要關心的地方... 列印報告時會一起印出。" data-num="${num}">${escapeHtml(note)}</textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span style="font-size:12px;color:var(--mute-2);">💡 編輯後自動存檔</span>
+          <span id="noteSaved" style="font-size:12px;color:var(--g);opacity:0;transition:opacity .3s;">✓ 已存</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // 老師備註自動存
+  const ta = document.getElementById('noteArea');
+  let saveT;
+  ta.addEventListener('input', () => {
+    clearTimeout(saveT);
+    saveT = setTimeout(() => {
+      const ns = loadJSON(NOTE_KEY);
+      ns[String(num)] = ta.value;
+      localStorage.setItem(NOTE_KEY, JSON.stringify(ns));
+      const saved = document.getElementById('noteSaved');
+      saved.style.opacity = '1';
+      setTimeout(() => saved.style.opacity = '0', 1500);
+    }, 500);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1') init();
+});
+window.addEventListener('focus', init);
+
+init();
+loadReport();  // 自動載入第一位
+</script>
+
+</body>
+</html>

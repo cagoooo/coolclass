@@ -463,10 +463,17 @@
         </div>
       </div>
 
+      <!-- 抽卡歷史導覽 -->
+      <div class="btn-bar center" style="margin-bottom:8px;">
+        <button class="btn sm" id="prevBtn" onclick="goPrev()" title="上一張">← 上一張</button>
+        <span id="histPos" style="color:var(--muted);font-size:12px;font-family:'Fraunces',serif;font-style:italic;align-self:center;min-width:60px;text-align:center;">—</span>
+        <button class="btn sm" id="nextBtn" onclick="goNext()" title="下一張">下一張 →</button>
+      </div>
       <div class="btn-bar center">
         <button class="btn primary lg" id="drawBtn">🎴 抽一張卡</button>
         <button class="btn y" id="favBtn">🌟 收藏</button>
-        <button class="btn b" id="downloadBtn" onclick="downloadCurrentCard()" title="下載成 1080×1350 直式圖（IG / 手機桌布 / 教室海報）">📥 下載成圖</button>
+        <button class="btn" id="copyBtn" onclick="copyQuote()" title="複製引言到剪貼簿">📋 複製</button>
+        <button class="btn b" id="downloadBtn" onclick="downloadCurrentCard()" title="下載成 1080×1350 直式圖">📥 下載成圖</button>
       </div>
     </div>
   </section>
@@ -574,18 +581,27 @@ function pickRandom() {
 }
 
 let lastDrawTime = 0;
+// v3.3：抽卡歷史 — 保留最近 30 張，可前後翻
+const drawHistory = [];
+let histPos = -1;  // 指向 drawHistory 當前位置；-1 表示沒抽過
+
 function drawCard() {
   const now = Date.now();
   if (now - lastDrawTime < 600) return;
   lastDrawTime = now;
 
-  // 防禦：以 DOM 實際狀態為準，避免 JS 變數與 class 失同步導致「點了沒反應」
   const innerEl = document.getElementById('cardInner');
   flipped = innerEl.classList.contains('flipped');
 
   const next = pickRandom();
   if (!next) return;
   const inner = document.getElementById('cardInner');
+
+  // 加入歷史：如果不在最新位置，砍掉後面的（重新分支）
+  if (histPos < drawHistory.length - 1) drawHistory.length = histPos + 1;
+  drawHistory.push(next);
+  if (drawHistory.length > 30) drawHistory.shift();  // 保留 30 張
+  histPos = drawHistory.length - 1;
 
   if (!flipped) {
     currentCard = next;
@@ -603,6 +619,65 @@ function drawCard() {
     }, 250);
   }
   updateFavBtn();
+  updateHistNav();
+}
+
+function goPrev() {
+  if (histPos <= 0) return;
+  histPos--;
+  currentCard = drawHistory[histPos];
+  const front = document.getElementById('cardFront');
+  front.style.transition = 'opacity 0.2s ease';
+  front.style.opacity = '0';
+  setTimeout(() => {
+    paintCard();
+    front.style.opacity = '1';
+  }, 200);
+  updateFavBtn();
+  updateHistNav();
+}
+function goNext() {
+  if (histPos >= drawHistory.length - 1) return;
+  histPos++;
+  currentCard = drawHistory[histPos];
+  const front = document.getElementById('cardFront');
+  front.style.transition = 'opacity 0.2s ease';
+  front.style.opacity = '0';
+  setTimeout(() => {
+    paintCard();
+    front.style.opacity = '1';
+  }, 200);
+  updateFavBtn();
+  updateHistNav();
+}
+function updateHistNav() {
+  const prev = document.getElementById('prevBtn');
+  const next = document.getElementById('nextBtn');
+  const pos = document.getElementById('histPos');
+  if (!prev || !next || !pos) return;
+  prev.disabled = histPos <= 0;
+  next.disabled = histPos >= drawHistory.length - 1;
+  prev.style.opacity = prev.disabled ? '0.4' : '1';
+  next.style.opacity = next.disabled ? '0.4' : '1';
+  pos.textContent = drawHistory.length === 0 ? '—' : `${histPos + 1} / ${drawHistory.length}`;
+}
+
+async function copyQuote() {
+  if (!currentCard) { flash('請先抽一張卡'); return; }
+  const txt = `「${currentCard.quote}」\n— ${currentCard.keyword} · 教室小幫手`;
+  try {
+    await navigator.clipboard.writeText(txt);
+    flash('✓ 引言已複製');
+  } catch {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = txt;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flash('✓ 引言已複製'); }
+    catch { alert(txt); }
+    document.body.removeChild(ta);
+  }
 }
 
 function paintCard() {
@@ -613,18 +688,73 @@ function paintCard() {
   front.style.setProperty('--card-fg', cat.fg);
   document.getElementById('keyword').textContent = currentCard.keyword;
   document.getElementById('category').textContent = cat.label;
-  document.getElementById('quote').textContent = '「' + currentCard.quote + '」';
+  const quoteEl = document.getElementById('quote');
+  quoteEl.textContent = '「' + currentCard.quote + '」';
   document.getElementById('seq').textContent = `No.${String(DECK.indexOf(currentCard) + 1).padStart(3, '0')}`;
+  // v3.3：長句自動縮字
+  requestAnimationFrame(() => autoFitQuote(quoteEl));
+}
+
+/** 偵測引言是否溢出容器，逐 1px 縮小直到合適 */
+function autoFitQuote(el) {
+  // 重置回 CSS 預設字級
+  el.style.fontSize = '';
+  el.style.lineHeight = '';
+  const parent = el.parentElement;
+  if (!parent) return;
+  // 取當前 computed font-size
+  let fs = parseFloat(getComputedStyle(el).fontSize);
+  const minFs = 14;
+  let safety = 30;
+  while (safety-- > 0 && (el.scrollHeight > el.clientHeight + 2 || el.scrollWidth > el.clientWidth + 2) && fs > minFs) {
+    fs -= 1;
+    el.style.fontSize = fs + 'px';
+    el.style.lineHeight = '1.6';
+  }
 }
 
 function toggleFav() {
   if (!currentCard) return;
   const idx = favs.findIndex(f => f.quote === currentCard.quote);
-  if (idx >= 0) { favs.splice(idx, 1); flash('已取消收藏'); }
-  else { favs.unshift({ ...currentCard, ts: Date.now() }); flash('✨ 已收藏'); }
+  const wasInFavs = idx >= 0;
+  if (wasInFavs) { favs.splice(idx, 1); flash('已取消收藏'); }
+  else { favs.unshift({ ...currentCard, ts: Date.now() }); flash('✨ 已收藏'); spawnCollectionParticles(); }
   saveFavs();
   updateFavBtn();
   renderWall();
+}
+
+/** v3.3：收藏粒子動畫 — 從 favBtn 飄出 ⭐ / ✨ / 💖 */
+function spawnCollectionParticles() {
+  const btn = document.getElementById('favBtn');
+  if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const startX = r.left + r.width / 2;
+  const startY = r.top + r.height / 2;
+  const emojis = ['⭐', '✨', '💛', '🌟', '✨'];
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.cssText = `
+      position: fixed; left: ${startX}px; top: ${startY}px;
+      font-size: ${18 + Math.random() * 14}px;
+      pointer-events: none; z-index: 9999;
+      transition: transform 1.1s cubic-bezier(.34,.6,.55,1), opacity 1.1s ease-out;
+      will-change: transform, opacity;
+    `;
+    document.body.appendChild(p);
+    // 隨機飄向上方扇形
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
+    const dist = 90 + Math.random() * 80;
+    const dx = Math.cos(angle) * dist;
+    const dy = Math.sin(angle) * dist;
+    const rot = (Math.random() - 0.5) * 180;
+    requestAnimationFrame(() => {
+      p.style.transform = `translate(${dx}px, ${dy}px) rotate(${rot}deg) scale(${0.6 + Math.random() * 0.5})`;
+      p.style.opacity = '0';
+    });
+    setTimeout(() => p.remove(), 1200);
+  }
 }
 
 function updateFavBtn() {

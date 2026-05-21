@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=no">
+<title>情緒打卡 · 學生 Kiosk 模式</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6b6b">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/emotion-kiosk.html">
+<meta property="og:title" content="情緒打卡 · 學生自助模式">
+<meta property="og:description" content="共用裝置給學生自助打卡的全螢幕介面。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: 'Noto Sans TC', "PingFang TC", system-ui, sans-serif;
+    background: var(--paper, #fff8e8);
+    color: var(--ink, #2a1f4a);
+    min-height: 100vh;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  :root {
+    --ink: #2a1f4a;
+    --paper: #fff8e8;
+    --r: #ff6b6b;
+    --y: #ffd23f;
+    --g: #6bcb77;
+    --b: #4d96ff;
+    --p: #b070ff;
+  }
+
+  /* 頂部 */
+  .kiosk-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px;
+    background: var(--ink); color: var(--paper);
+    font-weight: 900;
+  }
+  .kiosk-bar .title {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 22px;
+  }
+  .kiosk-bar .title .emo { font-size: 30px; }
+  .kiosk-bar .quit {
+    background: transparent;
+    border: 2px solid var(--paper);
+    color: var(--paper);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .kiosk-bar .class-name {
+    font-size: 14px;
+    opacity: .8;
+  }
+
+  /* 主畫面 */
+  .stage {
+    min-height: calc(100vh - 70px);
+    padding: 30px 24px;
+    display: flex; flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .stage h1 {
+    margin: 0;
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 900;
+    text-align: center;
+  }
+  .stage .step-label {
+    background: var(--ink);
+    color: var(--y);
+    padding: 6px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-weight: 900;
+  }
+
+  /* 號碼按鈕 */
+  .num-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 720px;
+  }
+  @media (max-width: 720px) { .num-grid { grid-template-columns: repeat(5, 1fr); gap: 10px; } }
+  @media (max-width: 460px) { .num-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; } }
+
+  .num-btn {
+    aspect-ratio: 1;
+    border: 4px solid var(--ink);
+    border-radius: 18px;
+    background: #fff;
+    color: var(--ink);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: clamp(28px, 6vw, 40px);
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform .1s, box-shadow .1s, background .15s;
+    position: relative;
+  }
+  .num-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--ink);
+    background: var(--y);
+  }
+  .num-btn.done {
+    background: #d8f0d8;
+    color: var(--g);
+    border-color: var(--g);
+    box-shadow: 4px 4px 0 var(--g);
+  }
+  .num-btn .name-tag {
+    display: block;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-style: normal;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: .7;
+    margin-top: -2px;
+  }
+  .num-btn.done::after {
+    content: '✓';
+    position: absolute;
+    top: 4px; right: 6px;
+    background: var(--g);
+    color: #fff;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-style: normal;
+  }
+
+  /* 情緒按鈕 */
+  .emo-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 900px;
+  }
+  @media (max-width: 700px) { .emo-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 460px) { .emo-grid { gap: 10px; } }
+
+  .emo-btn {
+    border: 4px solid var(--ink);
+    border-radius: 24px;
+    padding: 30px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    box-shadow: 5px 5px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .emo-btn:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--ink);
+  }
+  .emo-btn .face {
+    font-size: clamp(56px, 12vw, 88px);
+    line-height: 1;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .emo-btn .label {
+    font-weight: 900;
+    font-size: clamp(18px, 3vw, 24px);
+  }
+  .emo-btn[data-mood="happy"]   { background: var(--y); color: var(--ink); }
+  .emo-btn[data-mood="angry"]   { background: var(--r); color: #fff; }
+  .emo-btn[data-mood="sad"]     { background: var(--b); color: #fff; }
+  .emo-btn[data-mood="nervous"] { background: var(--p); color: #fff; }
+  .emo-btn[data-mood="calm"]    { background: var(--g); color: #1a3e22; }
+
+  /* 完成畫面 */
+  .done-screen {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--g), var(--y));
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s;
+  }
+  .done-screen.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .done-screen .check {
+    font-size: 140px;
+    line-height: 1;
+    animation: bounce .6s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes bounce {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+  }
+  .done-screen h2 {
+    margin: 0;
+    font-size: 42px;
+    font-weight: 900;
+    text-align: center;
+    color: var(--ink);
+  }
+  .done-screen p {
+    font-size: 18px;
+    color: var(--ink);
+    opacity: .8;
+    text-align: center;
+  }
+  .done-screen .countdown {
+    background: var(--ink);
+    color: var(--y);
+    padding: 8px 24px;
+    border-radius: 999px;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 900;
+    font-size: 20px;
+  }
+
+  /* 返回按鈕 */
+  .back-btn {
+    margin-top: 6px;
+    background: transparent;
+    border: 3px dashed var(--ink);
+    color: var(--ink);
+    padding: 8px 22px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .hint {
+    color: rgba(42,31,74,.55);
+    font-size: 14px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="kiosk-bar">
+  <div class="title">
+    <span class="emo">😊</span>
+    <span>情緒打卡牆</span>
+    <span class="class-name" id="className">— 班</span>
+  </div>
+  <button class="quit" onclick="quitKiosk()">← 老師退出</button>
+</div>
+
+<!-- Step 1: 選號碼 -->
+<div class="stage" id="stepNum">
+  <span class="step-label">STEP 1 · 我是幾號</span>
+  <h1>請按一下你的<span style="color:var(--r);">號碼</span></h1>
+  <div class="num-grid" id="numberGrid"></div>
+  <p class="hint">綠色 = 今天已經打卡過了 · 還沒打卡的不會有勾勾</p>
+</div>
+
+<!-- Step 2: 選情緒 -->
+<div class="stage" id="stepEmo" style="display:none;">
+  <span class="step-label">STEP 2 · 我今天的心情</span>
+  <h1><span id="currentNumLabel" style="color:var(--p);">— 號 ○○○</span>，<br>今天的心情是？</h1>
+  <div class="emo-grid">
+    <button class="emo-btn" data-mood="happy"   onclick="clockIn('happy')"><span class="face">😄</span><span class="label">開心</span></button>
+    <button class="emo-btn" data-mood="angry"   onclick="clockIn('angry')"><span class="face">😠</span><span class="label">生氣</span></button>
+    <button class="emo-btn" data-mood="sad"     onclick="clockIn('sad')"><span class="face">😢</span><span class="label">難過</span></button>
+    <button class="emo-btn" data-mood="nervous" onclick="clockIn('nervous')"><span class="face">😬</span><span class="label">緊張</span></button>
+    <button class="emo-btn" data-mood="calm"    onclick="clockIn('calm')"><span class="face">😌</span><span class="label">平靜</span></button>
+  </div>
+  <button class="back-btn" onclick="backToNum()">← 不是我，重選號碼</button>
+</div>
+
+<!-- 完成 -->
+<div class="done-screen" id="doneScreen">
+  <div class="check">🎉</div>
+  <h2 id="doneText">完成！</h2>
+  <p>下一位同學請！</p>
+  <div class="countdown" id="countdown">3</div>
+</div>
+
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_emotion_v1';
+const todayKey = () => new Date().toISOString().slice(0,10);
+
+let state = loadState();
+let selectedNum = null;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { maxNum: 30, records: {} };
+    const obj = JSON.parse(raw);
+    if (!obj.records) obj.records = {};
+    if (!obj.maxNum) obj.maxNum = 30;
+    return obj;
+  } catch(e) { return { maxNum: 30, records: {} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+function getMaxNum() {
+  return AkaiRoster.load().count || state.maxNum || 30;
+}
+function todayRecords() {
+  const k = todayKey();
+  if (!state.records[k]) state.records[k] = {};
+  return state.records[k];
+}
+
+function renderNumbers() {
+  const r = AkaiRoster.load();
+  document.getElementById('className').textContent = r.className || '我們班';
+  const grid = document.getElementById('numberGrid');
+  const records = todayRecords();
+  const maxNum = getMaxNum();
+  grid.innerHTML = '';
+  for (let i = 1; i <= maxNum; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn';
+    const name = AkaiRoster.getName(i);
+    btn.innerHTML = name
+      ? `${i}<span class="name-tag">${escapeHtml(name)}</span>`
+      : `${i}`;
+    if (records[i]) btn.classList.add('done');
+    btn.onclick = () => selectNumber(i);
+    grid.appendChild(btn);
+  }
+}
+
+function selectNumber(n) {
+  selectedNum = n;
+  const name = AkaiRoster.getName(n);
+  document.getElementById('currentNumLabel').textContent = name ? `${n} 號 ${name}` : `${n} 號`;
+  document.getElementById('stepNum').style.display = 'none';
+  document.getElementById('stepEmo').style.display = '';
+  // 觸覺
+  if (navigator.vibrate) navigator.vibrate(20);
+}
+
+function backToNum() {
+  selectedNum = null;
+  document.getElementById('stepNum').style.display = '';
+  document.getElementById('stepEmo').style.display = 'none';
+}
+
+function clockIn(mood) {
+  if (!selectedNum) return;
+  todayRecords()[selectedNum] = mood;
+  saveState();
+  // 觸覺
+  if (navigator.vibrate) navigator.vibrate([20, 50, 30]);
+  // 顯示完成 + 3 秒倒數重置
+  showDone();
+}
+
+function showDone() {
+  const done = document.getElementById('doneScreen');
+  const cd = document.getElementById('countdown');
+  const moodMap = { happy: '😄 開心', angry: '😠 生氣', sad: '😢 難過', nervous: '😬 緊張', calm: '😌 平靜' };
+  const mood = todayRecords()[selectedNum];
+  const name = AkaiRoster.getName(selectedNum) || `${selectedNum} 號`;
+  document.getElementById('doneText').textContent = `${name}：${moodMap[mood]}`;
+  done.classList.add('show');
+  let n = 3;
+  cd.textContent = n;
+  const it = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(it);
+      done.classList.remove('show');
+      backToNum();
+      renderNumbers();
+    } else {
+      cd.textContent = n;
+    }
+  }, 1000);
+}
+
+function quitKiosk() {
+  if (confirm('要退出 Kiosk 模式回到老師主畫面嗎？')) {
+    location.href = 'index.html';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 防止意外離開（PWA 全螢幕用）
+window.addEventListener('storage', (e) => {
+  if (e.key === 'akai_roster_v1' || e.key === 'akai_emotion_v1') renderNumbers();
+});
+
+renderNumbers();
+
+// SW 註冊
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+
+</body>
+</html>

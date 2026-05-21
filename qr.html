@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR Code 產生器 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cagoooo.github.io/coolclass/">
+<meta property="og:title" content="QR Code 產生器 · 教室小幫手">
+<meta property="og:description" content="一鍵產生教室工具的 QR code，印出貼牆學生掃。">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .qr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .qr-card {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: var(--rad);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: transform .15s;
+  }
+  .qr-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 var(--ink);
+  }
+  .qr-card .header {
+    display: flex; align-items: center; gap: 8px;
+    justify-content: center; margin-bottom: 12px;
+  }
+  .qr-card .emoji { font-size: 26px; }
+  .qr-card h3 { margin: 0; font-size: 18px; font-weight: 900; }
+
+  .qr-card .qr-img {
+    width: 100%;
+    aspect-ratio: 1;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: var(--rad-sm);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 12px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .qr-card .qr-img img {
+    max-width: 100%; max-height: 100%;
+    image-rendering: pixelated;
+  }
+  .qr-card .url {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11px; color: var(--muted);
+    word-break: break-all; margin-bottom: 10px;
+    padding: 4px 8px;
+    background: var(--paper-2);
+    border-radius: var(--rad-sm);
+  }
+  .qr-card .desc {
+    font-size: 12px; color: var(--ink); margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .qr-card .actions {
+    display: flex; gap: 6px; justify-content: center;
+  }
+
+  /* 自訂 QR */
+  .custom-card {
+    background: var(--ink); color: var(--paper);
+    border-radius: var(--rad);
+    padding: 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+  }
+  .custom-card h2 { margin: 0 0 14px; color: var(--y); font-weight: 900; }
+  .custom-card input {
+    width: 100%; background: #fff; color: var(--ink);
+    border: 3px solid var(--y);
+    border-radius: var(--rad-sm);
+    padding: 10px 14px;
+    font-family: inherit; font-weight: 700; font-size: 14px;
+    margin-bottom: 10px;
+  }
+  .custom-card .out {
+    background: #fff;
+    border-radius: var(--rad-sm);
+    padding: 16px;
+    color: var(--ink);
+    text-align: center;
+    min-height: 200px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 列印 */
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    body { background: #fff !important; }
+    .home-btn, .custom-card, .info-card, footer.f, .bg-deco, .akai-tweaks-fab, .page-hero .sub, .qr-card .actions { display: none !important; }
+    .qr-card { box-shadow: none !important; border-width: 2px; break-inside: avoid; }
+    .qr-grid { gap: 10mm; }
+  }
+
+  @media (max-width: 600px) {
+    .qr-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .qr-card { padding: 14px; }
+    .qr-card h3 { font-size: 15px; }
+    .qr-card .emoji { font-size: 22px; }
+    .qr-card .url { font-size: 10px; }
+    .qr-card .desc { font-size: 11px; }
+  }
+  @media (max-width: 380px) {
+    .qr-grid { grid-template-columns: 1fr; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-b"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">QR · 工具掃碼</span>
+      <h1>把工具<em>變成 QR code</em>，<br>學生掃了就能用。</h1>
+      <p class="sub">
+        <span class="badge">不需下載</span>
+        <span class="badge">適合貼教室公佈欄</span>
+        <span class="badge">可列印 A4</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalQR">9</span>
+      <span class="sml">個 QR</span>
+    </div>
+  </section>
+
+  <!-- 使用說明 -->
+  <div class="info-card" style="background:var(--y);border:3px solid var(--ink);border-radius:var(--rad);padding:14px 18px;margin-bottom:22px;box-shadow:var(--shadow);">
+    <b style="font-size:15px;">💡 怎麼用？</b>
+    <ul style="margin:6px 0 0;padding-left:22px;font-size:14px;line-height:1.7;">
+      <li><b>共用裝置情境</b>：印「情緒打卡 Kiosk」QR 貼教室牆，學生用班級 iPad / Chromebook 掃碼即可自助打卡（資料同步到老師裝置的 localStorage）</li>
+      <li><b>個人手機情境</b>：印「彩虹能量卡」QR，學生掃碼用自己手機看每日心錨</li>
+      <li><b>注意</b>：個人手機掃碼的紀錄不會跨裝置同步（除非升級雲端版）</li>
+    </ul>
+  </div>
+
+  <!-- 自訂 QR -->
+  <div class="custom-card">
+    <h2>🔗 自訂網址 → QR</h2>
+    <input type="text" id="customUrl" placeholder="貼任何網址，產生 QR code（例如班級 Google 文件）">
+    <button class="btn y" onclick="genCustom()" style="width:auto;">✨ 產生</button>
+    <div class="out" id="customOut" style="margin-top:12px;">輸入網址後按產生</div>
+  </div>
+
+  <!-- 內建 QR 集 -->
+  <div class="qr-grid" id="qrGrid"></div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已複製</div>
+
+<script src="sw-update.js" defer></script>
+<script>
+const BASE = location.origin + location.pathname.replace(/qr\.html.*$/, '');
+
+const QRS = [
+  { emoji: '😊', name: '情緒打卡 Kiosk', path: 'emotion-kiosk.html', desc: '學生自助打卡（共用裝置貼牆用）' },
+  { emoji: '🌈', name: '彩虹能量卡', path: 'cards.html', desc: '學生掃碼看每日心錨小語' },
+  { emoji: '⏱️', name: '教室計時器', path: 'timer.html', desc: '投影到大螢幕，全班共用' },
+  { emoji: '📢', name: '跑馬燈通知', path: 'marquee.html', desc: '投影到大螢幕的跑馬燈訊息' },
+  { emoji: '🎯', name: '隨機抽號', path: 'picker.html', desc: '老師抽問答時使用' },
+  { emoji: '👥', name: '隨機分組', path: 'grouper.html', desc: '小組討論分組' },
+  { emoji: '🏠', name: '主頁（11 工具入口）', path: 'index.html', desc: '所有工具的入口' },
+  { emoji: '👥', name: '班級名單', path: 'roster.html', desc: '老師管理學生名單' },
+  { emoji: '📊', name: '月度班級報告', path: 'report.html', desc: '一頁式月報告（給家長）' },
+];
+
+/** 用 QR Server API（免費、無 key） */
+function qrUrl(text, size = 280) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(text)}&color=2a1f4a&bgcolor=ffffff&margin=10`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML = '';
+  QRS.forEach(q => {
+    const url = BASE + q.path;
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    card.innerHTML = `
+      <div class="header"><span class="emoji">${q.emoji}</span><h3>${q.name}</h3></div>
+      <div class="qr-img"><img src="${qrUrl(url)}" alt="${q.name} QR" loading="lazy"></div>
+      <div class="url">${url.replace(/^https?:\/\//, '')}</div>
+      <div class="desc">${q.desc}</div>
+      <div class="actions">
+        <button class="btn sm" onclick="copyText('${url}')">📋 複製網址</button>
+        <button class="btn b sm" onclick="window.print()">🖨️ 列印</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function genCustom() {
+  const url = document.getElementById('customUrl').value.trim();
+  if (!url) { alert('請先輸入網址'); return; }
+  const out = document.getElementById('customOut');
+  out.innerHTML = `
+    <div style="text-align:center;">
+      <img src="${qrUrl(url, 360)}" alt="自訂 QR" style="max-width:100%;width:240px;height:240px;border:2px solid var(--ink);border-radius:var(--rad-sm);">
+      <div style="margin-top:10px;font-size:13px;font-family:'Fraunces',serif;font-style:italic;word-break:break-all;color:var(--muted);">${url}</div>
+      <button class="btn primary sm" style="margin-top:10px;" onclick="downloadQR('${url}')">📥 下載 PNG</button>
+    </div>
+  `;
+}
+
+function downloadQR(url) {
+  const a = document.createElement('a');
+  a.href = qrUrl(url, 1000);
+  a.download = 'qr-' + Date.now() + '.png';
+  a.target = '_blank';
+  a.click();
+  flash('✓ QR 圖檔下載中…');
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    flash('✓ 網址已複製');
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); flash('✓ 已複製'); } catch {}
+    document.body.removeChild(ta);
+  }
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+document.getElementById('totalQR').textContent = QRS.length;
+renderGrid();
+</script>
+
+</body>
+</html>
