@@ -138,21 +138,18 @@
   .card-shell {
     width: 100%;
     aspect-ratio: 3/4;
-    perspective: 1200px;
     margin-bottom: 22px;
     position: relative;
   }
   .card-inner {
     width: 100%; height: 100%;
     position: relative;
-    transition: transform .8s cubic-bezier(.4, .2, .2, 1);
-    transform-style: preserve-3d;
     cursor: pointer;
   }
-  .card-inner.flipped { transform: rotateY(180deg); }
+  /* v3.1.2：放棄 3D rotateY（Chrome 對此元件組合的 CSS transition 完全靜默失效，
+     diagnose 後改用 @keyframes 控制 opacity + scale 交叉淡入，可靠） */
   .card-face {
     position: absolute; inset: 0;
-    backface-visibility: hidden;
     border: 4px solid var(--ink);
     border-radius: 28px;
     overflow: hidden;
@@ -161,12 +158,36 @@
     padding: 32px 28px;
   }
   .card-back {
-    transform: rotateY(180deg);
     background: var(--ink);
     color: var(--paper);
     align-items: center; justify-content: center;
     text-align: center;
-    position: relative;
+    z-index: 2;
+    opacity: 1;
+  }
+  .card-front {
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+  @keyframes akaiCardBackOut {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(.96); }
+  }
+  @keyframes akaiCardFrontIn {
+    from { opacity: 0; transform: scale(.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .card-inner.flipped .card-back {
+    opacity: 0 !important;
+    pointer-events: none;
+    animation: akaiCardBackOut .45s ease forwards;
+  }
+  .card-inner.flipped .card-front {
+    opacity: 1 !important;
+    pointer-events: auto;
+    z-index: 3;
+    animation: akaiCardFrontIn .45s ease forwards;
   }
   .card-back::before {
     content: '';
@@ -217,11 +238,11 @@
     letter-spacing: 2px;
   }
 
+  /* .card-front 的 background / color 由此處設定（position 由 .card-face absolute 統一管）*/
   .card-front {
     background: var(--card-bg, var(--y));
     color: var(--card-fg, var(--ink));
     text-align: center;
-    position: relative;
   }
   .card-front .seq {
     position: absolute; top: 16px; right: 22px;

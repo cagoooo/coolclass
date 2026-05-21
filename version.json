@@ -1,5 +1,5 @@
 {
-  "version": "20260521-1103-8a26d79",
-  "builtAt": "2026-05-21T03:03:06Z",
-  "notes": "防禦修正：cards.html 抽卡以 DOM class 為真實狀態（避免 JS 變數與視覺不同步）"
+  "version": "20260521-1132-d725e70",
+  "builtAt": "2026-05-21T03:32:54Z",
+  "notes": "修正抽卡 bug：放棄 3D rotateY 改用 @keyframes opacity 交叉淡入"
 }
