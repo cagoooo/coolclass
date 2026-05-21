@@ -154,6 +154,29 @@
     color: var(--paper);
     text-decoration: line-through;
   }
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .display-box { padding: 28px 18px !important; box-shadow: 5px 5px 0 var(--ink) !important; }
+    .display-box::before { inset: 8px; border-radius: 14px; }
+    .big-num { font-size: clamp(96px, 32vw, 160px) !important; letter-spacing: -2px; }
+    .big-num { text-shadow: 3px 3px 0 var(--r), 6px 6px 0 var(--b) !important; }
+    .big-name { font-size: clamp(22px, 6vw, 34px) !important; margin-top: 6px; }
+
+    .btn-bar.center { gap: 8px; }
+    .btn-bar.center .btn.xl,
+    .btn-bar.center .btn.lg { padding: 10px 18px; font-size: 14px; }
+
+    .chips { gap: 6px; }
+    .chip { font-size: 11px; padding: 5px 10px; }
+
+    .panels { grid-template-columns: 1fr !important; gap: 14px; }
+    .opt-row { gap: 8px; flex-wrap: wrap; }
+    .opt-row label[style*="min-width"] { min-width: 50px !important; font-size: 13px !important; }
+  }
+  @media (max-width: 380px) {
+    .big-num { font-size: 100px !important; }
+    .big-name { font-size: 18px !important; }
+  }
   .chip b {
     font-family: 'Fraunces', serif;
     font-style: italic;

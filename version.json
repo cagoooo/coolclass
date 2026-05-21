@@ -1,5 +1,5 @@
 {
-  "version": "20260521-1142-3473cb5",
-  "builtAt": "2026-05-21T03:42:00Z",
-  "notes": "cards.html UI/UX 改良 + RWD：category 不再撐全寬、頂部 meta row、手機字級調整"
+  "version": "20260521-1716-c1241b4",
+  "builtAt": "2026-05-21T09:16:21Z",
+  "notes": "v3.2 全工具 RWD 統一：12 個工具手機桌機都順暢"
 }

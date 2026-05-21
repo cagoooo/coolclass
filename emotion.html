@@ -155,6 +155,44 @@
   .mini-stat[data-mood="sad"]     { background: var(--b); color: #fff; }
   .mini-stat[data-mood="nervous"] { background: var(--p); color: #fff; }
   .mini-stat[data-mood="calm"]    { background: var(--g); color: #1a3e22; }
+
+  /* ========== v3.2 RWD：手機（< 600px） ========== */
+  @media (max-width: 600px) {
+    /* 號碼按鈕 grid 5 欄（從 auto-fill 改成固定 5） */
+    .num-grid { grid-template-columns: repeat(5, 1fr) !important; gap: 8px !important; }
+    .num-btn { min-height: 60px !important; font-size: 20px !important; }
+    .num-btn .name-tag { font-size: 9px !important; }
+
+    /* 情緒大按鈕：mobile 一律 64px face + 12px label */
+    .emo-grid { gap: 8px; }
+    .emo-grid { grid-template-columns: repeat(5, 1fr); }
+    .emo-btn { padding: 10px 4px; }
+    .emo-btn .face { font-size: 36px; }
+    .emo-btn .label { font-size: 12px; letter-spacing: 1px; }
+
+    /* 統計列：5 欄改成 2 欄式（每行 2-3 個情緒） */
+    .stat-row { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .mini-stat { padding: 8px 4px; }
+    .mini-stat .face { font-size: 22px; }
+    .mini-stat .lbl { font-size: 10px; }
+    .mini-stat .cnt { font-size: 20px; }
+
+    /* 打卡牆 sticky：縮小 */
+    .wall { grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)) !important; gap: 8px !important; }
+    .sticky { padding: 8px 6px !important; }
+    .sticky .face { font-size: 26px; }
+    .sticky .nums { font-size: 11px; }
+    .sticky .name { font-size: 10px; }
+
+    /* 三步驟 chip 縮小 */
+    .step-chip { font-size: 12px; padding: 6px 10px; }
+  }
+  @media (max-width: 380px) {
+    .num-grid { grid-template-columns: repeat(4, 1fr) !important; }
+    .num-btn { min-height: 52px !important; font-size: 18px !important; }
+    .emo-btn .face { font-size: 32px; }
+    .emo-btn .label { font-size: 11px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

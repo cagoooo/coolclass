@@ -40,6 +40,21 @@
     margin-top: 22px;
   }
   .danger-zone h3 { color: var(--r); margin: 0 0 12px; }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .summary { padding: 14px 16px; box-shadow: 4px 4px 0 var(--ink) !important; }
+    .summary h3 { font-size: 14px; margin-bottom: 8px; }
+    .summary td { padding: 6px 6px; font-size: 12px; }
+    .summary td:nth-child(2) { font-size: 13px; }
+
+    .danger-zone { padding: 14px; }
+    .danger-zone h3 { font-size: 15px; }
+
+    .btn-bar { gap: 6px; flex-wrap: wrap; }
+    .btn-bar .btn { padding: 8px 14px; font-size: 13px; flex: 1 1 auto; min-width: 0; }
+    .btn-bar .btn.lg { padding: 10px 18px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

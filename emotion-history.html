@@ -193,6 +193,43 @@
     opacity: .5;
   }
   .emoji-seq .day.empty .f::before { content: '—'; font-size: 14px; color: var(--mute-2); }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .range-pick { flex-wrap: wrap; box-shadow: 2px 2px 0 var(--ink); }
+    .range-pick button { padding: 7px 12px; font-size: 12px; }
+
+    .chart-wrap { padding: 14px; border-radius: var(--rad); overflow-x: auto; box-shadow: 4px 4px 0 var(--ink) !important; }
+    .chart { height: 140px; gap: 3px; min-width: 100%; }
+    .day-col { min-width: 22px; }
+    .day-axis { gap: 3px; font-size: 9px; }
+    .day-axis .lbl { min-width: 22px; }
+
+    .legend { font-size: 12px; gap: 8px; }
+    .legend .item .sq { width: 14px; height: 14px; }
+
+    .stats { grid-template-columns: repeat(5, 1fr) !important; gap: 4px; }
+    .stat { padding: 8px 3px; box-shadow: 2px 2px 0 var(--ink) !important; }
+    .stat .ico { font-size: 22px; }
+    .stat .lbl { font-size: 9px; letter-spacing: .5px; }
+    .stat .val { font-size: 20px; }
+
+    .student-list { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; }
+    .student-chip { padding: 6px 8px; }
+    .student-chip .num { font-size: 10px; padding: 1px 6px; }
+    .student-chip .nm { font-size: 11px; }
+    .student-chip .cnt { font-size: 10px; }
+
+    .student-detail { padding: 14px; }
+    .emoji-seq { gap: 3px; }
+    .emoji-seq .day { width: 36px; height: 48px; }
+    .emoji-seq .day .d { font-size: 8px; }
+    .emoji-seq .day .f { font-size: 18px; }
+  }
+  @media (max-width: 380px) {
+    .stats { grid-template-columns: repeat(3, 1fr) !important; }
+    .stats .stat:nth-child(n+4) { grid-column: span 1; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

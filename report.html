@@ -153,6 +153,34 @@
     .report-block { box-shadow: none !important; break-inside: avoid; }
     .kpi, .emo-bars .bar-row { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .report-toolbar { padding: 12px 14px; gap: 8px; flex-wrap: wrap; box-shadow: 4px 4px 0 var(--ink) !important; }
+    .report-toolbar label { font-size: 12px; }
+    .report-toolbar input[type="month"] { padding: 6px 8px; font-size: 13px; }
+    .report-toolbar .btn { padding: 8px 12px; font-size: 12px; flex: 1 1 auto; }
+    .report-toolbar > a { margin-left: 0 !important; }
+
+    .report-block { padding: 16px 16px; border-radius: var(--rad); box-shadow: 4px 4px 0 var(--ink) !important; margin-bottom: 12px; }
+    .report-block h3 { font-size: 17px; gap: 6px; }
+    .report-block h3 .num { width: 30px; height: 30px; font-size: 14px; }
+
+    .kpis { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+    .kpi { padding: 10px; }
+    .kpi .num { font-size: 28px; }
+    .kpi .lbl { font-size: 10px; }
+
+    .emo-bars .bar-row { padding: 5px 8px; gap: 8px; }
+    .emo-bars .lbl { width: 44px; font-size: 13px; }
+    .emo-bars .face { font-size: 20px; }
+    .emo-bars .bar { height: 14px; }
+    .emo-bars .cnt { min-width: 36px; font-size: 14px; }
+
+    .student-issues { grid-template-columns: 1fr !important; gap: 6px; }
+    .student-issues .chip { padding: 6px 10px; font-size: 13px; }
+    .item-list li { font-size: 13px; padding: 6px 8px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

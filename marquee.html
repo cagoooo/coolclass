@@ -264,6 +264,30 @@
   }
   body.fullscreen .hint-fullscreen { display: block; animation: fade 3s forwards; }
   @keyframes fade { to { opacity: 0; } }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .marquee-box { height: 100px; border-radius: var(--rad); border-width: 3px; }
+    .marquee-track { font-size: clamp(28px, 8vw, 48px); }
+    .marquee-track .item { padding: 0 40px; }
+    .marquee-track .sep { margin: 0 18px; }
+    .clock-widget, .countdown-widget { font-size: 16px; padding: 6px 12px; border-radius: 10px; }
+    .overlay-top { padding: 0 16px; top: 10px; }
+
+    .panel-grid { grid-template-columns: 1fr !important; gap: 16px; }
+    .msg-item { padding: 8px 10px; }
+    .msg-item input[type="text"] { font-size: 13px; }
+    .add-row { gap: 6px; }
+    .add-row input { padding: 8px 10px; font-size: 13px; }
+    .templates button { font-size: 11px; padding: 4px 8px; }
+
+    .setting-row { gap: 8px; flex-wrap: wrap; }
+    .setting-row label { width: auto; font-size: 12px; }
+    .theme-pick button { width: 36px; height: 36px; }
+    .quick-cd { font-size: 11px; padding: 4px 8px; }
+    .action-row { gap: 8px; }
+    .action-row button { padding: 10px 14px; font-size: 13px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

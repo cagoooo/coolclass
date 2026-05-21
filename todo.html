@@ -183,6 +183,33 @@
   }
   .col.red    .col-empty { color: rgba(255,255,255,.7); }
   .col.green  .col-empty { color: rgba(26,62,34,.55); }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    /* 三欄改成縱向堆疊（已有，但加更多細節） */
+    .board { gap: 14px !important; }
+    .col { padding: 14px !important; border-radius: var(--rad-sm); box-shadow: 4px 4px 0 var(--ink) !important; }
+    .col-head { gap: 8px; margin-bottom: 12px; }
+    .col-head .num { width: 30px; height: 30px; font-size: 14px; }
+    .col-head .ttl { font-size: 16px; }
+    .col-head .ttl small { font-size: 10px; }
+    .col-head .count { font-size: 11px; padding: 2px 8px; }
+
+    .add-btn { padding: 10px; font-size: 13px; }
+
+    .item { padding: 10px 12px; box-shadow: 2px 2px 0 var(--ink); }
+    .item-title { font-size: 14px; }
+    .item-note { font-size: 12px; }
+    .item-del { width: 26px; height: 26px; font-size: 14px; }
+
+    /* 工具列按鈕 wrap */
+    .top-bar { gap: 6px !important; padding: 0 8px; }
+    .top-bar .btn { padding: 8px 14px; font-size: 13px; }
+  }
+  @media (max-width: 380px) {
+    .col { padding: 12px !important; }
+    .item-title { font-size: 13px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

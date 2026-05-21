@@ -712,6 +712,30 @@
   @media (max-width: 480px) {
     .tools.core, .tools.classroom, .tools.setup { grid-template-columns: 1fr; }
     .stats { grid-template-columns: 1fr 1fr; }
+    /* v3.2：再細調 */
+    .wrap { padding: 14px 14px 50px; }
+    .topbar { flex-direction: column; align-items: flex-start; }
+    .brand .mark { width: 44px; height: 44px; font-size: 22px; box-shadow: 3px 3px 0 var(--r); }
+    .brand .name h1 { font-size: 18px; }
+    .brand .name .meta { font-size: 11px; gap: 6px; }
+    .roster-pill { padding: 8px 14px; font-size: 12px; }
+    .today { padding: 20px 18px; border-radius: 22px; box-shadow: 5px 5px 0 var(--p); }
+    .today h2 { font-size: 20px; line-height: 1.4; }
+    .today .quote { font-size: 13px; }
+    .today .ring { width: 110px; height: 110px; }
+    .today .ring .num { font-size: 28px; }
+    .stat { min-height: 92px; padding: 12px; }
+    .stat .val { font-size: 24px; }
+    .stat .lbl { font-size: 11px; }
+    .tool { min-height: 140px; padding: 14px; }
+    .tool h3 { font-size: 16px; }
+    .tool p { font-size: 12px; }
+    .sec-title { gap: 8px; }
+    .sec-title .num { width: 32px; height: 32px; font-size: 14px; }
+    .sec-title h2 { font-size: 17px; }
+    .sec-title h2 small { font-size: 10px; }
+    .install { padding: 12px 14px; font-size: 13px; flex-wrap: wrap; }
+    .tips { padding: 18px; border-radius: var(--rad); }
   }
 
   /* 禁用瀏覽器預設動畫過快 */

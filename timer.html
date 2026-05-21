@@ -213,6 +213,32 @@
   body.fullscreen .timer-panel { padding: 80px 40px; margin-top: 4vh; }
   body.fullscreen .time-num { font-size: clamp(220px, 38vw, 600px); }
   body.fullscreen .btn-bar { margin-top: 32px; }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .timer-panel { padding: 24px 16px 20px; border-radius: var(--rad); box-shadow: 5px 5px 0 var(--ink) !important; }
+    .timer-panel::before { inset: 8px; }
+    .time-num { font-size: clamp(96px, 30vw, 180px) !important; letter-spacing: -3px; text-shadow: 4px 4px 0 var(--r), 8px 8px 0 var(--b) !important; }
+    .timer-label { font-size: clamp(14px, 4vw, 18px) !important; margin-top: 10px; }
+    .progress-wrap { height: 16px; margin: 16px auto 8px; border-width: 2px; }
+    .btn-bar.center { gap: 6px; flex-wrap: wrap; }
+    .btn-bar.center .btn.lg { padding: 10px 14px; font-size: 14px; }
+    .preset-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .preset-btn { padding: 12px 4px; box-shadow: 2px 2px 0 var(--ink); }
+    .preset-btn .mins { font-size: 22px; }
+    .preset-btn .label { font-size: 9px; letter-spacing: 1px; }
+    .custom-row { gap: 6px; padding-top: 12px; }
+    .custom-row .input { width: 64px; padding: 8px; font-size: 16px; }
+    .custom-row .lbl { font-size: 13px; }
+    .settings-grid { grid-template-columns: 1fr !important; gap: 10px; }
+    .extras-grid { grid-template-columns: 1fr !important; gap: 10px; }
+    .ext-card { padding: 12px 14px; }
+    .ext-time { font-size: 44px; }
+  }
+  @media (max-width: 380px) {
+    .time-num { font-size: 80px !important; }
+    .preset-grid { grid-template-columns: repeat(3, 1fr); }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

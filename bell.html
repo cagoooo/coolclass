@@ -100,6 +100,27 @@
     .slot { grid-template-columns: 40px 1fr 90px 80px; }
     .slot .actions { grid-column: 1 / -1; justify-content: center; }
   }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .now-panel { padding: 18px 16px; border-radius: var(--rad); box-shadow: 5px 5px 0 var(--ink) !important; }
+    .now-time { font-size: clamp(56px, 14vw, 80px); text-shadow: 3px 3px 0 var(--r); }
+    .now-next { font-size: clamp(13px, 3.5vw, 16px); margin-top: 10px; }
+
+    .slot { grid-template-columns: 34px 1fr 84px 70px !important; padding: 8px 10px; gap: 6px; }
+    .slot .idx { font-size: 18px; }
+    .slot input.label-input { font-size: 14px; }
+    .slot input[type="time"] { padding: 3px 6px; font-size: 13px; }
+    .slot .actions { gap: 4px; grid-column: 1 / -1; justify-content: center; padding-top: 4px; border-top: 1px dashed rgba(0,0,0,0.1); }
+    .slot .actions button { width: 28px; height: 28px; font-size: 13px; }
+
+    /* 主控 + 設定 row 改縱向 */
+    .btn-bar { gap: 8px; flex-wrap: wrap; }
+  }
+  @media (max-width: 380px) {
+    .slot { grid-template-columns: 28px 1fr 72px 60px !important; }
+    .slot input[type="time"] { font-size: 12px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

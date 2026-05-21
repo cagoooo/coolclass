@@ -212,6 +212,40 @@
     table.sheet th, table.sheet td { height: 24px; padding: 2px; border-color: #888; }
     @page { size: A4 landscape; margin: 12mm 10mm; }
   }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    /* 工具列：欄位堆疊 */
+    .toolbar { grid-template-columns: 1fr !important; gap: 10px !important; padding: 14px; }
+    .field label { font-size: 12px; }
+    .field input { padding: 8px 10px; font-size: 14px; }
+    .btn-group { gap: 6px; flex-wrap: wrap; }
+    .btn-group .btn { padding: 8px 12px; font-size: 12px; flex: 1 1 auto; min-width: 0; }
+
+    /* 表格區：保持橫滑可用 + sticky 第一欄 */
+    .sheet-wrap { padding: 14px; border-radius: var(--rad); box-shadow: 4px 4px 0 var(--ink) !important; }
+    .sheet-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .sheet-title { font-size: 16px; }
+    .sheet-stats { font-size: 12px; }
+
+    table.sheet { font-size: 11px; }
+    table.sheet th, table.sheet td { padding: 3px 1px; height: 28px; }
+    table.sheet tbody th { width: 64px; }
+    table.sheet tbody th .stu-num { font-size: 10px; padding: 1px 6px; }
+    table.sheet tbody th .stu-name { font-size: 11px; }
+    table.sheet .mark { font-size: 11px; min-width: 16px; min-height: 16px; line-height: 18px; }
+
+    /* 黏住第一欄（座號 + 姓名），讓使用者橫滑時仍能對應 */
+    table.sheet tbody th { position: sticky; left: 0; z-index: 1; }
+    table.sheet thead th:first-child { position: sticky; left: 0; z-index: 2; }
+
+    .legend { font-size: 12px; gap: 8px; padding: 0 8px; }
+  }
+  @media (max-width: 380px) {
+    table.sheet { font-size: 10px; }
+    table.sheet tbody th { width: 56px; }
+    table.sheet tbody th .stu-name { font-size: 10px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

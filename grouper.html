@@ -166,6 +166,27 @@
     .groups { gap: 8mm; grid-template-columns: repeat(3, 1fr); }
     @page { size: A4; margin: 10mm; }
   }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .ctrl-row { gap: 8px; flex-wrap: wrap; }
+    .ctrl-row label { font-size: 13px; }
+    .mode-pick button { padding: 7px 14px; font-size: 12px; }
+    .switch { font-size: 12px; }
+    .switch .knob { width: 38px; height: 22px; }
+
+    .groups { grid-template-columns: 1fr !important; gap: 12px; }
+    .group-card { padding: 14px 16px; border-radius: var(--rad); box-shadow: 4px 4px 0 var(--ink) !important; }
+    .group-head { gap: 8px; margin-bottom: 10px; padding-bottom: 8px; }
+    .group-head .num-tag { width: 36px; height: 36px; font-size: 18px; }
+    .group-head .title { font-size: 17px; }
+    .group-head .title small { font-size: 11px; }
+    .member { padding: 6px 10px; font-size: 13px; }
+    .member.leader::after { font-size: 14px; }
+
+    .btn-bar { gap: 6px; flex-wrap: wrap; }
+    .btn-bar .btn { padding: 8px 12px; font-size: 13px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

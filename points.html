@@ -118,6 +118,31 @@
   }
   .grp .bar .plus { background: var(--g); color: #fff; }
   .grp .bar .minus { background: var(--r); color: #fff; }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    /* 個人榜：2 欄 */
+    .leaderboard { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+    .stu { padding: 8px 6px; box-shadow: 2px 2px 0 var(--ink); }
+    .stu .rank { width: 28px; height: 28px; font-size: 12px; top: -8px; left: -8px; }
+    .stu .num { font-size: 11px; }
+    .stu .name { font-size: 15px; margin: 2px 0 6px; }
+    .stu .score { font-size: 36px; }
+    .stu .bar { gap: 3px; }
+    .stu .bar button { width: 30px; height: 28px; font-size: 13px; box-shadow: 2px 2px 0 var(--ink); }
+    .stu .last { font-size: 9px; margin-top: 3px; }
+
+    /* 小組榜：1 欄 */
+    .groups-board { grid-template-columns: 1fr !important; gap: 10px; }
+    .grp { padding: 14px; }
+    .grp .name { font-size: 18px; margin-bottom: 6px; }
+    .grp .score { font-size: 48px; margin: 6px 0; }
+    .grp .bar button { padding: 6px; font-size: 13px; }
+  }
+  @media (max-width: 380px) {
+    .leaderboard { grid-template-columns: repeat(2, 1fr) !important; }
+    .stu .score { font-size: 30px; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>

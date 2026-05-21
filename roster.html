@@ -105,6 +105,21 @@
   @media (max-width: 540px) {
     .form-row { grid-template-columns: 1fr; gap: 6px; }
   }
+
+  /* ========== v3.2 RWD ========== */
+  @media (max-width: 600px) {
+    .names-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; gap: 6px; }
+    .name-cell { padding: 6px 10px; box-shadow: 2px 2px 0 var(--ink); }
+    .name-cell .num { width: 26px; height: 26px; font-size: 12px; }
+    .name-cell input { font-size: 14px; }
+    .impact { padding: 14px 16px; font-size: 13px; box-shadow: 4px 4px 0 var(--ink) !important; }
+    .impact b { font-size: 14px; }
+    .btn-bar { gap: 6px; flex-wrap: wrap; }
+    .btn-bar .btn { padding: 8px 14px; font-size: 13px; }
+  }
+  @media (max-width: 380px) {
+    .names-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  }
 </style>
 <script src="tweaks.js"></script>
 </head>
