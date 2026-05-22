@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學期評語自動生成 · 教室小幫手</title>
+<meta name="description" content="從學生資料自動產生個性化學期評語草稿，老師潤飾後複製到成績系統">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b070ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="學期評語自動生成 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .student-select { display: grid; grid-template-columns: 60px 1fr auto auto; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .student-select select { padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; font-weight: 700; }
+  .student-select input { padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; }
+
+  .stats-pill { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; padding: 10px 14px; background: var(--paper-2); border: 2px dashed var(--ink); border-radius: 12px; font-size: 13px; }
+  .stats-pill .pill { background: #fff; border: 1.5px solid var(--ink); border-radius: 999px; padding: 4px 12px; font-weight: 700; }
+
+  .style-pick { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+  .style-pick button { padding: 6px 14px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 13px; }
+  .style-pick button.on { background: var(--p); color: #fff; }
+
+  .eval-output {
+    background: #fff;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 18px 22px;
+    min-height: 120px;
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    margin-bottom: 14px;
+    outline: none;
+  }
+  .eval-output:focus { box-shadow: 5px 5px 0 var(--y); }
+  .word-count { font-size: 12px; color: var(--muted); text-align: right; margin-top: -8px; margin-bottom: 14px; }
+
+  .batch-list { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; }
+  .batch-item {
+    background: #fff; border: 2px solid var(--ink); border-radius: 8px;
+    padding: 10px 14px; display: flex; gap: 10px; align-items: center;
+  }
+  .batch-item .num { background: var(--ink); color: var(--y); padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .batch-item .name { font-weight: 700; flex-shrink: 0; min-width: 70px; }
+  .batch-item .text { flex: 1; font-size: 12px; line-height: 1.5; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .batch-item .copy { background: var(--g); color: #fff; border: none; padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-p"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">EVALUATION · 學期評語生成</span>
+      <h1>學期末最痛的<em>寫評語</em>，<br>用既有資料 1 秒草擬。</h1>
+      <p class="sub">
+        <span class="badge">讀情緒/出勤/積點/行為</span>
+        <span class="badge">5 種文風</span>
+        <span class="badge">純本機 · 純樣板</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="dataPts">0</span>
+      <span class="sml">筆資料可用</span>
+    </div>
+  </section>
+
+  <div class="panel-grid">
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🎓</div>
+        <h2>選學生 + 生成草稿</h2>
+      </div>
+
+      <div class="student-select">
+        <select id="numSel"></select>
+        <input type="text" id="nameInp" placeholder="姓名（會自動帶名單）">
+        <span style="font-size:13px;color:var(--muted);">資料：</span>
+        <span style="font-size:13px;font-weight:700;" id="dataAvail">—</span>
+      </div>
+
+      <div class="stats-pill" id="statsPill">
+        <span style="color:var(--muted);">選一位學生後顯示該生資料摘要…</span>
+      </div>
+
+      <div>
+        <label style="font-weight:700;font-size:14px;">📝 評語文風：</label>
+        <div class="style-pick" id="styleRow">
+          <button data-style="warm" class="on">💝 溫暖鼓勵型</button>
+          <button data-style="objective">📊 客觀描述型</button>
+          <button data-style="growth">🌱 成長導向型</button>
+          <button data-style="encourage">🚀 積極進取型</button>
+          <button data-style="formal">📄 制式正式型</button>
+        </div>
+      </div>
+
+      <div>
+        <label style="font-weight:700;font-size:14px;margin-top:8px;display:block;">⚙️ 字數：</label>
+        <div class="style-pick">
+          <button data-len="50" class="on len-btn">短 ~50 字</button>
+          <button data-len="80" class="len-btn">中 ~80 字</button>
+          <button data-len="120" class="len-btn">長 ~120 字</button>
+        </div>
+      </div>
+
+      <div class="btn-bar" style="margin-top:14px;">
+        <button class="btn primary lg" onclick="generate()">✨ 生成評語草稿</button>
+        <button class="btn y" onclick="reGenerate()">🎲 換一個版本</button>
+      </div>
+
+      <div style="margin-top:14px;">
+        <label style="font-weight:700;font-size:14px;display:block;margin-bottom:6px;">📋 評語（可編輯）：</label>
+        <div class="eval-output" id="output" contenteditable="true">點上方「生成評語草稿」開始…</div>
+        <div class="word-count" id="wordCount"></div>
+        <div class="btn-bar">
+          <button class="btn g" onclick="copyOutput()">📋 複製評語</button>
+          <button class="btn b" onclick="saveCustom()">💾 存為自訂版本</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">📚</div>
+        <h2>全班批次（草稿一覽）</h2>
+        <span class="tail">每位學生一份草稿</span>
+      </div>
+
+      <div class="btn-bar" style="margin-bottom:12px;">
+        <button class="btn primary" onclick="generateAll()">🚀 全班一鍵生成</button>
+        <button class="btn y" onclick="exportAll()">📊 匯出 CSV</button>
+        <button class="btn r" onclick="clearAll()">🗑️ 清空草稿</button>
+      </div>
+
+      <div class="batch-list" id="batchList"></div>
+    </section>
+
+  </div>
+
+  <section class="block" style="margin-top:18px;">
+    <div class="block-head">
+      <div class="step">💡</div>
+      <h2>使用建議</h2>
+    </div>
+    <div style="font-size:14px;line-height:1.8;color:var(--ink-soft);">
+      <b>這是「樣板生成」不是 AI</b>：根據學生在 5 個工具（情緒打卡、出勤、積點、行為觀察、閱讀紀錄）的資料，挑句子組合成評語草稿。<br>
+      <b>必要的潤飾</b>：生成後 <b>請手動編輯</b>加入你對該生獨特的觀察、家長關心的議題、給家長的建議。AI 樣板無法取代你對孩子的真實了解。<br>
+      <b>未來會加上 AI 模式</b>：接 Gemini API 後可以根據資料生成更個性化的評語（路線圖見 PROGRESS.md F1）。<br>
+      <b>資料越多評語越準</b>：建議至少有情緒打卡 + 出勤資料才開始用，否則只能生成通用句型。
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已生成</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_evaluation_v1';
+let state = loadState();
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { customs: obj.customs || {}, batch: obj.batch || {} };
+  } catch { return { customs: {}, batch: {} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+let currentStyle = 'warm';
+let currentLen = 50;
+let currentNum = 1;
+
+// ===== 取學生資料 =====
+function getRoster() {
+  if (window.AkaiRoster) return AkaiRoster.load();
+  return { count: 30, names: {} };
+}
+function getName(num) {
+  const r = getRoster();
+  return (r.names && r.names[num]) || `${num} 號`;
+}
+
+function readJSON(k) {
+  try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+
+function analyzeStudent(num) {
+  const stats = {
+    name: getName(num),
+    num,
+    emoCount: 0,
+    emoTop: '',
+    emoBreakdown: {},
+    atnRate: null,
+    atnDays: 0,
+    points: 0,
+    behaviorPos: 0,
+    behaviorNeg: 0,
+    readingCount: 0,
+    hasData: false,
+  };
+
+  // 情緒
+  const emo = readJSON('akai_emotion_v1');
+  if (emo && emo.records) {
+    Object.values(emo.records).forEach(day => {
+      const rec = day[num];
+      if (rec) {
+        const e = rec.emo || rec;
+        stats.emoCount++;
+        stats.emoBreakdown[e] = (stats.emoBreakdown[e] || 0) + 1;
+      }
+    });
+    if (stats.emoCount > 0) {
+      stats.emoTop = Object.entries(stats.emoBreakdown).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
+      stats.hasData = true;
+    }
+  }
+
+  // 出勤
+  const atn = readJSON('akai_attendance_v1');
+  if (atn && atn.sheets) {
+    let present = 0, total = 0;
+    Object.values(atn.sheets).forEach(sheet => {
+      Object.values(sheet.marks || {}).forEach(day => {
+        const v = day[num];
+        if (v) {
+          total++;
+          if (v === 'present' || v === 'late') present++;
+        }
+      });
+    });
+    if (total > 0) {
+      stats.atnRate = present / total;
+      stats.atnDays = present;
+      stats.hasData = true;
+    }
+  }
+
+  // 積點
+  const pts = readJSON('akai_points_v1');
+  if (pts && pts.points) {
+    stats.points = pts.points[num] || 0;
+    if (stats.points > 0) stats.hasData = true;
+  }
+
+  // 行為觀察
+  const bh = readJSON('akai_behavior_v1');
+  if (bh && bh.logs) {
+    bh.logs.forEach(l => {
+      if (parseInt(l.num) === num) {
+        if (l.type === 'pos') stats.behaviorPos++;
+        else if (l.type === 'neg') stats.behaviorNeg++;
+      }
+    });
+    if (stats.behaviorPos + stats.behaviorNeg > 0) stats.hasData = true;
+  }
+
+  // 閱讀
+  const rd = readJSON('akai_reading_v1');
+  if (rd && rd.books) {
+    stats.readingCount = rd.books.filter(b => b.num === num).length;
+    if (stats.readingCount > 0) stats.hasData = true;
+  }
+
+  return stats;
+}
+
+function totalDataPoints() {
+  const r = getRoster();
+  const total = r.count || 30;
+  let count = 0;
+  for (let n = 1; n <= total; n++) {
+    const s = analyzeStudent(n);
+    if (s.hasData) count++;
+  }
+  return count;
+}
+
+// ===== 樣板庫 =====
+const TEMPLATES = {
+  warm: {
+    opening: [
+      '{name}是一個{trait}的孩子。',
+      '看著{name}本學期的點滴，老師感受到滿滿的{trait}。',
+      '{name}用{trait}的態度，走過了這個學期。',
+    ],
+    emoHappy: ['每天笑容滿面、開心打卡，是班上的小太陽 ☀️', '情緒穩定愉悅，常常帶給同學歡笑'],
+    emoBalanced: ['情緒平和、收放得宜', '能用穩定的心情面對每一天'],
+    emoMixed: ['有自己的情緒節奏，老師欣賞你的真實', '勇於表達內心感受，這是很棒的能力'],
+    atnExcellent: ['出席率優異，準時可靠 ✨', '幾乎每天到校，是值得信賴的孩子'],
+    atnGood: ['出席表現穩定，少有缺席'],
+    atnNeed: ['若能再加強出席會更好，期待下學期看到你天天到校'],
+    behaviorPos: ['本學期累積 {n} 次正向行為觀察，遵守班規、樂於助人', '在班級活動中常常主動服務，是同學的好榜樣'],
+    pointsHigh: ['班級積點榜表現亮眼，目前 {n} 分', '對班級事務的參與度很高'],
+    readingHigh: ['本學期閱讀 {n} 本書，培養出寶貴的閱讀習慣 📖'],
+    closing: [
+      '老師期待你下學期繼續發光發熱 🌟',
+      '相信你會帶著這份美好繼續成長 💝',
+      '下學期讓我們一起寫下更多精彩的篇章 ✨',
+      '期待看到你越來越棒的表現 🌈',
+    ],
+  },
+  objective: {
+    opening: ['{name}本學期表現如下：', '依各項紀錄統計，{name}：'],
+    emoHappy: ['情緒記錄以正向為多（{top}佔多數）'],
+    emoBalanced: ['情緒記錄分佈平均，整體穩定'],
+    emoMixed: ['情緒記錄多元，能完整呈現感受'],
+    atnExcellent: ['出席率達 {rate}%，表現優異'],
+    atnGood: ['出席率 {rate}%'],
+    atnNeed: ['出席率 {rate}%，仍有進步空間'],
+    behaviorPos: ['累積正向行為觀察 {n} 次'],
+    pointsHigh: ['班級積點 {n} 分'],
+    readingHigh: ['完成閱讀紀錄 {n} 本'],
+    closing: ['請家長持續鼓勵孩子。', '建請家長關注上述表現。', '感謝您的配合。'],
+  },
+  growth: {
+    opening: ['{name}在這學期，看見了明顯的成長：', '{name}持續展現學習熱情：'],
+    emoHappy: ['情緒管理已逐漸成熟，能自我調節'],
+    emoBalanced: ['情緒穩定，是孩子成熟的展現'],
+    emoMixed: ['正在學習辨識與表達情緒，每個感受都是成長的養分'],
+    atnExcellent: ['出席習慣已養成，這是學習力的基礎'],
+    atnGood: ['出席穩定，習慣良好'],
+    atnNeed: ['出席習慣仍在養成中，需要家長協助建立'],
+    behaviorPos: ['正向行為的累積（{n} 次）反映出社會性的發展'],
+    pointsHigh: ['積極參與班級事務，展現主動性'],
+    readingHigh: ['閱讀量（{n} 本）反映出自主學習的能力正在增強'],
+    closing: [
+      '期待下學期看到更多突破。',
+      '相信持續努力會有更大的收穫。',
+      '每一天的累積都在塑造更好的自己。',
+    ],
+  },
+  encourage: {
+    opening: ['{name}！這學期你做得很棒：', '親愛的 {name}，老師想告訴你：'],
+    emoHappy: ['你的笑容是班上的小陽光 ☀️'],
+    emoBalanced: ['你的穩定讓老師很安心 💖'],
+    emoMixed: ['真實的你才是最棒的你 💝'],
+    atnExcellent: ['每天到校的堅持值得讚許 ✨'],
+    atnGood: ['出席表現很穩定 👍'],
+    atnNeed: ['加油！希望下學期看到你每天到校 💪'],
+    behaviorPos: ['{n} 次的善舉，老師都看在眼裡 🌟'],
+    pointsHigh: ['{n} 分的積點是你努力的證明 🏆'],
+    readingHigh: ['{n} 本書讀完了！你超棒的 📚'],
+    closing: [
+      '繼續加油！老師永遠支持你 🚀',
+      '相信自己，下學期會更精彩 ✨',
+      '你已經很棒了，繼續做你自己 🌈',
+    ],
+  },
+  formal: {
+    opening: ['茲就 {name} 同學本學期之學習表現評述如下：'],
+    emoHappy: ['情緒表現正向，適應良好'],
+    emoBalanced: ['情緒穩定，調節得宜'],
+    emoMixed: ['情緒表達能力良好'],
+    atnExcellent: ['出席率達 {rate}%，表現優異'],
+    atnGood: ['出席表現良好（{rate}%）'],
+    atnNeed: ['出席率 {rate}%，宜加強'],
+    behaviorPos: ['累計正向行為觀察 {n} 次，品行端正'],
+    pointsHigh: ['獲頒班級積點 {n} 分，表現積極'],
+    readingHigh: ['完成閱讀紀錄 {n} 本，學習主動'],
+    closing: ['敬請家長持續關注。', '謹此奉告。', '尚請持續鼓勵。'],
+  },
+};
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generateText(num, style, len) {
+  const s = analyzeStudent(num);
+  if (!s.hasData) {
+    return `${s.name}本學期尚無足夠資料生成評語。建議先在情緒打卡、出勤、積點榜或行為觀察工具中累積至少 5 筆資料後再嘗試。`;
+  }
+  const tpl = TEMPLATES[style] || TEMPLATES.warm;
+
+  // 找形容詞
+  let trait = '認真踏實';
+  if (s.points > 5 || s.behaviorPos > 3) trait = '積極主動';
+  if (s.readingCount >= 5) trait = '熱愛閱讀且勤奮';
+  if (s.emoTop === '😊' || s.emoTop === '開心') trait = '陽光開朗';
+
+  let pieces = [];
+  pieces.push(pickRandom(tpl.opening).replace('{name}', s.name).replace('{trait}', trait));
+
+  // 情緒
+  if (s.emoCount > 0) {
+    if (['😊','開心','😄'].includes(s.emoTop)) pieces.push(pickRandom(tpl.emoHappy).replace('{top}', s.emoTop));
+    else if (['😐','平靜','🙂'].includes(s.emoTop)) pieces.push(pickRandom(tpl.emoBalanced).replace('{top}', s.emoTop));
+    else pieces.push(pickRandom(tpl.emoMixed).replace('{top}', s.emoTop));
+  }
+
+  // 出勤
+  if (s.atnRate !== null) {
+    const pct = Math.round(s.atnRate * 100);
+    if (s.atnRate >= 0.95) pieces.push(pickRandom(tpl.atnExcellent).replace('{rate}', pct));
+    else if (s.atnRate >= 0.85) pieces.push(pickRandom(tpl.atnGood).replace('{rate}', pct));
+    else pieces.push(pickRandom(tpl.atnNeed).replace('{rate}', pct));
+  }
+
+  // 行為觀察
+  if (s.behaviorPos >= 3) pieces.push(pickRandom(tpl.behaviorPos).replace('{n}', s.behaviorPos));
+
+  // 積點
+  if (s.points >= 5) pieces.push(pickRandom(tpl.pointsHigh).replace('{n}', s.points));
+
+  // 閱讀
+  if (s.readingCount >= 3) pieces.push(pickRandom(tpl.readingHigh).replace('{n}', s.readingCount));
+
+  pieces.push(pickRandom(tpl.closing));
+
+  let text = pieces.join('');
+
+  // 按字數截斷
+  if (len === 50 && text.length > 60) {
+    // 短：保留開頭 + 結尾
+    text = pieces[0] + (pieces.length > 1 ? pieces[Math.floor(pieces.length / 2)] : '') + pieces[pieces.length - 1];
+  } else if (len === 80 && text.length > 100) {
+    // 中：拿 3-4 句
+    text = pieces.slice(0, Math.min(4, pieces.length)).join('') + pieces[pieces.length - 1];
+  }
+  // 長：全給
+
+  return text;
+}
+
+function populateStudentSel() {
+  const r = getRoster();
+  const sel = document.getElementById('numSel');
+  let opts = '';
+  for (let i = 1; i <= (r.count || 30); i++) {
+    opts += `<option value="${i}">${i} 號</option>`;
+  }
+  sel.innerHTML = opts;
+  sel.value = currentNum;
+}
+
+function onStudentChange() {
+  currentNum = parseInt(document.getElementById('numSel').value);
+  document.getElementById('nameInp').value = getName(currentNum);
+  const s = analyzeStudent(currentNum);
+  const pillData = [];
+  if (s.emoCount) pillData.push(`<span class="pill">😊 ${s.emoCount} 天打卡</span>`);
+  if (s.atnRate !== null) pillData.push(`<span class="pill">📋 ${Math.round(s.atnRate*100)}% 出席</span>`);
+  if (s.points) pillData.push(`<span class="pill">🏆 ${s.points} 積點</span>`);
+  if (s.behaviorPos) pillData.push(`<span class="pill">⭐ ${s.behaviorPos} 正向行為</span>`);
+  if (s.behaviorNeg) pillData.push(`<span class="pill">🟡 ${s.behaviorNeg} 需關心</span>`);
+  if (s.readingCount) pillData.push(`<span class="pill">📖 ${s.readingCount} 本書</span>`);
+
+  document.getElementById('statsPill').innerHTML = pillData.length
+    ? pillData.join('')
+    : '<span style="color:var(--muted);">此學生尚無資料，請先累積至少 5 筆再生成評語</span>';
+  document.getElementById('dataAvail').textContent = s.hasData ? '✓ 可用' : '⚠ 不足';
+  document.getElementById('dataAvail').style.color = s.hasData ? 'var(--g)' : 'var(--r)';
+}
+
+function generate() {
+  const text = generateText(currentNum, currentStyle, currentLen);
+  document.getElementById('output').textContent = text;
+  updateWordCount();
+  flash('✓ 已生成');
+}
+function reGenerate() { generate(); }
+
+function updateWordCount() {
+  const text = document.getElementById('output').textContent.trim();
+  document.getElementById('wordCount').textContent = `${text.length} 字`;
+}
+
+async function copyOutput() {
+  const text = document.getElementById('output').textContent.trim();
+  try {
+    await navigator.clipboard.writeText(text);
+    flash('✓ 評語已複製');
+  } catch {
+    alert('複製失敗');
+  }
+}
+
+function saveCustom() {
+  const text = document.getElementById('output').textContent.trim();
+  if (!text) return;
+  state.batch[currentNum] = text;
+  saveState();
+  renderBatch();
+  flash('✓ 已存到批次清單');
+}
+
+function generateAll() {
+  if (!confirm('要為全班每位學生生成評語草稿嗎？\n（已有自訂版本的會保留不覆蓋）')) return;
+  const r = getRoster();
+  const total = r.count || 30;
+  let generated = 0;
+  for (let n = 1; n <= total; n++) {
+    if (state.batch[n]) continue;  // 已有自訂版本不覆蓋
+    const s = analyzeStudent(n);
+    if (s.hasData) {
+      state.batch[n] = generateText(n, currentStyle, currentLen);
+      generated++;
+    }
+  }
+  saveState();
+  renderBatch();
+  flash(`✓ 已生成 ${generated} 位學生的草稿`);
+}
+
+function renderBatch() {
+  const r = getRoster();
+  const total = r.count || 30;
+  const list = document.getElementById('batchList');
+  let html = '';
+  let hasAny = false;
+  for (let n = 1; n <= total; n++) {
+    const text = state.batch[n];
+    if (text) {
+      hasAny = true;
+      html += `
+        <div class="batch-item">
+          <span class="num">${n}</span>
+          <span class="name">${escapeHtml(getName(n).replace(/^\d+ 號 ?/, '') || `${n}號`)}</span>
+          <div class="text">${escapeHtml(text)}</div>
+          <button class="copy" onclick="copyBatch(${n})">複製</button>
+        </div>
+      `;
+    }
+  }
+  if (!hasAny) {
+    list.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">尚無批次草稿，點「全班一鍵生成」開始</div>';
+  } else {
+    list.innerHTML = html;
+  }
+}
+
+async function copyBatch(num) {
+  const text = state.batch[num];
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    flash(`✓ ${num} 號評語已複製`);
+  } catch { alert('複製失敗'); }
+}
+
+function exportAll() {
+  if (Object.keys(state.batch).length === 0) { alert('沒有草稿可匯出'); return; }
+  const r = getRoster();
+  const total = r.count || 30;
+  const rows = [['學號','姓名','評語']];
+  for (let n = 1; n <= total; n++) {
+    if (state.batch[n]) rows.push([n, getName(n), state.batch[n]]);
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `學期評語草稿_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  flash('✓ CSV 已下載');
+}
+
+function clearAll() {
+  if (!confirm('清空所有批次草稿？')) return;
+  state.batch = {};
+  saveState();
+  renderBatch();
+  flash('已清空');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// 事件綁定
+document.getElementById('numSel').addEventListener('change', onStudentChange);
+document.querySelectorAll('[data-style]').forEach(b => b.onclick = () => {
+  currentStyle = b.dataset.style;
+  document.querySelectorAll('[data-style]').forEach(x => x.classList.toggle('on', x === b));
+});
+document.querySelectorAll('.len-btn').forEach(b => b.onclick = () => {
+  currentLen = parseInt(b.dataset.len);
+  document.querySelectorAll('.len-btn').forEach(x => x.classList.toggle('on', x === b));
+});
+document.getElementById('output').addEventListener('input', updateWordCount);
+
+populateStudentSel();
+onStudentChange();
+renderBatch();
+document.getElementById('dataPts').textContent = totalDataPoints();
+</script>
+
+</body>
+</html>

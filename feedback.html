@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給阿凱老師建議 · 教室小幫手</title>
+<meta name="description" content="教室小幫手使用者回饋表 — 你的建議讓工具更好用">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff97c5">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="給阿凱老師建議 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .fb-form { display: flex; flex-direction: column; gap: 14px; }
+  .fb-form label { font-weight: 700; color: var(--ink); display: block; margin-bottom: 6px; }
+  .fb-form label small { font-weight: 400; opacity: .6; margin-left: 6px; font-size: 12px; }
+  .fb-form input[type="text"], .fb-form textarea, .fb-form select {
+    width: 100%; padding: 10px 12px;
+    border: 2.5px solid var(--ink); border-radius: 10px;
+    font-family: inherit; font-size: 14px;
+    background: #fff;
+    box-sizing: border-box;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .fb-form textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+  .fb-radio-group, .fb-check-group {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .fb-radio-group label, .fb-check-group label {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border: 2px solid var(--ink); border-radius: 999px;
+    background: var(--paper-2); cursor: pointer;
+    margin: 0; font-weight: 600; font-size: 13px;
+    transition: background .15s;
+  }
+  .fb-radio-group label.on, .fb-check-group label.on {
+    background: var(--pink); color: #fff;
+  }
+  .fb-radio-group input, .fb-check-group input { display: none; }
+  .star-row { display: flex; gap: 4px; }
+  .star-row .star { font-size: 32px; cursor: pointer; opacity: .35; transition: opacity .15s, transform .15s; }
+  .star-row .star.on { opacity: 1; color: #ffd23f; }
+  .star-row .star:hover { transform: scale(1.2); }
+
+  .gform-link { background: linear-gradient(135deg, #fff8e8 0%, #fff3c4 100%); border: 3px dashed var(--ink); border-radius: 14px; padding: 18px 20px; margin-bottom: 18px; }
+  .gform-link a { color: var(--ink); font-weight: 900; text-decoration: underline; }
+  .gform-link.placeholder { opacity: .6; }
+
+  .thanks {
+    background: linear-gradient(135deg, #ffd23f 0%, #6bcb77 100%);
+    color: var(--ink);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    display: none;
+    font-weight: 700;
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  .thanks.show { display: block; }
+  .thanks h2 { margin: 0 0 10px; font-size: 26px; }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-pink"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap narrow">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">FEEDBACK · 教師回饋</span>
+      <h1>給<em>阿凱老師</em>一些<br>真實的使用建議。</h1>
+      <p class="sub">
+        <span class="badge">2 分鐘填完</span>
+        <span class="badge">不收集個資</span>
+        <span class="badge">你的建議直接影響下一版</span>
+      </p>
+    </div>
+  </section>
+
+  <div class="gform-link placeholder" id="gformWrap">
+    💡 <b>更快的方式：</b>填 Google Form（連結未來會放這裡，阿凱老師建好後即可貼上）
+    <br><br>
+    <small style="opacity:.7;">下方的本機表單可立刻使用：填完按「複製到剪貼簿」貼到 LINE / Email 寄給阿凱老師也行。</small>
+  </div>
+
+  <section class="block" id="formBlock">
+    <div class="block-head">
+      <div class="step">📝</div>
+      <h2>你的使用回饋</h2>
+      <span class="tail">每一欄都可選填，填寫越多越好</span>
+    </div>
+
+    <form class="fb-form" id="fbForm" onsubmit="return false;">
+
+      <div>
+        <label>👤 你的身分 <small>（必填）</small></label>
+        <div class="fb-radio-group" data-key="role">
+          <label><input type="radio" name="role" value="elementary">🏫 國小老師</label>
+          <label><input type="radio" name="role" value="middle">🎓 國中老師</label>
+          <label><input type="radio" name="role" value="high">📚 高中老師</label>
+          <label><input type="radio" name="role" value="cram">📖 補教 / 安親</label>
+          <label><input type="radio" name="role" value="admin">📋 行政 / 主任</label>
+          <label><input type="radio" name="role" value="other">🤔 其他</label>
+        </div>
+      </div>
+
+      <div>
+        <label>⭐ 整體使用體驗 <small>（請給星）</small></label>
+        <div class="star-row" id="starRow"></div>
+      </div>
+
+      <div>
+        <label>💝 你最喜歡 / 最常用的工具 <small>（可複選最多 5 個）</small></label>
+        <div class="fb-check-group" id="favTools"></div>
+      </div>
+
+      <div>
+        <label>🚧 用起來有困難或卡關的工具？</label>
+        <textarea name="pain" placeholder="例如：「跑馬燈設定時鐘的位置找不到」「想知道情緒打卡能不能批次匯入」"></textarea>
+      </div>
+
+      <div>
+        <label>✨ 最希望加入什麼新功能？</label>
+        <textarea name="wish" placeholder="例如：「請加上自動接 LINE 群通知」「想要學生點名能掃 QR Code」"></textarea>
+      </div>
+
+      <div>
+        <label>📢 你願意推薦給其他老師嗎？</label>
+        <div class="fb-radio-group" data-key="recommend">
+          <label><input type="radio" name="recommend" value="yes">👍 已經推薦過了！</label>
+          <label><input type="radio" name="recommend" value="maybe">🤔 可能會</label>
+          <label><input type="radio" name="recommend" value="not_yet">⏳ 還在試用</label>
+          <label><input type="radio" name="recommend" value="no">😕 不太會</label>
+        </div>
+      </div>
+
+      <div>
+        <label>💌 其他想說的話</label>
+        <textarea name="extra" placeholder="任何使用心得、希望阿凱老師知道的、bug 描述、想要的學習單範本…"></textarea>
+      </div>
+
+      <div>
+        <label>📧 （選填）若希望阿凱老師回覆，留 Email</label>
+        <input type="text" name="email" placeholder="abc@gmail.com（不填也沒關係）" maxlength="80">
+      </div>
+
+      <div style="border-top:2px dashed var(--ink);padding-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn primary lg" onclick="submitFb()">📤 送出 / 複製到剪貼簿</button>
+        <button type="button" class="btn y" onclick="sendMail()">📧 用 Email 寄出</button>
+        <button type="button" class="btn" onclick="resetFb()">🔄 重填</button>
+      </div>
+
+    </form>
+
+    <div class="thanks" id="thanks">
+      <h2>🌈 謝謝你的回饋！</h2>
+      <div id="thanksMsg"></div>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已複製</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script>
+const TOOLS = [
+  '😊 情緒打卡牆','📝 班級 To-Do','🌈 彩虹能量卡','📋 出勤記錄',
+  '📢 跑馬燈通知','🎯 隨機抽號','⏱️ 教室計時器','👥 隨機分組',
+  '🔔 上下課鈴聲','🏆 班級積點榜','📊 月度報告','📈 情緒歷史',
+  '🎓 學生個人報告','💰 班費記帳','🧒 Kiosk 打卡','🎲 萬用抽籤',
+  '📜 班級公約','🖼️ 學生作品牆','🪑 座位表','📅 課表','🎂 生日榜',
+  '🍱 午餐點餐','📞 親師溝通','🎯 行為觀察','📋 代課交接','🎒 戶外教學',
+  '📚 教案備忘','📖 閱讀紀錄','📝 學習單','🏃 體適能','🎵 節拍器',
+  '🌱 環保打卡','🎤 錄音轉文字'
+];
+
+// 渲染收藏複選
+const favWrap = document.getElementById('favTools');
+favWrap.innerHTML = TOOLS.map((t, i) => `
+  <label><input type="checkbox" name="fav" value="${escapeAttr(t)}"> ${escapeHtml(t)}</label>
+`).join('');
+
+// 星級
+let stars = 5;
+const starRow = document.getElementById('starRow');
+starRow.innerHTML = [1,2,3,4,5].map(v => `<span class="star on" data-v="${v}">★</span>`).join('');
+starRow.querySelectorAll('.star').forEach(s => {
+  s.onclick = () => {
+    stars = parseInt(s.dataset.v);
+    starRow.querySelectorAll('.star').forEach(x => x.classList.toggle('on', parseInt(x.dataset.v) <= stars));
+  };
+});
+
+// Radio/Checkbox on 樣式同步
+document.querySelectorAll('.fb-radio-group').forEach(g => {
+  g.addEventListener('change', () => {
+    g.querySelectorAll('label').forEach(l => l.classList.remove('on'));
+    const checked = g.querySelector('input:checked');
+    if (checked) checked.closest('label').classList.add('on');
+  });
+});
+document.querySelectorAll('.fb-check-group').forEach(g => {
+  g.addEventListener('change', (e) => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      e.target.closest('label').classList.toggle('on', e.target.checked);
+    }
+  });
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+function buildPayload() {
+  const form = document.getElementById('fbForm');
+  const role = form.role.value || '（未填）';
+  const recommend = form.recommend.value || '（未填）';
+  const favs = [...form.querySelectorAll('input[name="fav"]:checked')].map(x => x.value);
+  const pain = form.pain.value.trim() || '（無）';
+  const wish = form.wish.value.trim() || '（無）';
+  const extra = form.extra.value.trim() || '（無）';
+  const email = form.email.value.trim() || '（未留）';
+  const d = new Date();
+  const dStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+  const roleMap = {elementary:'國小老師', middle:'國中老師', high:'高中老師', cram:'補教/安親', admin:'行政/主任', other:'其他'};
+  const recMap = {yes:'已推薦', maybe:'可能會', not_yet:'試用中', no:'不太會'};
+
+  return `教室小幫手 · 使用者回饋
+===================================
+📅 填寫時間：${dStr}
+👤 身分：${roleMap[role] || role}
+⭐ 整體評分：${'★'.repeat(stars)}${'☆'.repeat(5-stars)} (${stars}/5)
+
+💝 常用工具：
+${favs.length ? favs.map(f => '  · ' + f).join('\n') : '  （未勾選）'}
+
+🚧 困難 / 卡關：
+${pain}
+
+✨ 想要的新功能：
+${wish}
+
+📢 是否會推薦：${recMap[recommend] || recommend}
+
+💌 其他想說的話：
+${extra}
+
+📧 聯絡 Email：${email}
+===================================
+`;
+}
+
+async function submitFb() {
+  const txt = buildPayload();
+  try {
+    await navigator.clipboard.writeText(txt);
+    showThanks(`你的回饋已複製到剪貼簿（${txt.length} 字）<br><br>請貼到 LINE 群或 Email 給阿凱老師：<br><b>ipad@mail2.smes.tyc.edu.tw</b><br><br>或之後 Google Form 連結啟用時直接填那邊。`);
+  } catch {
+    // fallback: 顯示 textarea 讓使用者手動複製
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showThanks('已複製到剪貼簿（fallback 模式）'); }
+    catch { alert('無法複製。請手動 Ctrl+A、Ctrl+C：\n\n' + txt); }
+    document.body.removeChild(ta);
+  }
+}
+
+function sendMail() {
+  const txt = buildPayload();
+  const subject = encodeURIComponent('教室小幫手 · 使用者回饋');
+  const body = encodeURIComponent(txt);
+  window.location.href = `mailto:ipad@mail2.smes.tyc.edu.tw?subject=${subject}&body=${body}`;
+}
+
+function resetFb() {
+  document.getElementById('fbForm').reset();
+  stars = 5;
+  starRow.querySelectorAll('.star').forEach(s => s.classList.add('on'));
+  document.querySelectorAll('.fb-radio-group label, .fb-check-group label').forEach(l => l.classList.remove('on'));
+  document.getElementById('thanks').classList.remove('show');
+  document.getElementById('formBlock').style.display = '';
+  flash('已重設');
+}
+
+function showThanks(msg) {
+  document.getElementById('thanksMsg').innerHTML = msg;
+  document.getElementById('thanks').classList.add('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+</script>
+
+</body>
+</html>

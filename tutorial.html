@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>32 工具教學總覽 · 教室小幫手</title>
+<meta name="description" content="教室小幫手 32 個工具的使用情境、快速上手指南、適用場合對照表">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="32 工具教學總覽 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; padding: 10px 14px; background: var(--paper-2); border: 2px dashed var(--ink); border-radius: 12px; align-items: center; }
+  .filter-row input[type="text"] { flex: 1; min-width: 200px; padding: 8px 12px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; }
+  .filter-row .chip {
+    background: #fff; border: 2px solid var(--ink); border-radius: 999px;
+    padding: 4px 12px; cursor: pointer; font-weight: 700; font-size: 13px;
+  }
+  .filter-row .chip.on { background: var(--g); color: #fff; }
+
+  .tut-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .tut-card {
+    background: #fff; border: 3px solid var(--ink); border-radius: 16px;
+    padding: 16px; box-shadow: 4px 4px 0 var(--ink);
+    display: flex; flex-direction: column; gap: 10px;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .tut-card:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--y); }
+  .tut-head { display: flex; align-items: flex-start; gap: 10px; }
+  .tut-head .num {
+    background: var(--ink); color: var(--y);
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: italic; font-weight: 900;
+    flex-shrink: 0; font-size: 14px;
+  }
+  .tut-head .titles { flex: 1; }
+  .tut-head h3 { margin: 0; font-size: 17px; color: var(--ink); }
+  .tut-head .cat { font-size: 11px; color: var(--muted); font-weight: 700; }
+  .tut-preview {
+    background: var(--paper-2);
+    border: 2px dashed var(--ink);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 12px;
+    line-height: 1.5;
+    min-height: 80px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px;
+  }
+  .tut-preview .big-emoji { font-size: 36px; }
+  .tut-scene { font-size: 13px; color: var(--ink-soft); line-height: 1.65; padding: 0 4px; }
+  .tut-steps { font-size: 12px; color: var(--ink); line-height: 1.7; background: rgba(255,210,63,.18); padding: 8px 12px; border-radius: 8px; border-left: 4px solid var(--y); }
+  .tut-actions { display: flex; gap: 6px; }
+  .tut-actions a {
+    flex: 1; text-align: center;
+    background: var(--ink); color: var(--paper);
+    border: 2px solid var(--ink); border-radius: 999px;
+    padding: 7px 10px; font-weight: 700; font-size: 13px;
+    text-decoration: none;
+  }
+  .tut-actions a:hover { transform: translateY(-1px); }
+  .tut-actions a.ghost { background: transparent; color: var(--ink); }
+
+  .empty-msg { text-align: center; color: var(--muted); padding: 40px; font-size: 14px; }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-g"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">TUTORIAL · 32 工具總覽</span>
+      <h1>32 個工具，<em>怎麼用</em>？<br>哪些工具<em>適合你的情境</em>？</h1>
+      <p class="sub">
+        <span class="badge">每個工具一張卡</span>
+        <span class="badge">使用情境 + 3 步驟上手</span>
+        <span class="badge">分類篩選 + 搜尋</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="visibleCount">32</span>
+      <span class="sml">工具顯示中</span>
+    </div>
+  </section>
+
+  <div class="filter-row">
+    <input type="text" id="searchInp" placeholder="🔍 搜尋工具名稱、情境、適用場合…">
+    <span class="chip on" data-cat="">全部</span>
+    <span class="chip" data-cat="morning">🌅 晨間</span>
+    <span class="chip" data-cat="class">📚 上課</span>
+    <span class="chip" data-cat="manage">📋 班務</span>
+    <span class="chip" data-cat="parent">📞 親師</span>
+    <span class="chip" data-cat="proj">📢 投影</span>
+    <span class="chip" data-cat="event">✈️ 活動</span>
+    <span class="chip" data-cat="report">📊 報表</span>
+  </div>
+
+  <div class="tut-grid" id="grid"></div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script>
+const TUTORIALS = [
+  { n: 1, f: 'emotion.html', emo: '😊', t: '情緒打卡牆', cat: 'morning', catLabel: '晨間活動',
+    scene: '孩子進教室自己按下今天的心情，三步驟貼上情緒牆。老師當週可看出班級氛圍變化。',
+    steps: '1. 點學生號碼 → 2. 選 5 種情緒之一 → 3. 完成貼牆' },
+  { n: 2, f: 'todo.html', emo: '📝', t: '班級 To-Do', cat: 'manage', catLabel: '班務管理',
+    scene: '紅黃綠三欄拖曳，把今天必做、可做、想做的分開。班會議題、值日生工作板都好用。',
+    steps: '1. 點＋加入新項目 → 2. 拖到對應欄位 → 3. 完成打勾或刪除' },
+  { n: 3, f: 'cards.html', emo: '🌈', t: '彩虹能量卡', cat: 'morning', catLabel: '晨間活動',
+    scene: '103 句阿德勒風小語。每天固定一張「今日心錨」，老師自我激勵或班會暖場。',
+    steps: '1. 抽下一張 → 2. 收藏喜歡的 → 3. 下載成圖分享' },
+  { n: 4, f: 'attendance.html', emo: '📋', t: '出勤記錄表', cat: 'manage', catLabel: '班務管理',
+    scene: '自動扣週末、點格子切換 4 種狀態。月底教務處交差超快，CSV / PDF 雙匯出。',
+    steps: '1. 設好班級名單 → 2. 每天點格子 → 3. 月底匯出 CSV' },
+  { n: 5, f: 'marquee.html', emo: '📢', t: '跑馬燈通知', cat: 'proj', catLabel: '大屏投影',
+    scene: '8 種主題色 + 大字幕 + 內建時鐘 / 倒數。投影機顯示「明天記得帶水彩」「離下課還 5 分鐘」。',
+    steps: '1. 加幾則訊息 → 2. 選主題 → 3. 全螢幕投影。一鍵自動讀今日重點' },
+  { n: 6, f: 'picker.html', emo: '🎯', t: '隨機抽號', cat: 'class', catLabel: '上課中',
+    scene: '大字幕轉盤動畫 + 抽中音效。公平模式自動排除已抽過的，誰來答題讓老天爺決定。',
+    steps: '1. 設定 1-N 號 → 2. 按空白鍵抽 → 3. 開啟公平模式不重複' },
+  { n: 7, f: 'timer.html', emo: '⏱️', t: '教室計時器', cat: 'class', catLabel: '上課中',
+    scene: '大字幕倒數 + 8 個預設時間 + 4 計時器並行。討論 / 考試 / 休息都好用。',
+    steps: '1. 選預設或自訂分秒 → 2. 空白鍵開始 → 3. 最後 30 秒警示色' },
+  { n: 8, f: 'grouper.html', emo: '👥', t: '隨機分組', cat: 'class', catLabel: '上課中',
+    scene: '洗牌分 N 組 / 每組 N 人，自動選組長 👑。可印 A4 名牌、複製文字版到 LINE 群。',
+    steps: '1. 輸入學生人數 → 2. 設組數 → 3. 一鍵洗牌' },
+  { n: 9, f: 'bell.html', emo: '🔔', t: '上下課鈴聲', cat: 'class', catLabel: '上課中',
+    scene: '設定課表時間，自動播預備鈴 / 上課鈴 / 下課鈴。學校鈴聲故障時自救。',
+    steps: '1. 設時段 → 2. 選鈴聲類型 → 3. 啟用自動播放' },
+  { n: 10, f: 'points.html', emo: '🏆', t: '班級積點榜', cat: 'manage', catLabel: '班務管理',
+    scene: '給學生或小組加減分，週末公布排行小驚喜。期末小禮物兌換清單。',
+    steps: '1. 選學生號 → 2. 點 +1 或 -1 → 3. 排序看冠軍' },
+  { n: 11, f: 'report.html', emo: '📊', t: '每月班級報告', cat: 'report', catLabel: '月底報表',
+    scene: '整合出勤 + 情緒 + 待辦 + 能量卡 + 積點，一鍵生成 A4 報告 PDF。',
+    steps: '1. 選月份 → 2. 預覽報告 → 3. 列印 PDF' },
+  { n: 12, f: 'emotion-history.html', emo: '📈', t: '情緒歷史趨勢', cat: 'report', catLabel: '月底報表',
+    scene: '過去 7 / 14 / 30 / 90 天班級情緒堆疊圖，含單一學生深掘。',
+    steps: '1. 選時間範圍 → 2. 看趨勢圖 → 3. 點學生看個人走勢' },
+  { n: 13, f: 'student.html', emo: '🎓', t: '學生個人成長報告', cat: 'parent', catLabel: '親師溝通',
+    scene: '整合該學生情緒/出勤/積點/行為觀察，印 PDF 給家長看的學期報告。',
+    steps: '1. 選學生號 → 2. 預覽報告 → 3. 列印 PDF 給家長' },
+  { n: 14, f: 'finance.html', emo: '💰', t: '班費記帳', cat: 'manage', catLabel: '班務管理',
+    scene: '收入/支出簡易記帳，月底總計 + CSV 匯出給家長對帳。',
+    steps: '1. 加一筆收支 → 2. 選類別 → 3. 月底匯出 CSV' },
+  { n: 15, f: 'emotion-kiosk.html', emo: '🧒', t: '學生 Kiosk 打卡', cat: 'morning', catLabel: '晨間活動',
+    scene: '共用 iPad / 觸控大屏放教室前，學生輪流走過來打卡。老師端同步看到。',
+    steps: '1. 設成 kiosk 模式 → 2. 學生依序點 → 3. 老師看儀表板' },
+  { n: 16, f: 'lottery.html', emo: '🎲', t: '萬用抽籤箱', cat: 'event', catLabel: '特殊活動',
+    scene: '午餐、值日、班會議題、獎品都能抽。可存多組集合，反覆使用。',
+    steps: '1. 建集合（每行一個項目）→ 2. 抽 → 3. 公平模式排除已抽' },
+  { n: 17, f: 'rules.html', emo: '📜', t: '班級公約', cat: 'proj', catLabel: '大屏投影',
+    scene: '編輯班規 → 投影展示 → 學生簽名 → 印 A4 貼牆。',
+    steps: '1. 寫公約 → 2. 大字投影 → 3. 印 A4 貼教室' },
+  { n: 18, f: 'gallery.html', emo: '🖼️', t: '學生作品牆', cat: 'event', catLabel: '特殊活動',
+    scene: '拍照上傳作品自動 collage 排版，可印 A4 教室展示。IndexedDB 存圖不限大小。',
+    steps: '1. 拍照上傳 → 2. 標記學生號 → 3. 列印 A4' },
+  { n: 19, f: 'seating.html', emo: '🪑', t: '座位表', cat: 'manage', catLabel: '班務管理',
+    scene: '拖曳排座位 + 換座位歷史 + 印 A4 給代課老師。',
+    steps: '1. 拖學生到座位 → 2. 儲存 → 3. 印 A4 貼教室門口' },
+  { n: 20, f: 'schedule.html', emo: '📅', t: '課表', cat: 'manage', catLabel: '班務管理',
+    scene: '週課表 + 本節 / 下節即時顯示，配合上下課鈴聲使用。',
+    steps: '1. 填一週課表 → 2. 看本節 / 下節 → 3. 列印給家長' },
+  { n: 21, f: 'birthday.html', emo: '🎂', t: '生日榜', cat: 'morning', catLabel: '晨間活動',
+    scene: '本月壽星自動提醒，一鍵推到跑馬燈祝賀。',
+    steps: '1. 填每位學生生日 → 2. 看本月壽星 → 3. 推到跑馬燈' },
+  { n: 22, f: 'lunch.html', emo: '🍱', t: '午餐點餐', cat: 'manage', catLabel: '班務管理',
+    scene: '每天勾選訂餐 / 自備 / 過敏，月底結算 CSV 給營養午餐廠商。',
+    steps: '1. 每天勾選 → 2. 標記過敏 → 3. 月底匯出 CSV' },
+  { n: 23, f: 'contact.html', emo: '📞', t: '親師溝通記錄', cat: 'parent', catLabel: '親師溝通',
+    scene: '電話/LINE/Email/面談 完整日誌，可印可匯出。年底總結家長有按時參與哪些。',
+    steps: '1. 加溝通紀錄 → 2. 標記類型 → 3. 印報表給校長' },
+  { n: 24, f: 'behavior.html', emo: '🎯', t: '行為觀察', cat: 'parent', catLabel: '親師溝通',
+    scene: '三色標記正向 / 中性 / 需關心，月底自動產報告給家長簽名。',
+    steps: '1. 即時記錄行為 → 2. 月底看統計 → 3. 印給家長' },
+  { n: 25, f: 'substitute.html', emo: '📋', t: '代課交接單', cat: 'event', catLabel: '特殊活動',
+    scene: '請假當天 5 分鐘填好，代課老師看了就上手。含課表 / 重點學生 / 提醒。',
+    steps: '1. 填一日交接 → 2. 列印 A4 → 3. 留在桌上' },
+  { n: 26, f: 'field-trip.html', emo: '🎒', t: '戶外教學助手', cat: 'event', catLabel: '特殊活動',
+    scene: '集合點名 + 倒數 + 一鍵撥緊急電話，離線可用。',
+    steps: '1. 設集合時間 → 2. 點名 → 3. 緊急時一鍵撥' },
+  { n: 27, f: 'lesson.html', emo: '📚', t: '教案備忘', cat: 'manage', catLabel: '班務管理',
+    scene: '每節課的教學重點、教材、上完心得，給未來的自己看。',
+    steps: '1. 寫教案 → 2. 上完補心得 → 3. 複製到 Word' },
+  { n: 28, f: 'reading.html', emo: '📖', t: '閱讀紀錄表', cat: 'manage', catLabel: '班務管理',
+    scene: '「閱讀小博士」每位學生獨立紀錄，學期末印獎狀。',
+    steps: '1. 設學期目標 → 2. 學生讀完登記 → 3. 達標印獎狀' },
+  { n: 29, f: 'worksheet.html', emo: '📝', t: '學習單產生器', cat: 'class', catLabel: '上課中',
+    scene: '4 種題型自由組合，即時預覽，5 分鐘出隨堂測驗或家庭作業。',
+    steps: '1. 加題目（選/填/答/連）→ 2. 預覽 → 3. 印題目版/答案版' },
+  { n: 30, f: 'fitness.html', emo: '🏃', t: '體適能成績登錄', cat: 'report', catLabel: '月底報表',
+    scene: '5 項體適能成績輸入後自動算金/銀/銅等級，CSV 匯出貼教育部表格。',
+    steps: '1. 選年級性別組 → 2. 輸入成績 → 3. 匯出 CSV' },
+  { n: 31, f: 'metronome.html', emo: '🎵', t: '節拍器 + 律動', cat: 'class', catLabel: '上課中',
+    scene: '音樂課節拍器 BPM 30-220，體育課律動計時器有語音「換 XXX」提示。',
+    steps: '1. 設 BPM + 拍號 → 2. 開始 → 3. 律動模式排動作清單' },
+  { n: 32, f: 'eco.html', emo: '🌱', t: '環保 / 蔬食打卡', cat: 'morning', catLabel: '晨間活動',
+    scene: '🥢 自帶餐具 / 🥗 蔬食午餐 / 🍚 不剩飯三項打卡，三項全勤排行榜。',
+    steps: '1. 每天勾選 → 2. 看月度排行 → 3. 匯出 CSV' },
+  { n: 33, f: 'dictation.html', emo: '🎤', t: '錄音轉文字', cat: 'parent', catLabel: '親師溝通',
+    scene: '家訪 / 議題討論 Web Speech 即時辨識中文，純本機不上傳，匯出 Markdown。',
+    steps: '1. 點麥克風 → 2. 邊說邊辨識 → 3. 編輯後匯出' },
+];
+
+let currentCat = '';
+let currentSearch = '';
+
+function render() {
+  const grid = document.getElementById('grid');
+  let filtered = TUTORIALS.filter(t => {
+    if (currentCat && t.cat !== currentCat) return false;
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      const hay = `${t.t} ${t.scene} ${t.catLabel} ${t.steps}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  document.getElementById('visibleCount').textContent = filtered.length;
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;">找不到符合的工具 🤔<br>試試其他關鍵字或選擇「全部」</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(t => `
+    <div class="tut-card">
+      <div class="tut-head">
+        <div class="num">${t.n}</div>
+        <div class="titles">
+          <h3>${t.emo} ${escapeHtml(t.t)}</h3>
+          <div class="cat">${t.catLabel}</div>
+        </div>
+      </div>
+      <div class="tut-preview">
+        <span class="big-emoji">${t.emo}</span>
+        <small>（GIF 範例將陸續錄製補上）</small>
+      </div>
+      <div class="tut-scene">${escapeHtml(t.scene)}</div>
+      <div class="tut-steps">${escapeHtml(t.steps)}</div>
+      <div class="tut-actions">
+        <a href="${t.f}">▶ 立刻試試</a>
+        <a class="ghost" href="${t.f}" target="_blank">↗ 新分頁</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 分類 chip
+document.querySelectorAll('.chip[data-cat]').forEach(c => {
+  c.onclick = () => {
+    currentCat = c.dataset.cat;
+    document.querySelectorAll('.chip[data-cat]').forEach(x => x.classList.toggle('on', x === c));
+    render();
+  };
+});
+
+// 搜尋
+let searchT;
+document.getElementById('searchInp').addEventListener('input', (e) => {
+  clearTimeout(searchT);
+  searchT = setTimeout(() => {
+    currentSearch = e.target.value.trim();
+    render();
+  }, 200);
+});
+
+render();
+</script>
+
+</body>
+</html>

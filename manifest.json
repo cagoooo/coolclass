@@ -1,7 +1,7 @@
 {
   "name": "教室小幫手 — 老師的每日課堂工具",
   "short_name": "教室小幫手",
-  "description": "情緒打卡牆、To-Do List、彩虹能量卡、出勤記錄、跑馬燈、隨機抽號、計時器、隨機分組",
+  "description": "32 個免費教師工具 — 情緒打卡、能量卡、抽號、計時、跑馬燈、座位表、生日榜、體適能、學期評語、課堂錄音等。免登入、不上傳、離線可用。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -11,7 +11,7 @@
  * activate 後 postMessage SW_ACTIVATED 通知所有 clients，
  * 配合 sw-update.js 顯示更新 banner。
  */
-const BUILD_VERSION = "20260522-0910-ffa00be";  // ← bump-version.sh 會替換這行
+const BUILD_VERSION = "20260522-0944-e9e47bc";  // ← bump-version.sh 會替換這行
 const CACHE = `akai-classroom-${BUILD_VERSION}`;
 
 const CORE_ASSETS = [
@@ -66,6 +66,11 @@ const CORE_ASSETS = [
   './metronome.html',
   './eco.html',
   './dictation.html',
+  './feedback.html',
+  './tutorial.html',
+  './evaluation.html',
+  './robots.txt',
+  './sitemap.xml',
 ];
 
 // ===== install: 預先快取核心檔 + skipWaiting =====

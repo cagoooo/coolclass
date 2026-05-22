@@ -82,10 +82,13 @@
     {
       title: '🔧 設定與輔助',
       tools: [
-        { f: 'index.html',   i: '🏠', t: '回主頁' },
-        { f: 'roster.html',  i: '👥', t: '班級名單' },
-        { f: 'backup.html',  i: '💾', t: '備份與還原' },
-        { f: 'qr.html',      i: '📱', t: 'QR Code 工具' },
+        { f: 'index.html',     i: '🏠', t: '回主頁' },
+        { f: 'tutorial.html',  i: '📘', t: '32 工具教學' },
+        { f: 'feedback.html',  i: '💬', t: '給阿凱建議' },
+        { f: 'evaluation.html', i: '✍️', t: '學期評語生成' },
+        { f: 'roster.html',    i: '👥', t: '班級名單' },
+        { f: 'backup.html',    i: '💾', t: '備份與還原' },
+        { f: 'qr.html',        i: '📱', t: 'QR Code 工具' },
       ],
     },
   ];
