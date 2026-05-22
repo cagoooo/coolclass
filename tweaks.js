@@ -15,11 +15,14 @@
   };
 
   const ACCENTS = [
-    { id: 'rainbow', label: '彩虹（預設）', color: '#ffd23f' },
-    { id: 'mint',    label: '薄荷',         color: '#6bcb77' },
-    { id: 'sunset',  label: '日落',         color: '#ff9d4d' },
-    { id: 'berry',   label: '莓果',         color: '#b070ff' },
-    { id: 'ocean',   label: '海洋',         color: '#4d96ff' },
+    { id: 'rainbow',   label: '彩虹（預設）', color: '#ffd23f' },
+    { id: 'mint',      label: '薄荷',         color: '#6bcb77' },
+    { id: 'sunset',    label: '日落',         color: '#ff9d4d' },
+    { id: 'berry',     label: '莓果',         color: '#b070ff' },
+    { id: 'ocean',     label: '海洋',         color: '#4d96ff' },
+    { id: 'xmas',      label: '🎄 聖誕',      color: '#d62b2b' },
+    { id: 'lunar',     label: '🧧 春節',      color: '#ffc94a' },
+    { id: 'eco',       label: '🌳 環保',      color: '#5a8c43' },
   ];
 
   function load() {

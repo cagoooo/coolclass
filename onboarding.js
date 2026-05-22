@@ -17,14 +17,14 @@
     {
       tag: 'WELCOME · 你好',
       title: '歡迎使用<em>教室小幫手</em>',
-      desc: '一套給老師的每日課堂工具：情緒打卡、To-Do、能量卡、出勤、抽號、計時、分組、跑馬燈。<br><br><b>免登入、不會把資料上傳</b>，所有記錄都存在你的瀏覽器裡。',
+      desc: '一套給老師的每日課堂工具，<b>已收錄 26 個小工具</b>：情緒打卡、能量卡、抽號、計時器、跑馬燈、座位表、生日榜、行為觀察…<br><br><b>免登入、不會把資料上傳</b>，所有記錄都存在你的瀏覽器裡。',
       visual: 'rainbow',
       cta: '開始介紹 →',
     },
     {
       tag: 'STEP 1 · 設定班級',
       title: '先建立<em>班級名單</em>',
-      desc: '設定一次，<b>五個工具</b>都會自動帶入：情緒打卡、出勤、抽號、分組、能量卡。<br><br>輸入班級名稱、人數、學生姓名（姓名可選填，沒填就顯示「3 號」）。可以從 Excel 直接複製貼上。',
+      desc: '設定一次，<b>所有工具都自動帶入</b>：情緒打卡、出勤、抽號、分組、生日榜、座位表、行為觀察…<br><br>輸入班級名稱、人數、學生姓名（姓名可選填，沒填就顯示「3 號」）。可以從 Excel 直接複製貼上。',
       visual: 'roster',
       cta: '下一步 →',
       goto: 'roster.html',
@@ -38,16 +38,23 @@
       cta: '下一步 →',
     },
     {
-      tag: 'STEP 3 · 安裝成 App',
+      tag: 'STEP 3 · 認識 26 工具',
+      title: '<em>六大組</em>分類速覽',
+      desc: '<b>🌅 基礎五件套</b>：情緒/待辦/能量卡/出勤/跑馬燈<br><b>📚 課堂控場</b>：抽號/計時器/分組/鈴聲<br><b>🏆 班級管理</b>：積點榜/月度報告/情緒趨勢<br><b>🎓 學生視角</b>：成長報告/班費/Kiosk 打卡<br><b>🎉 教室生態</b>：抽籤箱/班級公約/作品牆<br><b>🪑 老師日常</b>：座位/課表/生日/午餐/親師/行為/代課/戶外/教案',
+      visual: 'tools',
+      cta: '下一步 →',
+    },
+    {
+      tag: 'STEP 4 · 安裝成 App',
       title: '加到主畫面，<em>離線可用</em>',
       desc: '電腦：用 Chrome / Edge 開啟，網址列右邊有「安裝」圖示。<br>iPad / iPhone：用 Safari → 分享 → 加入主畫面。<br><br>裝成 App 之後，<b>離線也能開</b>，速度也比較快。',
       visual: 'pwa',
       cta: '下一步 →',
     },
     {
-      tag: 'TIPS · 還有這些',
-      title: '<em>右下角</em>有更多',
-      desc: '<b>🎨 視覺微調</b> — 換主色、深色模式、關裝飾、扁平模式<br><b>← 回主頁</b> — 每個工具左上角都有<br><b>⌨ 空白鍵</b> — 抽號 / 計時器 / 跑馬燈快捷<br><br>祝你和孩子一起，過好每一天 🌈',
+      tag: 'TIPS · 右下角探秘',
+      title: '<em>右下角</em>三顆按鈕',
+      desc: '<b>🧭 工具導航</b> — 點開展示 26 工具分類面板（含搜尋），一鍵跳到任何工具<br><b>⬆ 回到頂部</b> — 捲到下方時浮現，點一下平滑回頂<br><b>🎨 視覺微調</b> — 換主色、深色模式、扁平模式、字級調整<br><br>還有：左上角「← 回主頁」、按 <b>?</b> 看當頁快捷鍵、跑馬燈支援「一鍵自動讀今日重點」<br><br>祝你和孩子一起，過好每一天 🌈',
       visual: 'tips',
       cta: '開始使用 ✨',
     },
@@ -170,6 +177,35 @@
             <text x="100" y="92" text-anchor="middle" font-family="Noto Sans TC,sans-serif" font-weight="900" font-size="10" fill="var(--ink)">教室小幫手</text>
             <text x="38" y="68" font-family="Fraunces,serif" font-style="italic" font-weight="900" font-size="22" fill="var(--y)">＋</text>
             <text x="158" y="68" font-family="Fraunces,serif" font-style="italic" font-weight="900" font-size="22" fill="var(--y)">App</text>
+          </svg>`;
+      case 'tools':
+        return `
+          <svg viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="200" height="120" rx="16" fill="var(--paper-2, #fff3d6)"/>
+            ${[
+              { x: 16, y: 14, c: '#ff6b6b', e: '😊' },
+              { x: 48, y: 14, c: '#ffd23f', e: '📝' },
+              { x: 80, y: 14, c: '#6bcb77', e: '🌈' },
+              { x: 112, y: 14, c: '#4d96ff', e: '📋' },
+              { x: 144, y: 14, c: '#ff97c5', e: '📢' },
+              { x: 176, y: 14, c: '#ff9d4d', e: '🎯' },
+              { x: 16, y: 46, c: '#ff9d4d', e: '⏱️' },
+              { x: 48, y: 46, c: '#b070ff', e: '👥' },
+              { x: 80, y: 46, c: '#ffd23f', e: '🔔' },
+              { x: 112, y: 46, c: '#6bcb77', e: '🏆' },
+              { x: 144, y: 46, c: '#4d96ff', e: '📊' },
+              { x: 176, y: 46, c: '#ff97c5', e: '📈' },
+              { x: 16, y: 78, c: '#b070ff', e: '🎓' },
+              { x: 48, y: 78, c: '#6bcb77', e: '💰' },
+              { x: 80, y: 78, c: '#ff6b6b', e: '🧒' },
+              { x: 112, y: 78, c: '#ff9d4d', e: '🎲' },
+              { x: 144, y: 78, c: '#4d96ff', e: '📜' },
+              { x: 176, y: 78, c: '#ff97c5', e: '🖼️' },
+            ].map(t => `
+              <rect x="${t.x}" y="${t.y}" width="24" height="24" rx="6" fill="${t.c}" stroke="var(--ink)" stroke-width="2"/>
+              <text x="${t.x+12}" y="${t.y+17}" text-anchor="middle" font-size="13">${t.e}</text>
+            `).join('')}
+            <text x="100" y="115" text-anchor="middle" font-family="Noto Sans TC,sans-serif" font-weight="900" font-size="9" fill="var(--ink)">…還有 9 個老師日常工具</text>
           </svg>`;
       case 'tips':
         return `

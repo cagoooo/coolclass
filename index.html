@@ -742,6 +742,105 @@
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
   }
+
+  /* ===== ⭐ 我的常用工具（v3.8） ===== */
+  .tool { position: relative; }
+  .fav-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: 30px; height: 30px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .92);
+    cursor: pointer;
+    font-size: 14px;
+    z-index: 3;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow: 1px 1px 0 var(--ink);
+    line-height: 1;
+  }
+  .fav-btn:hover {
+    transform: scale(1.1) rotate(-8deg);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .fav-btn.on { background: var(--y); }
+
+  #favs-section {
+    margin: 22px 0 28px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--y) 0%, #ffe896 100%);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  #favs-section.empty { display: none; }
+  .favs-head {
+    display: flex; align-items: baseline; gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .favs-head h3 {
+    margin: 0;
+    font-size: 1.15em;
+    color: var(--ink);
+    font-weight: 900;
+  }
+  .favs-head small {
+    color: var(--ink);
+    opacity: .65;
+    font-size: .82em;
+  }
+  #favs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .fav-card {
+    background: #fff;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 14px;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: transform .15s ease, box-shadow .15s ease;
+    position: relative;
+  }
+  .fav-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+  .fav-card .ic { font-size: 22px; flex-shrink: 0; }
+  .fav-card .tx { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fav-card .x {
+    position: absolute;
+    top: -8px; right: -6px;
+    width: 22px; height: 22px;
+    background: var(--ink);
+    color: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+  }
+  .fav-card:hover .x { display: flex; }
+
+  @media (max-width: 600px) {
+    #favs-grid { grid-template-columns: repeat(2, 1fr); }
+    .fav-card { font-size: 13px; padding: 10px 12px; }
+    .fav-card .ic { font-size: 18px; }
+    .fav-btn { width: 26px; height: 26px; font-size: 12px; }
+  }
 </style>
 <!-- 共用主題系統（dark mode / accent / deco / flat 由 tweaks.js 控制） -->
 <link rel="stylesheet" href="crayon.css">
@@ -837,6 +936,15 @@
       <span class="val" id="atnVal">—</span>
     </a>
   </div>
+
+  <!-- ===== ⭐ 我的常用工具 ===== -->
+  <section id="favs-section" class="empty">
+    <div class="favs-head">
+      <h3>⭐ 我的常用</h3>
+      <small id="favs-tip">點工具卡右上角的 ⭐ 來收藏（最多 8 個）</small>
+    </div>
+    <div id="favs-grid"></div>
+  </section>
 
   <!-- ===== 五大核心工具 ===== -->
   <div class="sec-title">
@@ -1204,6 +1312,7 @@
 <script src="roster.js"></script>
 <script src="sw-update.js" defer></script>
 <script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
 <script>
 /* 預覽環境 fallback：deploy 到 Coolclass/ 後請把上面兩行打開、移除這段 */
 if (!window.AkaiRoster) {
@@ -1361,6 +1470,115 @@ function render() {
 render();
 window.addEventListener('focus', render);
 window.addEventListener('storage', render);
+
+// ===== ⭐ 我的常用工具（v3.8 A2） =====
+const FAVS_KEY = 'akai_favs_v1';
+const MAX_FAVS = 8;
+
+function loadFavs() {
+  try { const r = localStorage.getItem(FAVS_KEY); return r ? JSON.parse(r) : []; }
+  catch { return []; }
+}
+function saveFavs(arr) {
+  try { localStorage.setItem(FAVS_KEY, JSON.stringify(arr.slice(0, MAX_FAVS))); } catch {}
+}
+function isFav(href) { return loadFavs().some(f => f.href === href); }
+function toggleFav(href, name, emoji) {
+  let favs = loadFavs();
+  const idx = favs.findIndex(f => f.href === href);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+  } else {
+    if (favs.length >= MAX_FAVS) {
+      alert(`常用工具最多 ${MAX_FAVS} 個，請先移除一個再加`);
+      return false;
+    }
+    favs.unshift({ href, name, emoji });
+  }
+  saveFavs(favs);
+  renderFavSection();
+  updateFavButtons();
+  return true;
+}
+function removeFav(href) {
+  const favs = loadFavs().filter(f => f.href !== href);
+  saveFavs(favs);
+  renderFavSection();
+  updateFavButtons();
+}
+function extractEmoji(text) {
+  // 抓 h3 開頭的 emoji
+  const m = text.match(/^([\p{Emoji}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}🪑📅🎂🍱📞🎯📋🎒📚]+)/u);
+  return m ? m[1] : '✨';
+}
+function initFavButtons() {
+  document.querySelectorAll('a.tool[href]').forEach(a => {
+    if (a.querySelector('.fav-btn')) return;
+    const href = a.getAttribute('href');
+    if (!href || href === '#' || href.startsWith('http')) return;
+    const h3 = a.querySelector('h3');
+    if (!h3) return;
+    const rawName = h3.textContent.trim();
+    const emoji = extractEmoji(rawName) || '✨';
+    const name = rawName.replace(/^[\p{Emoji}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}🪑📅🎂🍱📞🎯📋🎒📚]+\s*/u, '').trim() || rawName;
+
+    const btn = document.createElement('button');
+    btn.className = 'fav-btn' + (isFav(href) ? ' on' : '');
+    btn.type = 'button';
+    btn.title = isFav(href) ? '從常用移除' : '加到常用';
+    btn.innerHTML = isFav(href) ? '⭐' : '☆';
+    btn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const ok = toggleFav(href, name, emoji);
+      if (ok === false) return;
+      btn.classList.toggle('on');
+      btn.innerHTML = btn.classList.contains('on') ? '⭐' : '☆';
+      btn.title = btn.classList.contains('on') ? '從常用移除' : '加到常用';
+    };
+    a.appendChild(btn);
+  });
+}
+function updateFavButtons() {
+  document.querySelectorAll('a.tool').forEach(a => {
+    const btn = a.querySelector('.fav-btn');
+    if (!btn) return;
+    const href = a.getAttribute('href');
+    const on = isFav(href);
+    btn.classList.toggle('on', on);
+    btn.innerHTML = on ? '⭐' : '☆';
+    btn.title = on ? '從常用移除' : '加到常用';
+  });
+}
+function renderFavSection() {
+  const section = document.getElementById('favs-section');
+  const grid = document.getElementById('favs-grid');
+  const tip = document.getElementById('favs-tip');
+  if (!section || !grid) return;
+  const favs = loadFavs();
+  if (favs.length === 0) {
+    section.classList.add('empty');
+    return;
+  }
+  section.classList.remove('empty');
+  if (tip) tip.textContent = `${favs.length} / ${MAX_FAVS} 個 · 點 ✕ 移除`;
+  grid.innerHTML = favs.map(f => `
+    <a class="fav-card" href="${f.href}" title="${f.name}">
+      <span class="ic">${f.emoji}</span>
+      <span class="tx">${f.name}</span>
+      <button class="x" type="button" onclick="event.preventDefault();event.stopPropagation();removeFav('${f.href}');" title="移除">✕</button>
+    </a>
+  `).join('');
+}
+
+initFavButtons();
+renderFavSection();
+window.addEventListener('storage', (e) => {
+  if (e.key === FAVS_KEY) {
+    updateFavButtons();
+    renderFavSection();
+  }
+});
 </script>
 
 </body>

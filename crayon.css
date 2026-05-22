@@ -564,6 +564,14 @@ html[data-accent="berry"]   { --y: #b070ff; }
 html[data-accent="ocean"]   { --y: #4d96ff; }
 /* default rainbow keeps --y: #ffd23f */
 
+/* ---- v3.8 節慶 + 環保主題 ---- */
+html[data-accent="xmas"]    { --y: #d62b2b; --ink: #1a3e22; --g: #2e8a3e; }
+html[data-accent="xmas"]    body { background: linear-gradient(135deg, #fff5e1 0%, #ffe8d8 100%); }
+html[data-accent="lunar"]   { --y: #ffc94a; --ink: #8a1818; --r: #e63946; }
+html[data-accent="lunar"]   body { background: linear-gradient(135deg, #fff4d6 0%, #ffeac4 100%); }
+html[data-accent="eco"]     { --y: #5a8c43; --ink: #3d2818; --g: #88b86f; }
+html[data-accent="eco"]     body { background: linear-gradient(135deg, #f5f0e1 0%, #ebe4d0 100%); }
+
 /* ---- 裝飾關閉 ---- */
 html[data-deco="off"] .bg-deco { display: none; }
 

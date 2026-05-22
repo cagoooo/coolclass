@@ -392,6 +392,17 @@
         <input type="color" id="textColor" value="#ffd23f">
       </div>
 
+      <div class="setting-row" style="border-top:2px dashed var(--ink);padding-top:14px;margin-top:6px;">
+        <label>🔊 語音</label>
+        <input type="checkbox" id="speechOn" style="width:20px;height:20px;cursor:pointer;">
+        <label style="width:auto;">語速</label>
+        <input type="range" id="speechRate" min="0.6" max="1.4" step="0.1" value="1.0" style="max-width:120px;">
+        <span class="val" id="speechRateVal">1.0×</span>
+      </div>
+      <div style="font-size:.78em;color:var(--ink-soft,#5a4f7a);margin:-6px 0 14px;padding-left:102px;line-height:1.4;">
+        每則訊息開頭時自動唸出，適合投影機沒接擴音時用
+      </div>
+
       <div class="btn-bar" style="border-top:2px dashed var(--ink);padding-top:16px;margin-top:8px;">
         <button class="btn primary lg" onclick="toggleFullscreen()">🖥 全螢幕投影</button>
         <button class="btn y" id="pauseBtn" onclick="togglePause()">⏸ 暫停</button>
@@ -458,6 +469,7 @@
 
 <script src="sw-update.js" defer></script>
 <script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
 <script>
 const STORAGE_KEY = 'akai_marquee_v1';
 
@@ -503,6 +515,8 @@ function defaultState() {
     showCountdown: false,
     cdLabel: '距下課',
     cdTargetISO: null,
+    speechOn: false,
+    speechRate: 1.0,
   };
 }
 function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
@@ -914,11 +928,95 @@ function loadClockSettings() {
   }
 }
 
+// ===== v3.8 A3：訊息語音播報 =====
+let speechActive = false;
+let currentSpeechIdx = 0;
+
+function speakNext() {
+  if (!speechActive) return;
+  if (!('speechSynthesis' in window)) return;
+  const active = state.messages.filter(m => m.on && m.text.trim());
+  if (active.length === 0) {
+    setTimeout(speakNext, 3000);
+    return;
+  }
+  if (currentSpeechIdx >= active.length) currentSpeechIdx = 0;
+  const msg = active[currentSpeechIdx].text;
+  currentSpeechIdx++;
+  // 過濾 emoji + 符號讓朗讀更自然
+  const cleanMsg = msg
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '')
+    .replace(/[●·•★☆]/g, '')
+    .trim();
+  if (!cleanMsg) { setTimeout(speakNext, 200); return; }
+  try {
+    const utter = new SpeechSynthesisUtterance(cleanMsg);
+    utter.lang = 'zh-TW';
+    utter.rate = state.speechRate || 1.0;
+    utter.volume = 1.0;
+    utter.onend = () => { if (speechActive) setTimeout(speakNext, 1500); };
+    utter.onerror = () => { if (speechActive) setTimeout(speakNext, 1500); };
+    window.speechSynthesis.speak(utter);
+  } catch {
+    if (speechActive) setTimeout(speakNext, 1500);
+  }
+}
+function startSpeech() {
+  if (speechActive) return;
+  if (!('speechSynthesis' in window)) {
+    flash('⚠ 此瀏覽器不支援語音合成');
+    return;
+  }
+  speechActive = true;
+  currentSpeechIdx = 0;
+  speakNext();
+}
+function stopSpeech() {
+  speechActive = false;
+  try { window.speechSynthesis.cancel(); } catch {}
+}
+function setupSpeech() {
+  const cb = document.getElementById('speechOn');
+  const rate = document.getElementById('speechRate');
+  const rateVal = document.getElementById('speechRateVal');
+  if (!cb || !rate || !rateVal) return;
+  cb.checked = !!state.speechOn;
+  rate.value = state.speechRate || 1.0;
+  rateVal.textContent = (state.speechRate || 1.0).toFixed(1) + '×';
+  cb.onchange = () => {
+    state.speechOn = cb.checked;
+    saveState();
+    if (cb.checked) {
+      startSpeech();
+      flash('🔊 已開啟語音，將依序朗讀勾選的訊息');
+    } else {
+      stopSpeech();
+      flash('🔇 已關閉語音');
+    }
+  };
+  rate.oninput = () => {
+    state.speechRate = parseFloat(rate.value);
+    rateVal.textContent = state.speechRate.toFixed(1) + '×';
+    saveState();
+  };
+  // 自動載入：之前開過就繼續
+  if (state.speechOn) {
+    // 等使用者第一次互動再啟動（Chrome autoplay policy）
+    document.addEventListener('click', function autostart() {
+      if (state.speechOn && !speechActive) startSpeech();
+      document.removeEventListener('click', autostart);
+    }, { once: true });
+  }
+}
+// 頁面關閉時停止
+window.addEventListener('beforeunload', () => stopSpeech());
+
 renderMessages();
 renderTrack();
 renderSettings();
 loadClockSettings();
 tick();
+setupSpeech();
 </script>
 
 </body>
