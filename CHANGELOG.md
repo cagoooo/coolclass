@@ -7,6 +7,22 @@
 
 ---
 
+## [3.9.0] · 2026-05-22 · 防呆穩定包（B 階段 4 項）
+
+### Added
+- 💪 **B1 IndexedDB 升級**：新增 `akai-store.js` 統一儲存層；提供 `AkaiStore.get/set/migrateAll/getUsage` API。大資料（情緒/出勤/行為觀察/親師溝通等 10 個 keys）可一鍵搬到 IndexedDB，**解 localStorage 5MB 死線**。寫入 localStorage 遇 QuotaExceededError 自動 fallback 到 IndexedDB。被動式 quota guard：localStorage 用量 ≥ 80% 自動跳粉紅 banner 引導升級。
+- 🔄 **B2 還原版本相容檢查**：備份 JSON 加 `_meta.schemaVersion` + `appVersion`。還原時：(1) 顯示備份距今天數；(2) 比對 schema 版本差異提示；(3) 預覽每個 key 預估筆數；(4) 自動把 BIG_KEYS 還原到對應儲存（IndexedDB or localStorage）。
+- 👥 **B3 缺資料情境引導**：新增 `empty-state.js` 全頁注入；偵測 14 個依賴 roster 的工具，若名單為空 → 頁面頂部插入提示 banner「3 步驟設定名單」。對 birthday/contact/student 三個重視姓名的工具，名單只有號碼沒姓名時也會提示。每 session 同工具只提示一次。
+- 🩺 **B4 資料健康檢查**：backup.html 新增「🩺 開始檢查」按鈕。自動掃描：(1) 班級名單一致性；(2) 情緒記錄/積點榜/行為觀察是否有超出名單範圍的「孤兒」學生號；(3) 上次備份距今天數；(4) 儲存空間使用率。分「✅ 正常 / ⚠️ 需注意」兩欄顯示。
+
+### Changed
+- 📦 `sw.js` CORE_ASSETS 加入 `akai-store.js` + `empty-state.js`
+- 📝 30 個 HTML 全部注入新兩個 script
+- 📋 `backup.html` 新增 2 個區塊（升級到 IndexedDB / 資料健康檢查）
+- 📤 匯出改用 `buildBackupAsync()` 同時包含 localStorage + IndexedDB 資料
+
+---
+
 ## [3.8.0] · 2026-05-22 · 體驗微調包（A 階段 5 項）
 
 ### Added

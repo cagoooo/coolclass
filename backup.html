@@ -130,6 +130,42 @@
     </div>
   </section>
 
+  <!-- v3.9 B1：升級到 IndexedDB -->
+  <section class="block" id="upgrade" style="border-color:var(--g);background:linear-gradient(135deg,#e8f7ec 0%,#f5fbf6 100%);">
+    <div class="block-head">
+      <div class="step" style="background:var(--g);">💪</div>
+      <h2>升級儲存到 IndexedDB</h2>
+      <span class="tail">解除 localStorage 5MB 上限</span>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 12px;line-height:1.6;">
+      情緒打卡 / 出勤 / 行為觀察 / 親師溝通等資料用一年下來可能會塞滿 <b>localStorage 的 5MB</b>。<br>
+      升級後這些大資料會搬到 <b>IndexedDB（容量幾乎無上限）</b>，小設定仍留在 localStorage（讀取快）。
+    </p>
+    <div id="quotaInfo" style="background:#fff;padding:12px 14px;border-radius:10px;border:2px dashed var(--ink);font-size:13px;margin-bottom:14px;line-height:1.7;">
+      📊 儲存空間檢測中…
+    </div>
+    <div class="btn-bar">
+      <button class="btn g lg" onclick="upgradeStorage()">💪 立刻升級到 IndexedDB</button>
+      <button class="btn y" onclick="refreshQuota()">🔄 重新檢測</button>
+    </div>
+  </section>
+
+  <!-- v3.9 B4：資料健康檢查 -->
+  <section class="block" style="border-color:var(--b);background:linear-gradient(135deg,#e8f1fa 0%,#f5f8fc 100%);">
+    <div class="block-head">
+      <div class="step" style="background:var(--b);">🩺</div>
+      <h2>資料健康檢查</h2>
+      <span class="tail">找出可能的孤兒資料、損壞紀錄、過期備份</span>
+    </div>
+    <p style="color:var(--muted);font-size:14px;margin:0 0 12px;line-height:1.6;">
+      檢查每個工具的資料是否與目前班級名單一致，是否有壞掉的 JSON，提示哪些是 30 天沒備份的。
+    </p>
+    <div id="healthReport" style="background:#fff;padding:12px 14px;border-radius:10px;border:2px dashed var(--ink);font-size:13px;margin-bottom:14px;line-height:1.7;display:none;"></div>
+    <div class="btn-bar">
+      <button class="btn b lg" onclick="runHealthCheck()">🩺 開始檢查</button>
+    </div>
+  </section>
+
   <!-- 危險區 -->
   <section class="danger-zone">
     <h3>⚠️ 危險操作</h3>
@@ -153,6 +189,8 @@
 <script src="sw-update.js" defer></script>
 <script src="nav.js" defer></script>
 <script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
 <script>
 const KEYS_INFO = [
   { key: 'akai_roster_v1',       name: '👥 班級名單',          summary: r => `${r.className || '未命名'} · ${r.count || 0} 人 · ${Object.keys(r.names||{}).length} 個姓名` },
@@ -204,11 +242,16 @@ function renderSummary() {
   document.getElementById('totalKB').textContent = (totalBytes / 1024).toFixed(1);
 }
 
+// v3.9 B2：schema 版本（每次有資料結構改動就 bump）
+const SCHEMA_VERSION = '3.9';
+
 function buildBackup() {
   const out = {
     _meta: {
       app: '教室小幫手 / classroom-kit',
       version: 'backup-v1',
+      schemaVersion: SCHEMA_VERSION,  // v3.9 B2
+      appVersion: 'v3.9',
       exportedAt: new Date().toISOString(),
       keysIncluded: [],
     },
@@ -223,11 +266,31 @@ function buildBackup() {
     }
     out._meta.keysIncluded.push(info.key);
   });
+  // v3.9：包含 BIG_KEYS 從 IndexedDB（如果有用 AkaiStore）
+  // 注意：buildBackup 是同步，IndexedDB 是 async — 由 buildBackupAsync 處理
   return out;
 }
 
-function exportAll() {
-  const data = buildBackup();
+// v3.9：async 版本（含 IndexedDB 資料）
+async function buildBackupAsync() {
+  const out = buildBackup();
+  if (window.AkaiStore && AkaiStore.isMigrated()) {
+    for (const key of AkaiStore.BIG_KEYS) {
+      if (out[key] !== undefined) continue;  // localStorage 還有就不覆蓋
+      try {
+        const v = await AkaiStore.get(key);
+        if (v !== null && v !== undefined) {
+          out[key] = v;
+          out._meta.keysIncluded.push(key);
+        }
+      } catch {}
+    }
+  }
+  return out;
+}
+
+async function exportAll() {
+  const data = await buildBackupAsync();
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -245,7 +308,7 @@ function exportAll() {
 }
 
 async function copyToClipboard() {
-  const data = buildBackup();
+  const data = await buildBackupAsync();
   const json = JSON.stringify(data);
   try {
     await navigator.clipboard.writeText(json);
@@ -286,7 +349,7 @@ async function importFromClipboard() {
   }
 }
 
-function doImport(text, source) {
+async function doImport(text, source) {
   let obj;
   try { obj = JSON.parse(text); } catch {
     alert('JSON 格式不對，無法還原。');
@@ -295,19 +358,57 @@ function doImport(text, source) {
   if (!obj._meta || !obj._meta.keysIncluded) {
     if (!confirm('這個 JSON 看起來不是「教室小幫手」的備份。仍要繼續嗎？')) return;
   }
-  const keys = KEYS_INFO.map(i => i.key);
-  const willRestore = keys.filter(k => obj[k] !== undefined);
+  // v3.9 B2：版本相容預檢
+  const backupSchema = obj._meta?.schemaVersion;
+  const exportedAt = obj._meta?.exportedAt;
+  const appVer = obj._meta?.appVersion;
+  let versionWarn = '';
+  if (backupSchema && backupSchema !== SCHEMA_VERSION) {
+    versionWarn = `\n⚠️ 版本提示：這份備份來自 schema v${backupSchema}（當前 v${SCHEMA_VERSION}）。\n大部分欄位可相容，少數新功能（如「我的常用」⭐）可能不在備份內。`;
+  } else if (!backupSchema) {
+    versionWarn = `\n⚠️ 版本提示：這份備份來自 v3.8 以前（沒寫 schema 版本），相容性自行確認。`;
+  }
+  const ageDays = exportedAt ? Math.floor((Date.now() - new Date(exportedAt).getTime()) / 86400000) : null;
+  const ageNote = ageDays !== null ? `\n📅 備份距今 ${ageDays} 天前${appVer ? ' · 來源 ' + appVer : ''}` : '';
+
+  const allKeys = [...KEYS_INFO.map(i => i.key), ...(window.AkaiStore?.BIG_KEYS || [])];
+  const willRestore = [...new Set(allKeys)].filter(k => obj[k] !== undefined);
   if (willRestore.length === 0) {
     alert('檔案內沒有任何可還原的資料。');
     return;
   }
-  if (!confirm(`要從「${source}」還原 ${willRestore.length} 個項目嗎？\n\n⚠️ 這會覆蓋目前的本機資料。建議先按「立即下載備份」存一份保險。\n\n要還原的項目：\n${willRestore.map(k => '· ' + (KEYS_INFO.find(i => i.key === k)?.name || k)).join('\n')}`)) return;
 
-  willRestore.forEach(k => {
+  // 預覽：每個 key 預估筆數
+  const preview = willRestore.map(k => {
     const v = obj[k];
-    localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-  });
-  flash(`✓ 已還原 ${willRestore.length} 個項目`);
+    const info = KEYS_INFO.find(i => i.key === k);
+    let sizeNote = '';
+    try {
+      if (Array.isArray(v)) sizeNote = ` (${v.length} 筆)`;
+      else if (v && typeof v === 'object') sizeNote = ` (${Object.keys(v).length} 個欄位)`;
+    } catch {}
+    return '· ' + (info?.name || k) + sizeNote;
+  }).join('\n');
+
+  if (!confirm(`要從「${source}」還原 ${willRestore.length} 個項目嗎？\n\n⚠️ 這會覆蓋目前的本機資料。建議先按「立即下載備份」存一份保險。${ageNote}${versionWarn}\n\n要還原的項目：\n${preview}`)) return;
+
+  let lsOk = 0, idbOk = 0;
+  for (const k of willRestore) {
+    const v = obj[k];
+    if (window.AkaiStore && AkaiStore.BIG_KEYS.includes(k) && AkaiStore.isMigrated()) {
+      try { await AkaiStore.set(k, v); idbOk++; } catch (e) { console.error(e); }
+    } else {
+      try {
+        localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+        lsOk++;
+      } catch (err) {
+        if (err.name === 'QuotaExceededError' && window.AkaiStore) {
+          try { await AkaiStore.set(k, v); idbOk++; } catch {}
+        }
+      }
+    }
+  }
+  flash(`✓ 已還原 ${lsOk + idbOk} 個項目（${lsOk} 個 localStorage + ${idbOk} 個 IndexedDB）`);
   setTimeout(renderSummary, 200);
 }
 
@@ -331,8 +432,143 @@ function flash(text) {
   window._fT = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
+// ===== v3.9 B1：升級到 IndexedDB =====
+async function refreshQuota() {
+  const box = document.getElementById('quotaInfo');
+  if (!window.AkaiStore) {
+    box.innerHTML = '⚠️ AkaiStore 未載入';
+    return;
+  }
+  const u = await AkaiStore.getUsage();
+  const lsKB = (u.localStorageBytes / 1024).toFixed(1);
+  const lsPct = u.localStoragePercent.toFixed(1);
+  const idbMB = u.quota > 0 ? (u.used / 1024 / 1024).toFixed(2) : '—';
+  const idbQuotaMB = u.quota > 0 ? (u.quota / 1024 / 1024).toFixed(0) : '—';
+  const statusEmoji = u.migrated ? '✅' : (u.localStoragePercent >= 80 ? '🔴' : (u.localStoragePercent >= 50 ? '🟡' : '🟢'));
+  box.innerHTML = `
+    <div><b>📦 localStorage：</b> ${lsKB} KB / 約 5,120 KB（${lsPct}%）${statusEmoji}</div>
+    <div><b>🗄 IndexedDB：</b> ${idbMB} MB / ${idbQuotaMB} MB（瀏覽器配額）</div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--ink);">
+      <b>狀態：</b> ${u.migrated ? '✅ 已升級到 IndexedDB（大資料安全存放）' : '⚠️ 尚未升級，大資料仍在 localStorage'}
+    </div>
+  `;
+}
+async function upgradeStorage() {
+  if (!window.AkaiStore) { alert('AkaiStore 未載入'); return; }
+  if (AkaiStore.isMigrated()) {
+    alert('已經升級過了，無須重複操作。');
+    return;
+  }
+  if (!confirm('要把所有大資料（情緒/出勤/行為觀察/親師溝通等）從 localStorage 搬到 IndexedDB 嗎？\n\n✓ 這是安全的操作\n✓ 資料完整保留，只是換個倉庫\n✓ 升級後 5MB 限制就不再是問題\n\n建議先「立即下載備份」存一份保險。')) return;
+  flash('🔄 正在遷移…');
+  try {
+    const report = await AkaiStore.migrateAll();
+    flash(`✅ 升級完成！遷移 ${report.moved.length} 筆、跳過 ${report.skipped.length} 筆${report.failed.length ? '、失敗 ' + report.failed.length : ''}`);
+    setTimeout(() => { refreshQuota(); renderSummary(); }, 300);
+  } catch (e) {
+    alert('遷移失敗：' + e.message);
+  }
+}
+
+// ===== v3.9 B4：資料健康檢查 =====
+async function runHealthCheck() {
+  const box = document.getElementById('healthReport');
+  box.style.display = '';
+  box.innerHTML = '🔍 檢查中…';
+  const issues = [];
+  const wins = [];
+
+  // 1. roster 一致性檢查
+  const roster = loadKey('akai_roster_v1');
+  const rCount = roster?.count || 0;
+  if (!roster) {
+    issues.push('🚫 沒有設定班級名單 → <a href="roster.html">去設定</a>');
+  } else {
+    wins.push(`✓ 班級名單：${roster.className || '未命名'} · ${rCount} 人`);
+  }
+
+  // 2. 孤兒資料：情緒記錄中是否有超過 roster.count 的學生號
+  const emo = loadKey('akai_emotion_v1');
+  if (emo && rCount > 0) {
+    let orphans = new Set();
+    Object.values(emo.records || {}).forEach(day => {
+      Object.keys(day).forEach(num => {
+        if (parseInt(num) > rCount) orphans.add(num);
+      });
+    });
+    if (orphans.size > 0) {
+      issues.push(`🟠 情緒記錄有 ${orphans.size} 個學生號超過名單範圍：${[...orphans].slice(0,5).join(', ')}${orphans.size > 5 ? '…' : ''}`);
+    } else {
+      wins.push('✓ 情緒記錄與名單一致');
+    }
+  }
+
+  // 3. 積點榜孤兒
+  const pts = loadKey('akai_points_v1');
+  if (pts && rCount > 0) {
+    const orphans = Object.keys(pts.points || {}).filter(k => parseInt(k) > rCount);
+    if (orphans.length > 0) {
+      issues.push(`🟠 積點榜有 ${orphans.length} 個超範圍：${orphans.slice(0,5).join(', ')}`);
+    } else {
+      wins.push('✓ 積點榜與名單一致');
+    }
+  }
+
+  // 4. 行為觀察孤兒
+  const bh = loadKey('akai_behavior_v1');
+  if (bh && rCount > 0) {
+    const orphans = new Set((bh.logs || []).filter(l => parseInt(l.num) > rCount).map(l => l.num));
+    if (orphans.size > 0) {
+      issues.push(`🟠 行為觀察有 ${orphans.size} 個超範圍學生號`);
+    }
+  }
+
+  // 5. 上次備份時間
+  try {
+    const last = localStorage.getItem('akai_last_backup_v1');
+    if (last) {
+      const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+      if (days > 30) issues.push(`🟡 距上次備份已 ${days} 天，建議馬上下載一份`);
+      else if (days > 14) issues.push(`🟢 距上次備份 ${days} 天（建議 30 天內備份一次）`);
+      else wins.push(`✓ 上次備份 ${days} 天前`);
+    } else {
+      issues.push('🔴 從未備份過，立刻按上面「立即下載備份」吧');
+    }
+  } catch {}
+
+  // 6. 儲存空間
+  if (window.AkaiStore) {
+    const u = await AkaiStore.getUsage();
+    if (u.localStoragePercent >= 80 && !u.migrated) {
+      issues.push(`🔴 localStorage 用量 ${u.localStoragePercent.toFixed(0)}%，建議「升級到 IndexedDB」`);
+    } else if (u.migrated) {
+      wins.push('✓ 已升級到 IndexedDB，無 5MB 限制');
+    }
+  }
+
+  // Render
+  const issuesHtml = issues.length > 0 ? `
+    <div style="color:var(--ink);font-weight:700;margin-bottom:6px;">⚠️ 需要注意（${issues.length}）</div>
+    <ul style="margin:0 0 10px;padding-left:20px;">${issues.map(i => `<li>${i}</li>`).join('')}</ul>
+  ` : '';
+  const winsHtml = wins.length > 0 ? `
+    <div style="color:var(--g);font-weight:700;margin-bottom:6px;">✅ 正常項目（${wins.length}）</div>
+    <ul style="margin:0;padding-left:20px;color:var(--muted);font-size:12px;">${wins.map(w => `<li>${w}</li>`).join('')}</ul>
+  ` : '';
+  box.innerHTML = (issues.length === 0 ? '<div style="color:var(--g);font-weight:700;font-size:15px;margin-bottom:10px;">🎉 全部健康，沒有發現問題！</div>' : issuesHtml) + winsHtml;
+}
+
 window.addEventListener('focus', renderSummary);
 renderSummary();
+refreshQuota();
+
+// 如果 URL 有 #upgrade，自動滾過去
+if (location.hash === '#upgrade') {
+  setTimeout(() => {
+    const el = document.getElementById('upgrade');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
 </script>
 
 </body>

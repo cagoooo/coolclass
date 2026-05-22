@@ -6,7 +6,7 @@
 
 [![Live](https://img.shields.io/badge/🌐_線上版-cagoooo.github.io%2Fcoolclass-2a1f4a?style=for-the-badge)](https://cagoooo.github.io/coolclass/)
 [![PWA](https://img.shields.io/badge/📲_可裝成_App-PWA-ffd23f?style=for-the-badge&labelColor=2a1f4a)](https://cagoooo.github.io/coolclass/)
-[![Version](https://img.shields.io/badge/版本-v3.8_體驗微調-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/版本-v3.9_防呆穩定-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/MIT-開源自由用-6bcb77?style=for-the-badge&labelColor=2a1f4a)](LICENSE)
 
 ![教室小幫手 — 老師的每日課堂工具](og-image.png)
