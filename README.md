@@ -6,7 +6,7 @@
 
 [![Live](https://img.shields.io/badge/🌐_線上版-cagoooo.github.io%2Fcoolclass-2a1f4a?style=for-the-badge)](https://cagoooo.github.io/coolclass/)
 [![PWA](https://img.shields.io/badge/📲_可裝成_App-PWA-ffd23f?style=for-the-badge&labelColor=2a1f4a)](https://cagoooo.github.io/coolclass/)
-[![Version](https://img.shields.io/badge/版本-v3.6_推廣升級包-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/版本-v3.7_全頁導航-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/MIT-開源自由用-6bcb77?style=for-the-badge&labelColor=2a1f4a)](LICENSE)
 
 ![教室小幫手 — 老師的每日課堂工具](og-image.png)
@@ -128,6 +128,17 @@ git push  # 推到你的 GitHub 就會自動部署
 ```
 
 MIT License — 自由使用、修改、再散佈，不需要徵詢同意。
+
+---
+
+## 🆕 v3.7 全頁導航 FAB
+
+工具一多就會迷路 — 現在所有頁面右下角有兩個小按鈕：
+
+- **🧭 工具導航**：點開展示 26 工具分類清單（含搜尋框），一鍵跳到任何工具，**不用回首頁再點**。
+- **⬆ 回到頂部**：捲動超過 300px 才浮現，點一下平滑滾回頁首。
+
+跟既有的 🎨 視覺微調堆疊在右下角，互不衝突。列印時自動隱藏。
 
 ---
 
