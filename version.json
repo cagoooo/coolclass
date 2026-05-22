@@ -1,5 +1,5 @@
 {
-  "version": "20260522-0944-e9e47bc",
-  "builtAt": "2026-05-22T01:44:35Z",
-  "notes": "v4.1 推廣完整版：tutorial + feedback + evaluation + SEO 優化"
+  "version": "20260522-1000-52f9515",
+  "builtAt": "2026-05-22T02:00:43Z",
+  "notes": "v4.2 LINE 通知整合：Cloud Function + 前端 client + 4 觸發點（後端待 OAuth 部署）"
 }

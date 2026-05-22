@@ -181,6 +181,7 @@
 <script src="shortcuts.js" defer></script>
 <script src="akai-store.js" defer></script>
 <script src="empty-state.js" defer></script>
+<script src="line-notify.js" defer></script>
 <script>
 const TOOLS = [
   '😊 情緒打卡牆','📝 班級 To-Do','🌈 彩虹能量卡','📋 出勤記錄',
@@ -271,11 +272,32 @@ ${extra}
 `;
 }
 
+function payloadForLine() {
+  const form = document.getElementById('fbForm');
+  const role = form.role.value || '未填';
+  const recommend = form.recommend.value || '未填';
+  const favs = [...form.querySelectorAll('input[name="fav"]:checked')].map(x => x.value);
+  return {
+    stars,
+    role,
+    recommend,
+    favs: favs.join('、') || '未勾選',
+    pain: form.pain.value.trim() || '無',
+    wish: form.wish.value.trim() || '無',
+    extra: form.extra.value.trim() || '無',
+    email: form.email.value.trim() || '未留',
+  };
+}
+
 async function submitFb() {
   const txt = buildPayload();
+  // ===== v4.2：同步推 LINE =====
+  if (window.AkaiNotifyLine) {
+    try { window.AkaiNotifyLine('feedback_submitted', payloadForLine()); } catch {}
+  }
   try {
     await navigator.clipboard.writeText(txt);
-    showThanks(`你的回饋已複製到剪貼簿（${txt.length} 字）<br><br>請貼到 LINE 群或 Email 給阿凱老師：<br><b>ipad@mail2.smes.tyc.edu.tw</b><br><br>或之後 Google Form 連結啟用時直接填那邊。`);
+    showThanks(`你的回饋已複製到剪貼簿（${txt.length} 字）<br><br>已自動推送通知給阿凱老師 ✨<br><br>請貼到 LINE 群或 Email 給阿凱老師：<br><b>ipad@mail2.smes.tyc.edu.tw</b><br><br>或之後 Google Form 連結啟用時直接填那邊。`);
   } catch {
     // fallback: 顯示 textarea 讓使用者手動複製
     const ta = document.createElement('textarea');

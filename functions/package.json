@@ -1,0 +1,19 @@
+{
+  "name": "coolclass-functions",
+  "description": "LINE 通知 Cloud Functions for 教室小幫手",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log --lines 30",
+    "serve": "firebase emulators:start --only functions"
+  },
+  "dependencies": {
+    "firebase-functions": "^6.0.0",
+    "firebase-admin": "^12.5.0"
+  },
+  "private": true
+}

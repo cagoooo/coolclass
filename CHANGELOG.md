@@ -7,6 +7,44 @@
 
 ---
 
+## [4.2.0] · 2026-05-22 · LINE 通知整合（前端 + 後端 + 4 觸發點）
+
+### Added — 後端
+- 🆕 **`functions/index.js`**：Cloud Function `notifyLine` (asia-east1)，接 POST 推 LINE Flex Card
+- 🎨 **5 個事件對應的 Flex Card 模板**：`feedback_submitted`（藍）/ `backup_exported`（綠）/ `first_install`（藍）/ `js_error`（紅）/ `tool_first_use`（藍）
+- 🛡 **三層防護**：CORS + maxInstances:5 + rate limit（60 秒最多 10 條）
+- 🔐 **Fail-open**：secrets 未設時不擋部署（避免 deploy 失敗）
+- 🔁 **Flex fail-safe**：Flex 失敗自動 fallback 純文字（雷 #9）
+
+### Added — 前端
+- 🆕 **`line-notify.js`**：全域 `AkaiNotifyLine(event, payload)` API
+- 🔇 **預設靜默失敗**：永不影響使用者操作
+- ⏱ **同事件 60 秒去重**：避免重複觸發洗版
+- ⚙️ **可關閉**：`localStorage.setItem('akai_line_off', '1')` 單裝置關閉；空 endpoint 全站關閉
+- 🐛 **window.error / unhandledrejection 全域監聽**：自動回報 JS 錯誤
+- 🎉 **first_install 偵測**：onboarded_v1 從 '' → '1' 時自動推一次
+
+### Added — 4 個觸發點接線
+- `feedback.html` 送出時 → `feedback_submitted`（含星級/身分/常用/卡關/期望/Email）
+- `backup.html` exportAll 成功時 → `backup_exported`（含班級/資料大小/工具數）
+- `onboarding.js` 首次完成時 → `first_install`（含班級/裝置/頁面）
+- 全頁 window 錯誤 → `js_error`（含訊息/檔案/位置）
+
+### Added — 文件
+- 🆕 **`SETUP_LINE.md`** 完整部署手冊（給阿凱老師親自跑的 5 步驟）
+- 🆕 **`firebase.json`** + `functions/package.json` + `functions/.gitignore`
+
+### Changed
+- 📦 `sw.js` CORE_ASSETS 加入 `line-notify.js`
+- 📝 30+ HTML 全部注入 `<script src="line-notify.js" defer>`
+
+### 部署狀態
+- ✅ 前端程式碼已就緒（Endpoint 預設指向 smes-e1dc3 既有 Firebase 專案）
+- ⏳ 後端 Cloud Function 待阿凱老師親自跑 5 步驟（OAuth 不能由 Claude 代執行）→ 看 [SETUP_LINE.md](SETUP_LINE.md)
+- 🎯 部署完成後：使用者填回饋表 / 備份 / 首次安裝 / 發生錯誤時，LINE 自動收 Flex Card 通知
+
+---
+
 ## [4.1.0] · 2026-05-22 · 推廣完整版（D+F+G 四項齊發）
 
 ### Added

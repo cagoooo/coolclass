@@ -192,6 +192,7 @@
 <script src="shortcuts.js" defer></script>
 <script src="akai-store.js" defer></script>
 <script src="empty-state.js" defer></script>
+<script src="line-notify.js" defer></script>
 <script>
 const KEYS_INFO = [
   { key: 'akai_roster_v1',       name: '👥 班級名單',          summary: r => `${r.className || '未命名'} · ${r.count || 0} 人 · ${Object.keys(r.names||{}).length} 個姓名` },
@@ -306,6 +307,16 @@ async function exportAll() {
   setTimeout(() => URL.revokeObjectURL(url), 500);
   flash(`✓ 已下載 ${(json.length / 1024).toFixed(1)} KB 備份`);
   if (window.AkaiMarkBackup) window.AkaiMarkBackup();  // v3.6：通知 sw-update 重置提醒
+  // v4.2：LINE 通知阿凱老師（有人在認真用 + 備份了）
+  if (window.AkaiNotifyLine) {
+    try {
+      const tools = data._meta?.keysIncluded || [];
+      window.AkaiNotifyLine('backup_exported', {
+        size: `${(json.length / 1024).toFixed(1)} KB`,
+        tools: tools.length + ' 個工具有資料',
+      });
+    } catch {}
+  }
 }
 
 async function copyToClipboard() {
