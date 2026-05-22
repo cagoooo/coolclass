@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>體適能成績登錄 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff9d4d">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="體適能成績登錄 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .grade-pick { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .grade-pick button { padding: 6px 12px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 13px; }
+  .grade-pick button.on { background: var(--orange); color: #fff; }
+
+  .fit-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .fit-table th, .fit-table td { border: 2px solid var(--ink); padding: 4px 6px; text-align: center; }
+  .fit-table th { background: var(--ink); color: var(--y); font-weight: 700; }
+  .fit-table td.name-col { background: var(--paper-2); text-align: left; padding-left: 10px; font-weight: 700; white-space: nowrap; }
+  .fit-table input { width: 60px; padding: 4px 6px; border: 1px solid var(--ink); border-radius: 4px; font-family: inherit; text-align: center; }
+  .fit-table .grade-cell { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; }
+  .fit-table .grade-cell.gold { color: #d4a017; background: #fffacd; }
+  .fit-table .grade-cell.silver { color: #666; background: #f0f0f0; }
+  .fit-table .grade-cell.bronze { color: #a67244; background: #fae8d0; }
+  .fit-table .grade-cell.unpass { color: var(--r); background: #ffe5e5; }
+  .fit-table .pr-cell { font-size: 11px; color: var(--muted); }
+  .fit-help { background: var(--paper-2); padding: 12px 14px; border-radius: 10px; border: 2px dashed var(--ink); font-size: 12px; line-height: 1.7; color: var(--ink-soft); margin-bottom: 14px; }
+
+  @media (max-width: 700px) {
+    .fit-table { font-size: 11px; }
+    .fit-table input { width: 45px; padding: 2px; }
+  }
+  @media print {
+    body { background: white !important; }
+    .home-btn, footer.f, .akai-tweaks-fab, .akai-nav-fab, .btn-bar, .grade-pick, .fit-help, .page-hero { display: none !important; }
+    .block { box-shadow: none !important; border: none !important; background: none !important; padding: 0 !important; }
+    .fit-table { font-size: 10px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-y"></span><span class="blob blob-g"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">FITNESS · 體適能</span>
+      <h1>5 項<em>體適能</em>成績登錄，<br>自動算等級 + 匯出教育部表格。</h1>
+      <p class="sub">
+        <span class="badge">仰臥起坐 / 坐姿體前彎</span>
+        <span class="badge">立定跳遠 / 心肺耐力</span>
+        <span class="badge">自動 PR + 等級 + CSV</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalCount">0</span>
+      <span class="sml">人已登錄</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="block-head">
+      <div class="step">📋</div>
+      <h2>選擇年級 + 性別組</h2>
+      <span class="tail">不同組對照表不同，會影響等級判定</span>
+    </div>
+    <div class="fit-help">
+      💡 等級對照採教育部 SH150 體適能簡化標準：金（前 25%）/ 銀（25-50%）/ 銅（50-75%）/ 待加強（75%+）。<br>
+      實際 PR 值請以教育部公告為準，這個工具的等級僅供參考。心肺耐力以「秒數越少越好」計算（800 米或 1600 米）。
+    </div>
+    <div class="grade-pick" id="gradePick"></div>
+    <div class="grade-pick">
+      <button data-sex="boy" class="sex-btn on">👦 男生組</button>
+      <button data-sex="girl" class="sex-btn">👧 女生組</button>
+    </div>
+  </section>
+
+  <section class="block" style="margin-top:18px;">
+    <div class="block-head">
+      <div class="step">📊</div>
+      <h2>成績登錄表</h2>
+      <span class="tail">輸入數字自動算等級</span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="fit-table">
+        <thead>
+          <tr>
+            <th>學號</th><th>姓名</th>
+            <th>身高 cm</th><th>體重 kg</th>
+            <th>仰臥起坐<br>(次/分鐘)</th>
+            <th>坐姿體前彎<br>(公分)</th>
+            <th>立定跳遠<br>(公分)</th>
+            <th>心肺耐力<br>(秒)</th>
+            <th>綜合</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+      </table>
+    </div>
+    <div class="btn-bar" style="margin-top:14px;">
+      <button class="btn primary" onclick="exportCSV()">📊 匯出 CSV</button>
+      <button class="btn y" onclick="window.print()">🖨️ 列印報表</button>
+      <button class="btn r" onclick="clearAll()">🗑️ 清空成績</button>
+    </div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_fitness_v1';
+
+// 簡化版教育部體適能標準（gold/silver/bronze 三條線；values 為「達金/銀/銅」的最低值）
+// 心肺以秒越少越好，所以 lessIsBetter:true
+const STANDARDS = {
+  // [grade][sex][item] = { gold, silver, bronze, lessIsBetter? }
+  G3: {
+    boy:  { situp:30, sitreach:32, jump:140, run:430, runItem:'800米' },
+    girl: { situp:25, sitreach:36, jump:130, run:460, runItem:'800米' },
+  },
+  G4: {
+    boy:  { situp:32, sitreach:33, jump:150, run:415, runItem:'800米' },
+    girl: { situp:27, sitreach:37, jump:140, run:440, runItem:'800米' },
+  },
+  G5: {
+    boy:  { situp:35, sitreach:34, jump:160, run:400, runItem:'800米' },
+    girl: { situp:29, sitreach:38, jump:148, run:425, runItem:'800米' },
+  },
+  G6: {
+    boy:  { situp:38, sitreach:35, jump:170, run:385, runItem:'800米' },
+    girl: { situp:31, sitreach:39, jump:155, run:415, runItem:'800米' },
+  },
+  J1: {
+    boy:  { situp:40, sitreach:36, jump:185, run:480, runItem:'1600米' },
+    girl: { situp:32, sitreach:40, jump:160, run:550, runItem:'1600米' },
+  },
+};
+
+let state = loadState();
+let currentGrade = state.grade || 'G5';
+let currentSex = state.sex || 'boy';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { records: obj.records || {}, grade: obj.grade, sex: obj.sex };
+  } catch { return { records: {} }; }
+}
+function saveState() { state.grade = currentGrade; state.sex = currentSex; localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+let saveT;
+function autosave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { saveState(); }, 300);
+}
+
+function getRoster() {
+  if (window.AkaiRoster) return AkaiRoster.load();
+  return { count: 30, names: {} };
+}
+function getName(num) {
+  const r = getRoster();
+  return (r.names && r.names[num]) || '';
+}
+
+function calcGrade(item, value) {
+  if (value === '' || value === null || isNaN(value)) return { lv: '', cls: '' };
+  const std = STANDARDS[currentGrade][currentSex];
+  if (!std) return { lv: '?', cls: '' };
+  const threshold = std[item];
+  if (!threshold) return { lv: '', cls: '' };
+  const v = parseFloat(value);
+  if (item === 'run') {
+    // 越少越好
+    if (v <= threshold * 0.9) return { lv: '金', cls: 'gold' };
+    if (v <= threshold) return { lv: '銀', cls: 'silver' };
+    if (v <= threshold * 1.1) return { lv: '銅', cls: 'bronze' };
+    return { lv: '待加強', cls: 'unpass' };
+  } else {
+    if (v >= threshold * 1.15) return { lv: '金', cls: 'gold' };
+    if (v >= threshold) return { lv: '銀', cls: 'silver' };
+    if (v >= threshold * 0.85) return { lv: '銅', cls: 'bronze' };
+    return { lv: '待加強', cls: 'unpass' };
+  }
+}
+
+function calcOverall(rec) {
+  const items = ['situp','sitreach','jump','run'];
+  const grades = items.map(i => calcGrade(i, rec[i]).lv).filter(g => g);
+  if (grades.length < 4) return { lv: '—', cls: '' };
+  const golds = grades.filter(g => g === '金').length;
+  const silvers = grades.filter(g => g === '銀').length;
+  const bronzes = grades.filter(g => g === '銅').length;
+  const unpass = grades.filter(g => g === '待加強').length;
+  if (unpass > 0) return { lv: '待加強', cls: 'unpass' };
+  if (golds >= 3) return { lv: '金質', cls: 'gold' };
+  if (golds + silvers >= 3) return { lv: '銀質', cls: 'silver' };
+  return { lv: '銅質', cls: 'bronze' };
+}
+
+function renderGradePicker() {
+  const grades = [
+    { id: 'G3', label: '國小 3 年級' },
+    { id: 'G4', label: '國小 4 年級' },
+    { id: 'G5', label: '國小 5 年級' },
+    { id: 'G6', label: '國小 6 年級' },
+    { id: 'J1', label: '國中 7 年級' },
+  ];
+  document.getElementById('gradePick').innerHTML = grades.map(g =>
+    `<button data-grade="${g.id}" class="${g.id === currentGrade ? 'on' : ''}">${g.label}</button>`
+  ).join('');
+  document.querySelectorAll('[data-grade]').forEach(b => {
+    b.onclick = () => { currentGrade = b.dataset.grade; saveState(); renderGradePicker(); renderTable(); };
+  });
+  document.querySelectorAll('[data-sex]').forEach(b => {
+    b.classList.toggle('on', b.dataset.sex === currentSex);
+    b.onclick = () => { currentSex = b.dataset.sex; saveState(); renderGradePicker(); renderTable(); };
+  });
+}
+
+function renderTable() {
+  const r = getRoster();
+  const total = r.count || 30;
+  const tbody = document.getElementById('tBody');
+  let html = '';
+  let filledCount = 0;
+  for (let num = 1; num <= total; num++) {
+    const rec = state.records[num] || {};
+    if (rec.situp || rec.sitreach || rec.jump || rec.run) filledCount++;
+    const sitG = calcGrade('situp', rec.situp);
+    const reachG = calcGrade('sitreach', rec.sitreach);
+    const jumpG = calcGrade('jump', rec.jump);
+    const runG = calcGrade('run', rec.run);
+    const overall = calcOverall(rec);
+    html += `
+      <tr>
+        <td class="name-col">${num}</td>
+        <td class="name-col">${escapeHtml(getName(num))}</td>
+        <td><input type="number" min="0" max="300" value="${rec.h || ''}" data-num="${num}" data-key="h"></td>
+        <td><input type="number" min="0" max="200" value="${rec.w || ''}" data-num="${num}" data-key="w"></td>
+        <td>
+          <input type="number" min="0" max="100" value="${rec.situp || ''}" data-num="${num}" data-key="situp">
+          <div class="grade-cell ${sitG.cls}">${sitG.lv}</div>
+        </td>
+        <td>
+          <input type="number" min="-30" max="60" value="${rec.sitreach || ''}" data-num="${num}" data-key="sitreach">
+          <div class="grade-cell ${reachG.cls}">${reachG.lv}</div>
+        </td>
+        <td>
+          <input type="number" min="0" max="400" value="${rec.jump || ''}" data-num="${num}" data-key="jump">
+          <div class="grade-cell ${jumpG.cls}">${jumpG.lv}</div>
+        </td>
+        <td>
+          <input type="number" min="0" max="2000" value="${rec.run || ''}" data-num="${num}" data-key="run">
+          <div class="grade-cell ${runG.cls}">${runG.lv}</div>
+        </td>
+        <td class="grade-cell ${overall.cls}" style="font-size:14px;">${overall.lv}</td>
+      </tr>
+    `;
+  }
+  tbody.innerHTML = html;
+  document.getElementById('totalCount').textContent = filledCount;
+
+  tbody.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const num = inp.dataset.num;
+      const key = inp.dataset.key;
+      if (!state.records[num]) state.records[num] = {};
+      state.records[num][key] = inp.value;
+      autosave();
+      renderTable();  // 重新算等級
+    });
+  });
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportCSV() {
+  const r = getRoster();
+  const total = r.count || 30;
+  const std = STANDARDS[currentGrade][currentSex];
+  const runLabel = std?.runItem || '心肺';
+  const rows = [['學號','姓名','身高(cm)','體重(kg)','仰臥起坐(次/分)','坐姿體前彎(cm)','立定跳遠(cm)', runLabel + '(秒)','綜合等級']];
+  for (let num = 1; num <= total; num++) {
+    const rec = state.records[num] || {};
+    const overall = calcOverall(rec);
+    rows.push([num, getName(num), rec.h||'', rec.w||'', rec.situp||'', rec.sitreach||'', rec.jump||'', rec.run||'', overall.lv]);
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `體適能成績_${currentGrade}_${currentSex}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  flash('✓ CSV 已下載');
+}
+
+function clearAll() {
+  if (!confirm('清空所有成績？\n（年級/性別設定保留）')) return;
+  state.records = {};
+  saveState();
+  renderTable();
+  flash('已清空');
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+renderGradePicker();
+renderTable();
+window.addEventListener('focus', renderTable);
+</script>
+
+</body>
+</html>

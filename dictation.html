@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>課堂錄音轉文字 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4d96ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="課堂錄音轉文字 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .rec-stage {
+    background: var(--ink);
+    border-radius: 20px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 18px;
+  }
+  .rec-stage .mic {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 4px solid var(--y);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 48px;
+    cursor: pointer;
+    transition: transform .15s;
+    margin-bottom: 14px;
+  }
+  .rec-stage .mic:hover { transform: scale(1.05); }
+  .rec-stage .mic.on { background: var(--r); border-color: var(--r); animation: pulse 1.2s infinite; }
+  .rec-stage .mic.on::after { content: ''; }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,.7); }
+    50% { box-shadow: 0 0 0 20px rgba(255,107,107,0); }
+  }
+  .rec-stage .status { color: var(--paper); font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+  .rec-stage .timer { color: var(--y); font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; font-size: 36px; }
+  .live-text {
+    background: var(--paper-2);
+    padding: 14px;
+    border-radius: 10px;
+    border: 2px dashed var(--ink);
+    min-height: 60px;
+    margin-top: 14px;
+    font-size: 16px;
+    color: var(--ink);
+    text-align: left;
+  }
+  .live-text .interim { color: var(--muted); font-style: italic; }
+  .transcript-list { display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; }
+  .transcript-item {
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+  .transcript-item .time {
+    background: var(--ink);
+    color: var(--y);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+  }
+  .transcript-item .text {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .transcript-item .text[contenteditable="true"] {
+    background: rgba(255,210,63,.15);
+    padding: 2px 6px;
+    border-radius: 6px;
+    outline: none;
+  }
+  .transcript-item .del { background: var(--r); color: #fff; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 11px; }
+  .unsupported {
+    background: linear-gradient(135deg, #ffeaea 0%, #fff5e0 100%);
+    border: 3px dashed var(--r);
+    border-radius: 14px;
+    padding: 20px;
+    text-align: center;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-b"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">DICTATION · 課堂錄音轉文字</span>
+      <h1>說的話<em>即時變字</em>，<br>家訪 / 議題討論留存超輕鬆。</h1>
+      <p class="sub">
+        <span class="badge">Web Speech API</span>
+        <span class="badge">即時辨識中文</span>
+        <span class="badge">純本機處理 · 不上傳</span>
+      </p>
+    </div>
+  </section>
+
+  <div id="supported">
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🎤</div>
+        <h2>錄音 + 即時轉文字</h2>
+      </div>
+      <div class="rec-stage">
+        <div class="mic" id="micBtn" title="點擊開始/停止">🎤</div>
+        <div class="status" id="status">準備就緒 · 點麥克風開始</div>
+        <div class="timer" id="timer">00:00</div>
+        <div class="live-text" id="liveText">辨識結果會即時顯示在這裡…</div>
+      </div>
+      <div class="btn-bar">
+        <button class="btn primary lg" id="toggleBtn" onclick="toggleRec()">🎤 開始錄音</button>
+        <button class="btn y" onclick="newSession()">📝 新段落</button>
+        <button class="btn r" onclick="clearAll()">🗑️ 清空</button>
+      </div>
+    </section>
+
+    <section class="block" style="margin-top:18px;">
+      <div class="block-head">
+        <div class="step">📋</div>
+        <h2>已記錄段落</h2>
+        <span class="tail" id="paraCount">— 段</span>
+      </div>
+      <div class="transcript-list" id="transcriptList"></div>
+      <div class="btn-bar" style="margin-top:14px;">
+        <button class="btn primary" onclick="exportMd()">📝 匯出 Markdown</button>
+        <button class="btn y" onclick="exportTxt()">📄 匯出純文字</button>
+        <button class="btn g" onclick="copyAll()">📋 複製全部</button>
+        <button class="btn b" onclick="window.print()">🖨️ 列印</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="unsupported" class="unsupported" style="display:none;">
+    😢 你的瀏覽器不支援 Web Speech API（中文語音辨識）<br><br>
+    建議使用 <b>Chrome / Edge 桌面版</b>，或 Android 上的 Chrome。<br>
+    Safari 與 iOS 對 SpeechRecognition 支援有限。
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_dictation_v1';
+
+let state = loadState();
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { paragraphs: obj.paragraphs || [], sessionStart: null };
+  } catch { return { paragraphs: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ paragraphs: state.paragraphs })); }
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) {
+  document.getElementById('supported').style.display = 'none';
+  document.getElementById('unsupported').style.display = '';
+}
+
+let recognition = null;
+let recording = false;
+let timerInterval = null;
+let startTime = 0;
+let currentBuffer = '';
+
+function setupRecognition() {
+  if (!SR) return;
+  recognition = new SR();
+  recognition.lang = 'zh-TW';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const r = event.results[i];
+      if (r.isFinal) final += r[0].transcript;
+      else interim += r[0].transcript;
+    }
+    if (final) {
+      currentBuffer += final;
+      addParagraph(final.trim());
+    }
+    const lt = document.getElementById('liveText');
+    lt.innerHTML = `<span>${escapeHtml(currentBuffer)}</span><span class="interim">${escapeHtml(interim)}</span>`;
+  };
+  recognition.onerror = (e) => {
+    console.error('SR error:', e.error);
+    if (e.error === 'no-speech') return;  // 安靜的環境，忽略
+    if (e.error === 'not-allowed') {
+      alert('請允許麥克風權限才能使用此功能');
+      stopRec();
+    }
+  };
+  recognition.onend = () => {
+    if (recording) {
+      try { recognition.start(); } catch {}  // 自動續錄
+    }
+  };
+}
+
+function startRec() {
+  if (!SR) return;
+  if (!recognition) setupRecognition();
+  try {
+    recognition.start();
+    recording = true;
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 500);
+    document.getElementById('micBtn').classList.add('on');
+    document.getElementById('toggleBtn').textContent = '⏸ 停止錄音';
+    document.getElementById('status').textContent = '🔴 錄音中…說話即時辨識';
+    document.getElementById('liveText').innerHTML = '<span class="interim">聆聽中…</span>';
+    currentBuffer = '';
+  } catch (e) {
+    alert('啟動失敗：' + e.message);
+  }
+}
+function stopRec() {
+  recording = false;
+  if (recognition) try { recognition.stop(); } catch {}
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+  document.getElementById('micBtn').classList.remove('on');
+  document.getElementById('toggleBtn').textContent = '🎤 繼續錄音';
+  document.getElementById('status').textContent = '已停止 · 點麥克風繼續';
+}
+function toggleRec() {
+  if (recording) stopRec(); else startRec();
+}
+function updateTimer() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60);
+  document.getElementById('timer').textContent = `${String(m).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+}
+
+function addParagraph(text) {
+  if (!text) return;
+  state.paragraphs.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,5),
+    text,
+    time: new Date().toISOString(),
+  });
+  saveState();
+  renderTranscripts();
+}
+
+function delPara(id) {
+  state.paragraphs = state.paragraphs.filter(p => p.id !== id);
+  saveState();
+  renderTranscripts();
+}
+
+function newSession() {
+  currentBuffer = '';
+  document.getElementById('liveText').innerHTML = '已開始新段落…';
+  addParagraph('— 新段落 —');
+}
+
+function clearAll() {
+  if (!confirm('清空所有已記錄段落？')) return;
+  state.paragraphs = [];
+  saveState();
+  renderTranscripts();
+  flash('已清空');
+}
+
+function renderTranscripts() {
+  const wrap = document.getElementById('transcriptList');
+  document.getElementById('paraCount').textContent = `${state.paragraphs.length} 段`;
+  if (state.paragraphs.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">還沒有段落</div>';
+    return;
+  }
+  wrap.innerHTML = state.paragraphs.map(p => {
+    const t = new Date(p.time);
+    const tStr = `${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}`;
+    return `
+      <div class="transcript-item">
+        <span class="time">${tStr}</span>
+        <div class="text" contenteditable="true" data-id="${p.id}">${escapeHtml(p.text)}</div>
+        <button class="del" onclick="delPara('${p.id}')">✕</button>
+      </div>
+    `;
+  }).join('');
+  wrap.querySelectorAll('[contenteditable]').forEach(el => {
+    el.addEventListener('blur', () => {
+      const id = el.dataset.id;
+      const p = state.paragraphs.find(x => x.id === id);
+      if (p) { p.text = el.textContent; saveState(); }
+    });
+  });
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportMd() {
+  if (state.paragraphs.length === 0) { alert('沒有段落可匯出'); return; }
+  const d = new Date();
+  const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  let md = `# 課堂錄音 ${dStr}\n\n> 用「教室小幫手 · 課堂錄音轉文字」生成\n\n`;
+  state.paragraphs.forEach(p => {
+    const t = new Date(p.time);
+    md += `**${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}** ${p.text}\n\n`;
+  });
+  download(md, `課堂錄音_${dStr}.md`, 'text/markdown');
+}
+
+function exportTxt() {
+  if (state.paragraphs.length === 0) { alert('沒有段落可匯出'); return; }
+  const txt = state.paragraphs.map(p => {
+    const t = new Date(p.time);
+    return `[${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}:${String(t.getSeconds()).padStart(2,'0')}] ${p.text}`;
+  }).join('\n\n');
+  download(txt, `課堂錄音_${new Date().toISOString().slice(0,10)}.txt`, 'text/plain');
+}
+
+async function copyAll() {
+  const txt = state.paragraphs.map(p => p.text).join('\n\n');
+  try {
+    await navigator.clipboard.writeText(txt);
+    flash('✓ 已複製全文到剪貼簿');
+  } catch {
+    alert('複製失敗');
+  }
+}
+
+function download(content, filename, mime) {
+  const blob = new Blob(['﻿' + content], { type: mime + ';charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  flash('✓ 已下載');
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+document.getElementById('micBtn').onclick = toggleRec;
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+  if (e.key === ' ') { e.preventDefault(); toggleRec(); }
+});
+
+renderTranscripts();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>學習單產生器 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff97c5">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="學習單產生器 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .ws-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .ws-meta input { padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; }
+  .q-list { display: flex; flex-direction: column; gap: 10px; }
+  .q-item { background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 12px; box-shadow: 2px 2px 0 var(--ink); }
+  .q-head { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .q-head .q-num { background: var(--ink); color: var(--y); padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+  .q-head select { padding: 4px 8px; border: 2px solid var(--ink); border-radius: 6px; font-family: inherit; font-size: 13px; font-weight: 700; }
+  .q-head .spc { flex: 1; }
+  .q-head button { background: var(--ink); color: #fff; border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font-size: 12px; }
+  .q-head .del { background: var(--r); }
+  .q-body input[type="text"], .q-body textarea {
+    width: 100%; padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px;
+    font-family: inherit; font-size: 14px; margin-bottom: 6px; box-sizing: border-box;
+    resize: vertical;
+  }
+  .q-body textarea { min-height: 50px; }
+  .q-choices { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+  .q-choices .row { display: flex; gap: 6px; align-items: center; }
+  .q-choices .row input[type="radio"], .q-choices .row input[type="checkbox"] { width: 18px; height: 18px; }
+  .q-choices .row input[type="text"] { margin-bottom: 0; }
+  .q-choices .row .del { background: var(--ink); color: #fff; border: none; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; cursor: pointer; }
+  .q-link { padding: 6px 10px; background: var(--paper-2); border-radius: 6px; font-size: 12px; color: var(--ink-soft); margin-top: 6px; }
+
+  /* 預覽區 */
+  .preview {
+    background: #fff;
+    border: 3px dashed var(--ink);
+    border-radius: 14px;
+    padding: 30px 36px;
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: 'Noto Sans TC', serif;
+  }
+  .preview h1 { font-size: 22px; text-align: center; margin: 0 0 4px; color: var(--ink); }
+  .preview .meta-row { display: flex; gap: 14px; justify-content: space-between; font-size: 14px; border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 14px; }
+  .preview .pq { margin-bottom: 16px; }
+  .preview .pq-stem { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .preview .pq-choices { padding-left: 12px; font-size: 14px; line-height: 1.9; }
+  .preview .pq-blank { display: inline-block; min-width: 80px; border-bottom: 1px solid var(--ink); padding: 0 6px; margin: 0 4px; }
+  .preview .pq-line { border-bottom: 1px solid var(--ink); margin: 8px 0; height: 22px; }
+  .preview .pq-match-pair { display: flex; gap: 30px; padding: 4px 0; align-items: center; }
+  .preview .pq-match-pair .left { background: var(--paper-2); padding: 4px 12px; border-radius: 4px; min-width: 150px; }
+  .preview .pq-match-pair .right { background: var(--paper-2); padding: 4px 12px; border-radius: 4px; min-width: 150px; }
+  .preview .pq.with-ans { background: rgba(107,203,119,.08); padding: 8px; border-left: 4px solid var(--g); }
+  .preview .ans-mark { color: var(--g); font-weight: 700; }
+
+  @media (max-width: 900px) {
+    .panel-grid { grid-template-columns: 1fr; }
+  }
+  @media print {
+    body { background: white !important; }
+    .home-btn, .panel-grid > section.editor, footer.f, .akai-tweaks-fab, .akai-nav-fab, .page-hero { display: none !important; }
+    .preview { border: none; padding: 0; box-shadow: none; max-height: none; overflow: visible; }
+    .preview-section { padding: 0 !important; box-shadow: none !important; border: none !important; background: none !important; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-pink"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">WORKSHEET · 學習單產生器</span>
+      <h1>4 種題型<em>自由組合</em>，<br>5 分鐘出一張學習單。</h1>
+      <p class="sub">
+        <span class="badge">選擇 / 填空 / 簡答 / 連連看</span>
+        <span class="badge">即時預覽</span>
+        <span class="badge">含答案 / 不含答案 雙版列印</span>
+      </p>
+    </div>
+  </section>
+
+  <div class="panel-grid">
+
+    <section class="block editor">
+      <div class="block-head">
+        <div class="step">✏️</div>
+        <h2>編輯區</h2>
+      </div>
+      <div class="ws-meta">
+        <input type="text" id="metaTitle" placeholder="📋 學習單標題（例：分數除法練習）" maxlength="60">
+        <input type="text" id="metaSubject" placeholder="🏫 科目／單元" maxlength="40">
+        <input type="text" id="metaClass" placeholder="班級" maxlength="20">
+        <input type="text" id="metaDate" placeholder="日期 (預設今天)">
+      </div>
+      <div class="btn-bar" style="margin-bottom:14px;">
+        <button class="btn primary" onclick="addQ('choice')">＋ 選擇題</button>
+        <button class="btn y" onclick="addQ('blank')">＋ 填空題</button>
+        <button class="btn g" onclick="addQ('short')">＋ 簡答題</button>
+        <button class="btn b" onclick="addQ('match')">＋ 連連看</button>
+      </div>
+      <div class="q-list" id="qList"></div>
+      <div class="btn-bar" style="margin-top:14px;border-top:2px dashed var(--ink);padding-top:14px;">
+        <button class="btn r" onclick="clearAll()">🗑️ 全部清空</button>
+        <button class="btn y" onclick="loadSample()">📚 載入範例</button>
+      </div>
+    </section>
+
+    <section class="block preview-section">
+      <div class="block-head">
+        <div class="step">👁️</div>
+        <h2>即時預覽</h2>
+        <span class="tail">
+          <label style="font-size:12px;cursor:pointer;">
+            <input type="checkbox" id="showAns" onchange="render()" style="vertical-align:middle;"> 顯示答案
+          </label>
+        </span>
+      </div>
+      <div class="preview" id="preview"></div>
+      <div class="btn-bar" style="margin-top:14px;">
+        <button class="btn primary lg" onclick="printSheet(false)">🖨️ 列印（題目版）</button>
+        <button class="btn g" onclick="printSheet(true)">🖨️ 列印（含答案版）</button>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已新增</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_worksheet_v1';
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      meta: obj.meta || { title: '', subject: '', cls: '', date: '' },
+      questions: obj.questions || [],
+    };
+  } catch { return { meta: {}, questions: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+let saveT;
+function autosave() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { saveState(); render(); }, 300);
+}
+
+function todayDateStr() {
+  const d = new Date();
+  return `${d.getFullYear()} / ${d.getMonth()+1} / ${d.getDate()}`;
+}
+
+function addQ(type) {
+  const q = { id: Date.now() + '_' + Math.random().toString(36).slice(2,5), type };
+  if (type === 'choice') {
+    q.stem = '';
+    q.choices = ['', '', '', ''];
+    q.ans = 0;
+  } else if (type === 'blank') {
+    q.stem = '請寫出 ___ 的答案。';
+    q.ans = '';
+  } else if (type === 'short') {
+    q.stem = '';
+    q.ans = '';
+    q.lines = 3;
+  } else if (type === 'match') {
+    q.stem = '';
+    q.pairs = [['', ''], ['', ''], ['', '']];
+  }
+  state.questions.push(q);
+  autosave();
+  flash('✓ 已新增題目');
+}
+
+function delQ(id) {
+  state.questions = state.questions.filter(q => q.id !== id);
+  autosave();
+}
+function moveQ(id, dir) {
+  const i = state.questions.findIndex(q => q.id === id);
+  if (i < 0) return;
+  const j = i + dir;
+  if (j < 0 || j >= state.questions.length) return;
+  [state.questions[i], state.questions[j]] = [state.questions[j], state.questions[i]];
+  autosave();
+}
+
+function renderEditor() {
+  document.getElementById('metaTitle').value = state.meta.title || '';
+  document.getElementById('metaSubject').value = state.meta.subject || '';
+  document.getElementById('metaClass').value = state.meta.cls || '';
+  document.getElementById('metaDate').value = state.meta.date || '';
+
+  const wrap = document.getElementById('qList');
+  if (state.questions.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;">點上方按鈕新增第一題</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  state.questions.forEach((q, idx) => {
+    const div = document.createElement('div');
+    div.className = 'q-item';
+    const typeLabels = { choice: '選擇題', blank: '填空題', short: '簡答題', match: '連連看' };
+    div.innerHTML = `
+      <div class="q-head">
+        <span class="q-num">第 ${idx+1} 題</span>
+        <select class="qt"><option value="choice">選擇題</option><option value="blank">填空題</option><option value="short">簡答題</option><option value="match">連連看</option></select>
+        <span class="spc"></span>
+        <button class="up" title="上移">↑</button>
+        <button class="down" title="下移">↓</button>
+        <button class="del" title="刪除">✕</button>
+      </div>
+      <div class="q-body" id="body-${q.id}"></div>
+    `;
+    div.querySelector('.qt').value = q.type;
+    div.querySelector('.qt').onchange = (e) => { q.type = e.target.value; initQ(q); autosave(); };
+    div.querySelector('.up').onclick = () => moveQ(q.id, -1);
+    div.querySelector('.down').onclick = () => moveQ(q.id, 1);
+    div.querySelector('.del').onclick = () => delQ(q.id);
+    wrap.appendChild(div);
+    renderQBody(q);
+  });
+}
+
+function initQ(q) {
+  if (q.type === 'choice' && !Array.isArray(q.choices)) { q.choices = ['', '', '', '']; q.ans = 0; }
+  if (q.type === 'match' && !Array.isArray(q.pairs)) { q.pairs = [['', ''], ['', ''], ['', '']]; }
+  if (q.type === 'blank' && q.ans === undefined) q.ans = '';
+  if (q.type === 'short' && !q.lines) q.lines = 3;
+}
+
+function renderQBody(q) {
+  const body = document.getElementById('body-' + q.id);
+  if (!body) return;
+  if (q.type === 'choice') {
+    body.innerHTML = `
+      <textarea class="stem" placeholder="題幹">${escapeText(q.stem)}</textarea>
+      <div class="q-choices" id="ch-${q.id}"></div>
+      <button class="btn y" style="margin-top:6px;font-size:12px;padding:4px 10px;" onclick="addChoice('${q.id}')">＋ 加選項</button>
+    `;
+    body.querySelector('.stem').oninput = (e) => { q.stem = e.target.value; autosave(); };
+    const wrap = body.querySelector('#ch-' + q.id);
+    q.choices.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      const letter = String.fromCharCode(65 + i);
+      row.innerHTML = `
+        <input type="radio" name="ans-${q.id}" ${q.ans === i ? 'checked' : ''}>
+        <b style="width:20px;">${letter}.</b>
+        <input type="text" placeholder="選項 ${letter}" value="${escapeAttr(c)}">
+        <button class="del">✕</button>
+      `;
+      row.querySelector('input[type="radio"]').onchange = () => { q.ans = i; autosave(); };
+      row.querySelector('input[type="text"]').oninput = (e) => { q.choices[i] = e.target.value; autosave(); };
+      row.querySelector('.del').onclick = () => { q.choices.splice(i,1); if (q.ans >= q.choices.length) q.ans = 0; autosave(); };
+      wrap.appendChild(row);
+    });
+  } else if (q.type === 'blank') {
+    body.innerHTML = `
+      <textarea class="stem" placeholder="題幹（用 ___ 代表空格）">${escapeText(q.stem)}</textarea>
+      <input type="text" class="ans" placeholder="✓ 正確答案" value="${escapeAttr(q.ans || '')}">
+    `;
+    body.querySelector('.stem').oninput = (e) => { q.stem = e.target.value; autosave(); };
+    body.querySelector('.ans').oninput = (e) => { q.ans = e.target.value; autosave(); };
+  } else if (q.type === 'short') {
+    body.innerHTML = `
+      <textarea class="stem" placeholder="題幹">${escapeText(q.stem)}</textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+        <label style="font-size:13px;font-weight:700;">作答行數：</label>
+        <input type="number" class="lines" min="1" max="20" value="${q.lines}" style="width:60px;padding:4px 8px;border:2px solid var(--ink);border-radius:6px;margin:0;">
+      </div>
+      <textarea class="ans" placeholder="✓ 參考答案" style="margin-top:6px;">${escapeText(q.ans || '')}</textarea>
+    `;
+    body.querySelector('.stem').oninput = (e) => { q.stem = e.target.value; autosave(); };
+    body.querySelector('.lines').oninput = (e) => { q.lines = parseInt(e.target.value) || 3; autosave(); };
+    body.querySelector('.ans').oninput = (e) => { q.ans = e.target.value; autosave(); };
+  } else if (q.type === 'match') {
+    body.innerHTML = `
+      <input type="text" class="stem" placeholder="題目說明（例：將左方與右方相對應的詞連起來）" value="${escapeAttr(q.stem)}">
+      <div class="q-link">左右兩欄將被排序顯示。學生看到的是亂序，老師端可看正確配對。</div>
+      <div id="pairs-${q.id}" style="margin-top:6px;"></div>
+      <button class="btn y" style="margin-top:6px;font-size:12px;padding:4px 10px;" onclick="addPair('${q.id}')">＋ 加一對</button>
+    `;
+    body.querySelector('.stem').oninput = (e) => { q.stem = e.target.value; autosave(); };
+    const pwrap = body.querySelector('#pairs-' + q.id);
+    q.pairs.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style.display = 'flex';
+      row.style.gap = '6px';
+      row.style.marginBottom = '4px';
+      row.innerHTML = `
+        <input type="text" placeholder="左方 ${i+1}" value="${escapeAttr(p[0])}" style="flex:1;">
+        <span style="align-self:center;color:var(--ink);">↔</span>
+        <input type="text" placeholder="右方 ${i+1}" value="${escapeAttr(p[1])}" style="flex:1;">
+        <button class="del" style="background:var(--ink);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:11px;cursor:pointer;">✕</button>
+      `;
+      const ins = row.querySelectorAll('input');
+      ins[0].oninput = (e) => { q.pairs[i][0] = e.target.value; autosave(); };
+      ins[1].oninput = (e) => { q.pairs[i][1] = e.target.value; autosave(); };
+      row.querySelector('.del').onclick = () => { q.pairs.splice(i,1); autosave(); };
+      pwrap.appendChild(row);
+    });
+  }
+}
+
+function addChoice(qId) {
+  const q = state.questions.find(x => x.id === qId);
+  if (!q) return;
+  q.choices.push('');
+  autosave();
+}
+function addPair(qId) {
+  const q = state.questions.find(x => x.id === qId);
+  if (!q) return;
+  q.pairs.push(['', '']);
+  autosave();
+}
+
+function escapeText(s) { return String(s||'').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+function escapeAttr(s) { return escapeText(s).replace(/"/g, '&quot;'); }
+
+function renderPreview() {
+  const showAns = document.getElementById('showAns').checked;
+  const prev = document.getElementById('preview');
+  const meta = state.meta;
+  const title = meta.title || '【未命名學習單】';
+  const subject = meta.subject || '';
+  const cls = meta.cls || '';
+  const date = meta.date || todayDateStr();
+  let html = `
+    <h1>${escapeText(title)}</h1>
+    ${subject ? `<div style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:8px;">${escapeText(subject)}</div>` : ''}
+    <div class="meta-row">
+      <span>班級：${escapeText(cls) || '_____'}</span>
+      <span>姓名：________</span>
+      <span>座號：____</span>
+      <span>日期：${escapeText(date)}</span>
+    </div>
+  `;
+  state.questions.forEach((q, idx) => {
+    const num = idx + 1;
+    html += `<div class="pq${showAns ? ' with-ans' : ''}">`;
+    if (q.type === 'choice') {
+      html += `<div class="pq-stem">${num}. (   ) ${escapeText(q.stem || '【未填題目】')}</div>`;
+      html += `<div class="pq-choices">`;
+      q.choices.forEach((c, i) => {
+        const letter = String.fromCharCode(65 + i);
+        const isAns = showAns && q.ans === i;
+        html += `${isAns ? '<span class="ans-mark">✓ </span>' : ''}(${letter}) ${escapeText(c)}<br>`;
+      });
+      html += `</div>`;
+    } else if (q.type === 'blank') {
+      const stem = (q.stem || '').replace(/___+/g, '<span class="pq-blank">' + (showAns && q.ans ? '<span class="ans-mark">' + escapeText(q.ans) + '</span>' : '&nbsp;') + '</span>');
+      html += `<div class="pq-stem">${num}. ${stem}</div>`;
+    } else if (q.type === 'short') {
+      html += `<div class="pq-stem">${num}. ${escapeText(q.stem || '【未填題目】')}</div>`;
+      for (let i = 0; i < (q.lines || 3); i++) {
+        html += '<div class="pq-line"></div>';
+      }
+      if (showAns && q.ans) {
+        html += `<div style="margin-top:4px;color:var(--g);font-size:13px;">參考答案：${escapeText(q.ans)}</div>`;
+      }
+    } else if (q.type === 'match') {
+      html += `<div class="pq-stem">${num}. ${escapeText(q.stem || '配對下列項目')}</div>`;
+      // 學生看到的：右方亂序
+      const rightShuffled = (q.pairs || []).map((p, i) => ({ idx: i, txt: p[1] }));
+      // 用 seed shuffle 避免每次預覽都亂跳
+      const seed = num * 31;
+      rightShuffled.sort((a, b) => ((a.idx + seed) % 7) - ((b.idx + seed) % 7));
+      (q.pairs || []).forEach((p, i) => {
+        const r = rightShuffled[i];
+        const correctIdx = rightShuffled.findIndex(x => x.idx === i);
+        html += `<div class="pq-match-pair">
+          <span class="left">${escapeText(p[0])}</span>
+          <span style="font-size:18px;color:var(--ink);">←→</span>
+          <span class="right">(${String.fromCharCode(65 + correctIdx)}) ${escapeText(r.txt)}</span>
+          ${showAns ? `<span class="ans-mark" style="margin-left:8px;">配 ${String.fromCharCode(65 + correctIdx)}</span>` : ''}
+        </div>`;
+      });
+    }
+    html += `</div>`;
+  });
+  if (state.questions.length === 0) {
+    html += '<div style="text-align:center;color:var(--muted);padding:40px;">⬅ 左方加題目即可開始</div>';
+  }
+  prev.innerHTML = html;
+}
+
+function render() { renderEditor(); renderPreview(); }
+
+function clearAll() {
+  if (!confirm('清空所有題目與標題？')) return;
+  state = { meta: { title: '', subject: '', cls: '', date: '' }, questions: [] };
+  saveState();
+  render();
+  flash('已清空');
+}
+
+function loadSample() {
+  if (state.questions.length > 0 && !confirm('已有題目，要覆蓋為範例嗎？')) return;
+  state = {
+    meta: { title: '分數加減法練習', subject: '數學 · 第四單元', cls: '六年甲班', date: todayDateStr() },
+    questions: [
+      { id: 'demo1', type: 'choice', stem: '1/2 + 1/3 = ?', choices: ['2/5', '5/6', '1/5', '3/5'], ans: 1 },
+      { id: 'demo2', type: 'blank', stem: '3/4 - 1/4 = ___', ans: '1/2' },
+      { id: 'demo3', type: 'short', stem: '請寫出三個真分數（分子小於分母）的例子。', ans: '1/2、2/3、3/5（答案不唯一）', lines: 2 },
+      { id: 'demo4', type: 'match', stem: '將下列分數與小數配對：', pairs: [['1/4', '0.25'], ['1/2', '0.5'], ['3/4', '0.75']] },
+    ],
+  };
+  saveState();
+  render();
+  flash('✓ 已載入範例');
+}
+
+function printSheet(withAns) {
+  document.getElementById('showAns').checked = withAns;
+  renderPreview();
+  setTimeout(() => window.print(), 100);
+}
+
+// meta 輸入即存
+['metaTitle','metaSubject','metaClass','metaDate'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    state.meta = {
+      title: document.getElementById('metaTitle').value,
+      subject: document.getElementById('metaSubject').value,
+      cls: document.getElementById('metaClass').value,
+      date: document.getElementById('metaDate').value,
+    };
+    autosave();
+  });
+});
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+render();
+</script>
+
+</body>
+</html>

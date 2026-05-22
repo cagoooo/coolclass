@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>閱讀紀錄表 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6bcb77">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="閱讀紀錄表 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+  .stat-card { background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 12px 14px; box-shadow: 3px 3px 0 var(--ink); text-align: center; }
+  .stat-card .val { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; font-size: 28px; color: var(--g); display: block; }
+  .stat-card .lbl { font-size: 12px; color: var(--muted); font-weight: 700; }
+  .add-form { display: grid; grid-template-columns: 80px 1fr 1fr 80px; gap: 8px; margin-bottom: 10px; }
+  .add-form select, .add-form input { padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; font-size: 14px; }
+  .row-extra { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .row-extra textarea { padding: 8px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 50px; }
+  .book-list { display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; }
+  .book-item { background: #fff; border: 2px solid var(--ink); border-radius: 10px; padding: 10px 14px; display: flex; gap: 10px; align-items: flex-start; box-shadow: 2px 2px 0 var(--ink); }
+  .book-item .student-tag { background: var(--g); color: #fff; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 12px; flex-shrink: 0; min-width: 60px; text-align: center; }
+  .book-item .info { flex: 1; min-width: 0; }
+  .book-item .info b { display: block; font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+  .book-item .info small { font-size: 12px; color: var(--muted); display: block; }
+  .book-item .info .comment { font-size: 12px; color: var(--ink-soft); margin-top: 4px; padding: 4px 8px; background: var(--paper-2); border-radius: 6px; }
+  .book-item .actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .book-item .del { background: var(--r); color: #fff; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 12px; }
+  .ranking { display: flex; flex-direction: column; gap: 6px; }
+  .rank-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--paper-2); border-radius: 8px; border: 2px solid var(--ink); }
+  .rank-row .pos { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; width: 30px; font-size: 18px; }
+  .rank-row .pos.gold { color: #d4a017; }
+  .rank-row .pos.silver { color: #888; }
+  .rank-row .pos.bronze { color: #a67244; }
+  .rank-row .name { flex: 1; font-weight: 700; }
+  .rank-row .cnt { background: var(--ink); color: var(--y); padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+  .filter-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .filter-bar select { padding: 6px 10px; border: 2px solid var(--ink); border-radius: 8px; font-family: inherit; font-weight: 700; }
+
+  @media (max-width: 600px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .add-form { grid-template-columns: 1fr 1fr; }
+    .row-extra { grid-template-columns: 1fr; }
+  }
+  @media print {
+    .home-btn, .panel-grid > section:not(.print-cert), .add-form, .row-extra, footer.f, .filter-bar, .akai-tweaks-fab, .akai-nav-fab { display: none !important; }
+    body { background: white !important; }
+  }
+  .cert-prev { background: linear-gradient(135deg, #fff8e8 0%, #ffe8a8 100%); border: 4px double var(--ink); padding: 30px 40px; border-radius: 14px; text-align: center; margin-top: 14px; }
+  .cert-prev h1 { font-family: 'Fraunces', serif; font-style: italic; font-size: 40px; color: var(--g); margin: 0 0 14px; }
+  .cert-prev .student-name { font-size: 28px; font-weight: 900; color: var(--ink); margin: 10px 0; }
+  .cert-prev .desc { font-size: 16px; color: var(--ink-soft); line-height: 1.7; margin: 14px 0; }
+  .cert-prev .sig { margin-top: 30px; font-size: 14px; color: var(--ink-soft); }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-g"></span>
+  <span class="blob blob-y"></span>
+  <span class="dots dots-1"></span>
+</div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">READING · 閱讀小博士</span>
+      <h1>記下每一本<em>讀過的書</em>，<br>培養終身閱讀者。</h1>
+      <p class="sub">
+        <span class="badge">每人獨立紀錄</span>
+        <span class="badge">月度排行</span>
+        <span class="badge">學期獎狀 A4 列印</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="totalBooks">0</span>
+      <span class="sml">本書 · 全班累積</span>
+    </div>
+  </section>
+
+  <div class="stats-grid">
+    <div class="stat-card"><span class="val" id="cntBooks">0</span><span class="lbl">本月閱讀本數</span></div>
+    <div class="stat-card"><span class="val" id="cntStudents">0</span><span class="lbl">本月有讀的學生</span></div>
+    <div class="stat-card"><span class="val" id="cntChars">0</span><span class="lbl">本月心得總字數</span></div>
+    <div class="stat-card"><span class="val" id="cntReached">0</span><span class="lbl">達學期目標人數</span></div>
+  </div>
+
+  <div class="panel-grid">
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">＋</div>
+        <h2>新增閱讀紀錄</h2>
+      </div>
+      <div class="add-form">
+        <select id="inpNum"></select>
+        <input type="text" id="inpTitle" placeholder="📖 書名（必填）" maxlength="100">
+        <input type="text" id="inpAuthor" placeholder="✍️ 作者" maxlength="60">
+        <input type="number" id="inpPages" placeholder="頁數" min="0" max="9999">
+      </div>
+      <div class="row-extra">
+        <textarea id="inpComment" placeholder="✏️ 學生心得（選填）" maxlength="500"></textarea>
+        <textarea id="inpTeacher" placeholder="💬 老師評語（選填）" maxlength="200"></textarea>
+      </div>
+      <div class="btn-bar">
+        <button class="btn primary lg" onclick="addBook()">📚 加入紀錄</button>
+        <button class="btn y" onclick="clearForm()">清空表單</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🏆</div>
+        <h2>本月閱讀排行</h2>
+      </div>
+      <div class="ranking" id="ranking"></div>
+    </section>
+
+  </div>
+
+  <section class="block" style="margin-top:22px;">
+    <div class="block-head">
+      <div class="step">📋</div>
+      <h2>閱讀紀錄列表</h2>
+      <span class="tail" id="listCount">— 筆</span>
+    </div>
+    <div class="filter-bar">
+      <label>篩選學生：</label>
+      <select id="filterNum" onchange="render()"><option value="">全部</option></select>
+      <label>排序：</label>
+      <select id="filterSort" onchange="render()">
+        <option value="dateDesc">日期新→舊</option>
+        <option value="dateAsc">日期舊→新</option>
+        <option value="num">學生號</option>
+      </select>
+      <span style="flex:1;"></span>
+      <button class="btn y" onclick="exportCSV()">📊 匯出 CSV</button>
+    </div>
+    <div class="book-list" id="bookList"></div>
+  </section>
+
+  <section class="block" style="margin-top:22px;">
+    <div class="block-head">
+      <div class="step">🏅</div>
+      <h2>學期閱讀獎狀（A4 列印）</h2>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <label>選學生：</label>
+      <select id="certNum" onchange="renderCert()"></select>
+      <label>學期目標：</label>
+      <input type="number" id="certGoal" min="1" max="500" value="10" style="width:80px;padding:6px 10px;border:2px solid var(--ink);border-radius:8px;" onchange="renderCert()">
+      <span style="flex:1;"></span>
+      <button class="btn primary" onclick="window.print()">🖨️ 列印獎狀</button>
+    </div>
+    <div class="cert-prev print-cert" id="certPreview"></div>
+  </section>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已加入</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_reading_v1';
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { books: obj.books || [], semesterGoal: obj.semesterGoal || 10 };
+  } catch { return { books: [], semesterGoal: 10 }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function getRoster() {
+  if (window.AkaiRoster) return AkaiRoster.load();
+  return { count: 30, names: {} };
+}
+function getName(num) {
+  const r = getRoster();
+  return (r.names && r.names[num]) || `${num} 號`;
+}
+
+function populateStudentSelects() {
+  const r = getRoster();
+  const opts = [];
+  for (let i = 1; i <= (r.count || 30); i++) {
+    opts.push(`<option value="${i}">${i} 號 ${(r.names && r.names[i]) || ''}</option>`);
+  }
+  document.getElementById('inpNum').innerHTML = opts.join('');
+  document.getElementById('filterNum').innerHTML = '<option value="">全部學生</option>' + opts.join('');
+  document.getElementById('certNum').innerHTML = opts.join('');
+}
+
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+function addBook() {
+  const num = parseInt(document.getElementById('inpNum').value);
+  const title = document.getElementById('inpTitle').value.trim();
+  if (!title) { flash('⚠ 請填書名'); return; }
+  const author = document.getElementById('inpAuthor').value.trim();
+  const pages = parseInt(document.getElementById('inpPages').value) || 0;
+  const comment = document.getElementById('inpComment').value.trim();
+  const teacher = document.getElementById('inpTeacher').value.trim();
+  state.books.push({
+    id: Date.now() + '_' + Math.random().toString(36).slice(2,6),
+    num, title, author, pages, comment, teacher,
+    date: todayISO(),
+  });
+  saveState();
+  render();
+  clearForm();
+  flash(`✓ 已記錄「${title}」`);
+}
+
+function clearForm() {
+  ['inpTitle','inpAuthor','inpPages','inpComment','inpTeacher'].forEach(id => document.getElementById(id).value = '');
+}
+
+function delBook(id) {
+  const b = state.books.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(`刪除這筆？\n📖 ${b.title}（${getName(b.num)}）`)) return;
+  state.books = state.books.filter(x => x.id !== id);
+  saveState();
+  render();
+  flash('🗑️ 已刪除');
+}
+
+function render() {
+  // 統計
+  document.getElementById('totalBooks').textContent = state.books.length;
+  const monthKey = thisMonth();
+  const monthBooks = state.books.filter(b => b.date.startsWith(monthKey));
+  document.getElementById('cntBooks').textContent = monthBooks.length;
+  document.getElementById('cntStudents').textContent = new Set(monthBooks.map(b => b.num)).size;
+  document.getElementById('cntChars').textContent = monthBooks.reduce((sum, b) => sum + (b.comment || '').length, 0);
+
+  // 學期目標達標人數
+  const goal = state.semesterGoal || 10;
+  const counts = {};
+  state.books.forEach(b => { counts[b.num] = (counts[b.num] || 0) + 1; });
+  const reached = Object.values(counts).filter(c => c >= goal).length;
+  document.getElementById('cntReached').textContent = reached;
+
+  // 排行榜（本月）
+  const monthCounts = {};
+  monthBooks.forEach(b => { monthCounts[b.num] = (monthCounts[b.num] || 0) + 1; });
+  const ranked = Object.entries(monthCounts).sort((a,b) => b[1]-a[1]).slice(0, 5);
+  const medals = ['🥇','🥈','🥉','4.','5.'];
+  const medalCls = ['gold','silver','bronze','',''];
+  document.getElementById('ranking').innerHTML = ranked.length === 0
+    ? '<div style="text-align:center;color:var(--muted);padding:20px;">本月還沒有紀錄</div>'
+    : ranked.map(([num, cnt], i) => `
+        <div class="rank-row">
+          <span class="pos ${medalCls[i]}">${medals[i]}</span>
+          <span class="name">${getName(num)}</span>
+          <span class="cnt">${cnt} 本</span>
+        </div>
+      `).join('');
+
+  // 列表（含篩選）
+  const filterNum = document.getElementById('filterNum').value;
+  const sort = document.getElementById('filterSort').value;
+  let list = state.books.slice();
+  if (filterNum) list = list.filter(b => String(b.num) === filterNum);
+  if (sort === 'dateDesc') list.sort((a,b) => b.date.localeCompare(a.date));
+  else if (sort === 'dateAsc') list.sort((a,b) => a.date.localeCompare(b.date));
+  else list.sort((a,b) => a.num - b.num || b.date.localeCompare(a.date));
+
+  document.getElementById('listCount').textContent = `${list.length} 筆`;
+  document.getElementById('bookList').innerHTML = list.length === 0
+    ? '<div style="text-align:center;color:var(--muted);padding:20px;">還沒有紀錄</div>'
+    : list.map(b => `
+        <div class="book-item">
+          <div class="student-tag">${b.num}號</div>
+          <div class="info">
+            <b>📖 ${escapeHtml(b.title)}</b>
+            <small>${escapeHtml(b.author || '—')} · ${b.pages || '?'} 頁 · ${b.date}</small>
+            ${b.comment ? `<div class="comment">💭 ${escapeHtml(b.comment)}</div>` : ''}
+            ${b.teacher ? `<div class="comment" style="background:#ffe896;">👩‍🏫 ${escapeHtml(b.teacher)}</div>` : ''}
+          </div>
+          <div class="actions">
+            <button class="del" onclick="delBook('${b.id}')" title="刪除">✕</button>
+          </div>
+        </div>
+      `).join('');
+
+  // 重新渲染獎狀預覽
+  renderCert();
+}
+
+function renderCert() {
+  const num = parseInt(document.getElementById('certNum').value);
+  const goal = parseInt(document.getElementById('certGoal').value) || 10;
+  state.semesterGoal = goal;
+  saveState();
+  const studentBooks = state.books.filter(b => b.num === num);
+  const count = studentBooks.length;
+  const reached = count >= goal;
+  const r = getRoster();
+  const className = r.className || '本班';
+  const today = new Date();
+  const dateStr = `${today.getFullYear() - 1911} 年 ${today.getMonth() + 1} 月 ${today.getDate()} 日`;
+
+  document.getElementById('certPreview').innerHTML = `
+    <h1>🏅 閱讀小博士 獎狀</h1>
+    <div class="student-name">${className} · ${num} 號 · ${escapeHtml(getName(num).replace(/^\d+ 號 ?/, ''))}</div>
+    <div class="desc">
+      該生本學期共閱讀 <b style="color:var(--g);font-size:24px;">${count}</b> 本書，<br>
+      ${reached
+        ? `已達成本學期 <b>${goal}</b> 本閱讀目標，<br>展現「主動閱讀、勤於思考」的精神，特此表揚 🎉`
+        : `朝著本學期 <b>${goal}</b> 本目標前進中，<br>繼續加油！每本書都是一段美好的旅程 📚`
+      }
+    </div>
+    <div class="sig">
+      ${className}　導師　簽　<br><br>
+      ${dateStr}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportCSV() {
+  if (state.books.length === 0) { alert('沒有資料可匯出'); return; }
+  const rows = [['日期','學號','姓名','書名','作者','頁數','心得','老師評語']];
+  state.books.forEach(b => rows.push([b.date, b.num, getName(b.num), b.title, b.author||'', b.pages||'', b.comment||'', b.teacher||'']));
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `閱讀紀錄_${todayISO()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  flash('✓ CSV 已下載');
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+populateStudentSelects();
+render();
+window.addEventListener('focus', () => { populateStudentSelects(); render(); });
+</script>
+
+</body>
+</html>

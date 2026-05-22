@@ -27,12 +27,15 @@
       ],
     },
     {
-      title: '📚 課堂控場四件套',
+      title: '📚 課堂控場',
       tools: [
-        { f: 'picker.html',  i: '🎯', t: '隨機抽號' },
-        { f: 'timer.html',   i: '⏱️', t: '教室計時器' },
-        { f: 'grouper.html', i: '👥', t: '隨機分組' },
-        { f: 'bell.html',    i: '🔔', t: '上下課鈴聲' },
+        { f: 'picker.html',     i: '🎯', t: '隨機抽號' },
+        { f: 'timer.html',      i: '⏱️', t: '教室計時器' },
+        { f: 'grouper.html',    i: '👥', t: '隨機分組' },
+        { f: 'bell.html',       i: '🔔', t: '上下課鈴聲' },
+        { f: 'metronome.html',  i: '🎵', t: '節拍器 + 律動' },
+        { f: 'worksheet.html',  i: '📝', t: '學習單產生器' },
+        { f: 'dictation.html',  i: '🎤', t: '錄音轉文字' },
       ],
     },
     {
@@ -52,11 +55,14 @@
       ],
     },
     {
-      title: '🎉 教室生態三件套',
+      title: '🎉 教室生態',
       tools: [
         { f: 'lottery.html', i: '🎲', t: '萬用抽籤箱' },
         { f: 'rules.html',   i: '📜', t: '班級公約' },
         { f: 'gallery.html', i: '🖼️', t: '學生作品牆' },
+        { f: 'reading.html', i: '📖', t: '閱讀紀錄表' },
+        { f: 'fitness.html', i: '🏃', t: '體適能登錄' },
+        { f: 'eco.html',     i: '🌱', t: '環保打卡' },
       ],
     },
     {
@@ -265,7 +271,7 @@
       </div>
       <div class="akai-nav-body" id="akai-nav-body"></div>
       <div class="akai-nav-foot">
-        共 26 工具 · 點選即跳轉
+        共 32 工具 · 點選即跳轉
       </div>
     `;
 
@@ -349,7 +355,7 @@
     menuBtn.className = 'akai-nav-fab akai-nav-menu';
     menuBtn.id = 'akai-nav-menu-btn';
     menuBtn.type = 'button';
-    menuBtn.title = '工具導航（共 26 個）';
+    menuBtn.title = '工具導航（共 32 個）';
     menuBtn.innerHTML = '🧭';
 
     return { topBtn, menuBtn };

@@ -2,11 +2,11 @@
 
 # 🌈 教室小幫手
 
-### 老師的每日課堂工具 · **26 個免費小工具**
+### 老師的每日課堂工具 · **32 個免費小工具**
 
 [![Live](https://img.shields.io/badge/🌐_線上版-cagoooo.github.io%2Fcoolclass-2a1f4a?style=for-the-badge)](https://cagoooo.github.io/coolclass/)
 [![PWA](https://img.shields.io/badge/📲_可裝成_App-PWA-ffd23f?style=for-the-badge&labelColor=2a1f4a)](https://cagoooo.github.io/coolclass/)
-[![Version](https://img.shields.io/badge/版本-v3.9_防呆穩定-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/版本-v4.0_新工具六件套-ff97c5?style=for-the-badge&labelColor=2a1f4a)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/MIT-開源自由用-6bcb77?style=for-the-badge&labelColor=2a1f4a)](LICENSE)
 
 ![教室小幫手 — 老師的每日課堂工具](og-image.png)
@@ -128,6 +128,21 @@ git push  # 推到你的 GitHub 就會自動部署
 ```
 
 MIT License — 自由使用、修改、再散佈，不需要徵詢同意。
+
+---
+
+## 🆕 v4.0 新工具六件套
+
+| # | 工具 | 適用場景 |
+|---|---|---|
+| 27 | 📖 **閱讀紀錄表** | 國小推「閱讀小博士」、每位學生紀錄 + 學期獎狀列印 |
+| 28 | 📝 **學習單產生器** | 5 分鐘出隨堂測驗 / 家庭作業，4 種題型自由組合 |
+| 29 | 🏃 **體適能成績登錄** | 學期教育部要求填報的 5 項體適能，自動算等級 |
+| 30 | 🎵 **節拍器 + 律動計時** | 音樂課節拍器、健康操律動計時、語音換動作提示 |
+| 31 | 🌱 **環保 / 蔬食日打卡** | 週一蔬食、垃圾減量、月度排行榜 |
+| 32 | 🎤 **課堂錄音轉文字** | 家訪 / 議題討論即時轉文字、純本機處理不上傳 |
+
+→ 線上總覽：<https://cagoooo.github.io/coolclass/>（首頁 F 區）
 
 ---
 

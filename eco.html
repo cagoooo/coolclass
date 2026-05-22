@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>環保 / 蔬食日打卡 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#5a8c43">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="環保 / 蔬食日打卡 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .eco-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+  .eco-stat { background: #fff; border: 3px solid var(--ink); border-radius: 12px; padding: 14px 16px; box-shadow: 3px 3px 0 var(--ink); text-align: center; }
+  .eco-stat .val { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; font-size: 32px; color: var(--g); display: block; line-height: 1; }
+  .eco-stat .lbl { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 4px; display: block; }
+  .eco-stat .ic { font-size: 22px; display: block; margin-bottom: 4px; }
+
+  .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+  .student-card { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 10px 12px; box-shadow: 2px 2px 0 var(--ink); }
+  .student-card .name { font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .student-card .name .num { background: var(--ink); color: var(--y); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+  .check-row { display: flex; flex-direction: column; gap: 4px; }
+  .check-row label {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; border: 2px solid var(--ink); border-radius: 8px;
+    cursor: pointer; font-size: 13px;
+    transition: background .15s;
+    background: var(--paper-2);
+  }
+  .check-row label.on { background: linear-gradient(135deg, #d5f0c8 0%, #f5fbf0 100%); }
+  .check-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .ranking-list { display: flex; flex-direction: column; gap: 6px; }
+  .rank-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--paper-2); border-radius: 8px; border: 2px solid var(--ink); }
+  .rank-item .pos { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; width: 30px; }
+  .rank-item .pos.gold { color: #d4a017; }
+  .rank-item .pos.silver { color: #888; }
+  .rank-item .pos.bronze { color: #a67244; }
+  .rank-item .name { flex: 1; font-weight: 700; }
+  .rank-item .cnt { background: var(--g); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+
+  @media (max-width: 600px) {
+    .eco-stats { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-g"></span><span class="dots dots-1"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">ECO · 環保 / 蔬食日</span>
+      <h1>每天三件小事，<br>養成<em>環保好習慣</em>。</h1>
+      <p class="sub">
+        <span class="badge">🥢 自帶餐具</span>
+        <span class="badge">🥗 蔬食午餐</span>
+        <span class="badge">🍚 不剩飯</span>
+      </p>
+    </div>
+    <div class="right-aux">
+      <span class="big" id="todayCnt">0</span>
+      <span class="sml">今日打卡人次</span>
+    </div>
+  </section>
+
+  <div class="eco-stats">
+    <div class="eco-stat"><span class="ic">🥢</span><span class="val" id="cntTool">0</span><span class="lbl">本月自帶餐具</span></div>
+    <div class="eco-stat"><span class="ic">🥗</span><span class="val" id="cntVeg">0</span><span class="lbl">本月蔬食</span></div>
+    <div class="eco-stat"><span class="ic">🍚</span><span class="val" id="cntFinish">0</span><span class="lbl">本月不剩飯</span></div>
+    <div class="eco-stat"><span class="ic">🌍</span><span class="val" id="cntPerfect">0</span><span class="lbl">三項全勤學生</span></div>
+  </div>
+
+  <div class="panel-grid">
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">✅</div>
+        <h2>今日打卡（<span id="todayDateBadge">—</span>）</h2>
+        <span class="tail">點 checkbox 即時記錄</span>
+      </div>
+      <div class="student-grid" id="studentGrid"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🏆</div>
+        <h2>本月環保排行</h2>
+      </div>
+      <div class="ranking-list" id="ranking"></div>
+      <div class="btn-bar" style="margin-top:14px;">
+        <button class="btn y" onclick="exportCSV()">📊 匯出 CSV</button>
+        <button class="btn r" onclick="clearMonth()">🗑️ 清本月紀錄</button>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script src="roster.js"></script>
+<script>
+const STORAGE_KEY = 'akai_eco_v1';
+const ITEMS = [
+  { id: 'tool',   label: '🥢 自帶餐具' },
+  { id: 'veg',    label: '🥗 蔬食午餐' },
+  { id: 'finish', label: '🍚 不剩飯' },
+];
+
+let state = loadState();
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return { records: obj.records || {} };  // { 'YYYY-MM-DD': { num: { tool:true, veg:true, finish:true } } }
+  } catch { return { records: {} }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function todayKey() { return new Date().toISOString().slice(0,10); }
+function thisMonth() { return new Date().toISOString().slice(0,7); }
+
+function getRoster() {
+  if (window.AkaiRoster) return AkaiRoster.load();
+  return { count: 30, names: {} };
+}
+function getName(num) {
+  const r = getRoster();
+  return (r.names && r.names[num]) || `${num} 號`;
+}
+
+function render() {
+  const td = todayKey();
+  const d = new Date();
+  const wk = ['日','一','二','三','四','五','六'];
+  document.getElementById('todayDateBadge').textContent = `${d.getMonth()+1}/${d.getDate()} 星期${wk[d.getDay()]}`;
+
+  const r = getRoster();
+  const total = r.count || 30;
+  const todayRec = state.records[td] || {};
+
+  // 學生格子
+  const grid = document.getElementById('studentGrid');
+  let html = '';
+  for (let num = 1; num <= total; num++) {
+    const rec = todayRec[num] || {};
+    html += `
+      <div class="student-card">
+        <div class="name"><span class="num">${num}號</span> ${escapeHtml(getName(num).replace(/^\d+ 號 ?/, '') || '—')}</div>
+        <div class="check-row" data-num="${num}">
+          ${ITEMS.map(it => `
+            <label class="${rec[it.id] ? 'on' : ''}">
+              <input type="checkbox" data-key="${it.id}" ${rec[it.id] ? 'checked' : ''}>
+              ${it.label}
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.check-row').forEach(row => {
+    const num = row.dataset.num;
+    row.querySelectorAll('input').forEach(cb => {
+      cb.onchange = () => {
+        if (!state.records[td]) state.records[td] = {};
+        if (!state.records[td][num]) state.records[td][num] = {};
+        state.records[td][num][cb.dataset.key] = cb.checked;
+        saveState();
+        cb.parentElement.classList.toggle('on', cb.checked);
+        render();
+      };
+    });
+  });
+
+  // 今日總打卡人次
+  let todayCnt = 0;
+  Object.values(todayRec).forEach(rec => {
+    ITEMS.forEach(it => { if (rec[it.id]) todayCnt++; });
+  });
+  document.getElementById('todayCnt').textContent = todayCnt;
+
+  // 本月統計
+  const monthPrefix = thisMonth();
+  const monthDays = Object.keys(state.records).filter(d => d.startsWith(monthPrefix));
+  const monthCounts = { tool: 0, veg: 0, finish: 0 };
+  const studentScores = {};  // { num: count }
+  monthDays.forEach(d => {
+    Object.entries(state.records[d] || {}).forEach(([num, rec]) => {
+      ITEMS.forEach(it => {
+        if (rec[it.id]) {
+          monthCounts[it.id]++;
+          studentScores[num] = (studentScores[num] || 0) + 1;
+        }
+      });
+    });
+  });
+  document.getElementById('cntTool').textContent = monthCounts.tool;
+  document.getElementById('cntVeg').textContent = monthCounts.veg;
+  document.getElementById('cntFinish').textContent = monthCounts.finish;
+
+  // 三項全勤學生（每天三項全打）
+  let perfectCount = 0;
+  for (let num = 1; num <= total; num++) {
+    const all = monthDays.every(d => {
+      const rec = (state.records[d] || {})[num] || {};
+      return ITEMS.every(it => rec[it.id]);
+    });
+    if (all && monthDays.length > 0) perfectCount++;
+  }
+  document.getElementById('cntPerfect').textContent = perfectCount;
+
+  // 排行
+  const ranked = Object.entries(studentScores).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const medals = ['🥇','🥈','🥉','4.','5.'];
+  const medalCls = ['gold','silver','bronze','',''];
+  document.getElementById('ranking').innerHTML = ranked.length === 0
+    ? '<div style="text-align:center;color:var(--muted);padding:20px;">本月還沒有紀錄</div>'
+    : ranked.map(([num, cnt], i) => `
+        <div class="rank-item">
+          <span class="pos ${medalCls[i]}">${medals[i]}</span>
+          <span class="name">${getName(num)}</span>
+          <span class="cnt">${cnt} 次</span>
+        </div>
+      `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function exportCSV() {
+  const r = getRoster();
+  const total = r.count || 30;
+  const monthPrefix = thisMonth();
+  const monthDays = Object.keys(state.records).filter(d => d.startsWith(monthPrefix)).sort();
+  if (monthDays.length === 0) { alert('本月還沒資料'); return; }
+  const rows = [['學號','姓名','日期','自帶餐具','蔬食','不剩飯']];
+  for (let num = 1; num <= total; num++) {
+    monthDays.forEach(d => {
+      const rec = (state.records[d] || {})[num] || {};
+      if (rec.tool || rec.veg || rec.finish) {
+        rows.push([num, getName(num), d, rec.tool ? '✓' : '', rec.veg ? '✓' : '', rec.finish ? '✓' : '']);
+      }
+    });
+  }
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `環保打卡_${monthPrefix}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  flash('✓ CSV 已下載');
+}
+
+function clearMonth() {
+  if (!confirm('清除本月所有打卡紀錄？')) return;
+  const monthPrefix = thisMonth();
+  Object.keys(state.records).forEach(d => { if (d.startsWith(monthPrefix)) delete state.records[d]; });
+  saveState();
+  render();
+  flash('✓ 本月已清空');
+}
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+render();
+window.addEventListener('focus', render);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>節拍器 + 律動計時 · 教室小幫手</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#b070ff">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="節拍器 + 律動計時 · 教室小幫手">
+<meta property="og:image" content="https://cagoooo.github.io/coolclass/og-image.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  .stage {
+    background: var(--ink);
+    border-radius: 20px;
+    padding: 40px 30px;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 18px;
+    min-height: 320px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--paper);
+  }
+  .bpm-display { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; font-size: 120px; line-height: 1; color: var(--y); }
+  .bpm-unit { font-size: 18px; opacity: .7; }
+  .beat-dots { display: flex; gap: 16px; margin-top: 30px; }
+  .beat-dot { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.18); border: 3px solid var(--y); transition: transform .1s ease, background .1s ease; }
+  .beat-dot.on { background: var(--y); transform: scale(1.4); }
+  .beat-dot.accent { background: var(--r); border-color: var(--r); }
+  .beat-dot.accent.on { background: var(--y); border-color: var(--y); transform: scale(1.5); }
+  .controls { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+  .control-card { background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 16px 20px; box-shadow: 4px 4px 0 var(--ink); }
+  .control-card h3 { margin: 0 0 10px; color: var(--ink); font-size: 14px; }
+  .bpm-slider { width: 100%; }
+  .bpm-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .bpm-buttons button { padding: 4px 10px; border: 2px solid var(--ink); border-radius: 999px; background: var(--paper-2); cursor: pointer; font-family: inherit; font-weight: 700; font-size: 12px; }
+  .bpm-buttons button.on { background: var(--p); color: #fff; }
+
+  /* 律動計時器 */
+  .routine-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+  .routine-item { background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 8px 10px; display: flex; gap: 8px; align-items: center; }
+  .routine-item.now { background: var(--y); }
+  .routine-item input[type="text"] { flex: 1; border: none; outline: none; background: transparent; font-family: inherit; font-weight: 700; font-size: 14px; }
+  .routine-item input[type="number"] { width: 50px; padding: 4px 6px; border: 1px solid var(--ink); border-radius: 4px; text-align: center; font-family: inherit; }
+  .routine-item button.del { background: var(--r); color: #fff; border: none; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 11px; }
+  .routine-progress { height: 8px; background: var(--paper-2); border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+  .routine-progress-bar { height: 100%; background: linear-gradient(90deg, var(--g), var(--y)); transition: width .2s ease; }
+  .now-action { font-size: 24px; font-weight: 900; color: var(--ink); text-align: center; padding: 10px; background: var(--y); border-radius: 10px; border: 2px solid var(--ink); margin: 8px 0; }
+  .now-time { font-family: 'Fraunces', serif; font-style: italic; font-size: 42px; font-weight: 900; text-align: center; color: var(--r); }
+
+  @media (max-width: 700px) {
+    .bpm-display { font-size: 80px; }
+    .stage { padding: 24px 16px; min-height: 240px; }
+    .beat-dot { width: 22px; height: 22px; }
+  }
+</style>
+<script src="tweaks.js"></script>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-p"></span><span class="blob blob-y"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">METRONOME · 節拍器 + 律動</span>
+      <h1>音樂課<em>節拍器</em>，<br>體育課<em>律動計時</em>。</h1>
+      <p class="sub">
+        <span class="badge">BPM 30-220</span>
+        <span class="badge">2/3/4/6 拍</span>
+        <span class="badge">視覺 + 聲音 + 振動</span>
+      </p>
+    </div>
+  </section>
+
+  <div class="panel-grid">
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🎼</div>
+        <h2>節拍器</h2>
+      </div>
+      <div class="stage">
+        <div>
+          <span class="bpm-display" id="bpmDisp">120</span>
+          <div class="bpm-unit">BPM · 拍/分鐘</div>
+        </div>
+        <div class="beat-dots" id="beatDots"></div>
+      </div>
+      <div class="control-card">
+        <h3>BPM 速度</h3>
+        <input type="range" class="bpm-slider" id="bpmRange" min="30" max="220" value="120">
+        <div class="bpm-buttons">
+          <button data-bpm="40">慢板 40</button>
+          <button data-bpm="60">行板 60</button>
+          <button data-bpm="80">中板 80</button>
+          <button data-bpm="100">適中 100</button>
+          <button data-bpm="120" class="on">中板 120</button>
+          <button data-bpm="140">快板 140</button>
+          <button data-bpm="160">急板 160</button>
+        </div>
+      </div>
+      <div class="control-card" style="margin-top:12px;">
+        <h3>拍號</h3>
+        <div class="bpm-buttons">
+          <button data-sig="2" >2/4 拍</button>
+          <button data-sig="3">3/4 拍</button>
+          <button data-sig="4" class="on">4/4 拍</button>
+          <button data-sig="6">6/8 拍</button>
+        </div>
+      </div>
+      <div class="control-card" style="margin-top:12px;">
+        <h3>音量 + 選項</h3>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;">
+          <label>音量</label>
+          <input type="range" id="volRange" min="0" max="100" value="60" style="flex:1;">
+          <span id="volVal" style="width:40px;text-align:right;">60%</span>
+        </div>
+        <label style="display:block;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="vibrate"> 📳 開啟手機振動（首拍）
+        </label>
+      </div>
+      <div class="btn-bar" style="margin-top:14px;">
+        <button class="btn primary lg" id="metroBtn" onclick="toggleMetro()">▶ 開始</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">🏃</div>
+        <h2>律動計時</h2>
+        <span class="tail">健康操、瑜伽、跳舞用</span>
+      </div>
+      <div id="routineNow" style="display:none;">
+        <div class="now-action" id="nowAction">準備中…</div>
+        <div class="now-time" id="nowTime">00:00</div>
+        <div class="routine-progress"><div class="routine-progress-bar" id="progressBar"></div></div>
+      </div>
+      <div class="routine-list" id="routineList"></div>
+      <div class="btn-bar" style="margin-top:10px;">
+        <button class="btn y" onclick="addRoutine()">＋ 加一項</button>
+        <button class="btn g" onclick="loadRoutineTemplate()">📋 載入暖身範本</button>
+      </div>
+      <div class="btn-bar" style="margin-top:14px;border-top:2px dashed var(--ink);padding-top:14px;">
+        <button class="btn primary lg" id="routineBtn" onclick="toggleRoutine()">▶ 開始律動</button>
+        <button class="btn r" onclick="stopRoutine()">⏹ 停止</button>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="f">
+    Made with ♥ by <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener">阿凱老師</a> · 桃園市龍潭區石門國民小學
+    <div class="ver">© 2026 · v3 "Crayon Pop"</div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">已存</div>
+
+<script src="sw-update.js" defer></script>
+<script src="nav.js" defer></script>
+<script src="shortcuts.js" defer></script>
+<script src="akai-store.js" defer></script>
+<script src="empty-state.js" defer></script>
+<script>
+const STORAGE_KEY = 'akai_metronome_v1';
+
+let state = loadState();
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return {
+      bpm: obj.bpm || 120,
+      sig: obj.sig || 4,
+      vol: obj.vol === undefined ? 60 : obj.vol,
+      vibrate: !!obj.vibrate,
+      routine: obj.routine || [],
+    };
+  } catch { return { bpm: 120, sig: 4, vol: 60, vibrate: false, routine: [] }; }
+}
+function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+// ===== 節拍器 =====
+let audioCtx;
+let metroRunning = false;
+let metroTimer = null;
+let beatCount = 0;
+let nextBeatTime = 0;
+
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playBeat(accent) {
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.frequency.value = accent ? 880 : 440;
+  gain.gain.value = (state.vol / 100) * (accent ? 0.5 : 0.3);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.06);
+  osc.stop(audioCtx.currentTime + 0.07);
+}
+
+function renderBeatDots() {
+  const wrap = document.getElementById('beatDots');
+  wrap.innerHTML = '';
+  for (let i = 0; i < state.sig; i++) {
+    const d = document.createElement('div');
+    d.className = 'beat-dot' + (i === 0 ? ' accent' : '');
+    wrap.appendChild(d);
+  }
+}
+
+function tickBeat() {
+  const dots = document.querySelectorAll('.beat-dot');
+  const idx = beatCount % state.sig;
+  dots.forEach(d => d.classList.remove('on'));
+  if (dots[idx]) dots[idx].classList.add('on');
+  playBeat(idx === 0);
+  if (idx === 0 && state.vibrate && navigator.vibrate) navigator.vibrate(80);
+  beatCount++;
+}
+
+function startMetro() {
+  if (metroRunning) return;
+  ensureAudio();
+  metroRunning = true;
+  beatCount = 0;
+  const interval = 60000 / state.bpm;
+  tickBeat();
+  metroTimer = setInterval(tickBeat, interval);
+  document.getElementById('metroBtn').textContent = '⏸ 暫停';
+}
+function stopMetro() {
+  metroRunning = false;
+  if (metroTimer) clearInterval(metroTimer);
+  metroTimer = null;
+  document.querySelectorAll('.beat-dot').forEach(d => d.classList.remove('on'));
+  document.getElementById('metroBtn').textContent = '▶ 開始';
+}
+function toggleMetro() {
+  if (metroRunning) stopMetro();
+  else startMetro();
+}
+
+function updateBPM(v) {
+  state.bpm = parseInt(v);
+  document.getElementById('bpmDisp').textContent = state.bpm;
+  document.getElementById('bpmRange').value = state.bpm;
+  document.querySelectorAll('[data-bpm]').forEach(b => b.classList.toggle('on', parseInt(b.dataset.bpm) === state.bpm));
+  saveState();
+  if (metroRunning) { stopMetro(); startMetro(); }
+}
+function updateSig(s) {
+  state.sig = parseInt(s);
+  document.querySelectorAll('[data-sig]').forEach(b => b.classList.toggle('on', parseInt(b.dataset.sig) === state.sig));
+  renderBeatDots();
+  saveState();
+}
+
+document.getElementById('bpmRange').addEventListener('input', (e) => updateBPM(e.target.value));
+document.querySelectorAll('[data-bpm]').forEach(b => b.onclick = () => updateBPM(b.dataset.bpm));
+document.querySelectorAll('[data-sig]').forEach(b => b.onclick = () => updateSig(b.dataset.sig));
+document.getElementById('volRange').addEventListener('input', (e) => {
+  state.vol = parseInt(e.target.value);
+  document.getElementById('volVal').textContent = state.vol + '%';
+  saveState();
+});
+document.getElementById('vibrate').addEventListener('change', (e) => { state.vibrate = e.target.checked; saveState(); });
+
+// 空白鍵切換
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === ' ') { e.preventDefault(); toggleMetro(); }
+});
+
+// ===== 律動計時 =====
+let routineRunning = false;
+let routineIdx = 0;
+let routineTimer = null;
+let routineSecLeft = 0;
+
+function renderRoutineList() {
+  const wrap = document.getElementById('routineList');
+  if (state.routine.length === 0) {
+    wrap.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px;">點「加一項」開始排律動，或載入暖身範本</div>';
+    return;
+  }
+  wrap.innerHTML = '';
+  state.routine.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'routine-item' + (routineRunning && i === routineIdx ? ' now' : '');
+    div.innerHTML = `
+      <span style="font-family:'Fraunces',serif;font-weight:900;width:24px;">${i+1}</span>
+      <input type="text" placeholder="動作名稱" value="${escapeAttr(r.name)}">
+      <input type="number" min="5" max="600" value="${r.sec}" title="秒數">
+      <span style="font-size:11px;color:var(--muted);">秒</span>
+      <button class="del">✕</button>
+    `;
+    const ins = div.querySelectorAll('input');
+    ins[0].oninput = (e) => { state.routine[i].name = e.target.value; saveState(); };
+    ins[1].oninput = (e) => { state.routine[i].sec = parseInt(e.target.value) || 30; saveState(); };
+    div.querySelector('.del').onclick = () => { state.routine.splice(i,1); saveState(); renderRoutineList(); };
+    wrap.appendChild(div);
+  });
+}
+
+function addRoutine() {
+  state.routine.push({ name: '動作 ' + (state.routine.length + 1), sec: 30 });
+  saveState();
+  renderRoutineList();
+}
+function loadRoutineTemplate() {
+  if (state.routine.length > 0 && !confirm('已有律動清單，覆蓋為範本？')) return;
+  state.routine = [
+    { name: '🏃 原地踏步', sec: 30 },
+    { name: '💪 開合跳', sec: 30 },
+    { name: '🧘 伸展深呼吸', sec: 60 },
+    { name: '🤸 高抬腿', sec: 30 },
+    { name: '🙆 大腿側拉伸', sec: 30 },
+    { name: '🧎 緩和散步', sec: 60 },
+  ];
+  saveState();
+  renderRoutineList();
+}
+
+function speakAction(text) {
+  if (!('speechSynthesis' in window)) return;
+  try {
+    const utter = new SpeechSynthesisUtterance(text.replace(/[\p{Emoji}\u{1F300}-\u{1FAFF}]/gu, '').trim() || '下一個動作');
+    utter.lang = 'zh-TW';
+    utter.rate = 1.0;
+    speechSynthesis.speak(utter);
+  } catch {}
+}
+
+function startRoutine() {
+  if (state.routine.length === 0) { alert('請先加一些動作'); return; }
+  routineRunning = true;
+  routineIdx = 0;
+  routineSecLeft = state.routine[0].sec;
+  document.getElementById('routineNow').style.display = '';
+  document.getElementById('routineBtn').textContent = '⏸ 暫停';
+  speakAction(state.routine[0].name);
+  ensureAudio();
+  tickRoutine();
+  routineTimer = setInterval(tickRoutine, 1000);
+  renderRoutineList();
+}
+function tickRoutine() {
+  const cur = state.routine[routineIdx];
+  if (!cur) return;
+  document.getElementById('nowAction').textContent = cur.name;
+  document.getElementById('nowTime').textContent = `${Math.floor(routineSecLeft/60).toString().padStart(2,'0')}:${(routineSecLeft%60).toString().padStart(2,'0')}`;
+  const pct = ((cur.sec - routineSecLeft) / cur.sec) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  if (routineSecLeft <= 3 && routineSecLeft > 0) playBeat(true);  // 結束前 3 秒提示音
+  routineSecLeft--;
+  if (routineSecLeft < 0) {
+    routineIdx++;
+    if (routineIdx >= state.routine.length) {
+      stopRoutine();
+      speakAction('律動結束');
+      alert('🎉 律動完成！');
+      return;
+    }
+    routineSecLeft = state.routine[routineIdx].sec;
+    speakAction('換 ' + state.routine[routineIdx].name);
+    renderRoutineList();
+  }
+}
+function stopRoutine() {
+  routineRunning = false;
+  if (routineTimer) clearInterval(routineTimer);
+  routineTimer = null;
+  document.getElementById('routineBtn').textContent = '▶ 開始律動';
+  document.getElementById('routineNow').style.display = 'none';
+  renderRoutineList();
+}
+function toggleRoutine() {
+  if (routineRunning) {
+    clearInterval(routineTimer);
+    routineRunning = false;
+    document.getElementById('routineBtn').textContent = '▶ 繼續';
+  } else if (routineIdx > 0 || routineSecLeft > 0) {
+    routineRunning = true;
+    routineTimer = setInterval(tickRoutine, 1000);
+    document.getElementById('routineBtn').textContent = '⏸ 暫停';
+  } else {
+    startRoutine();
+  }
+}
+
+function escapeAttr(s) { return String(s||'').replace(/"/g, '&quot;').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+function flash(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(window._fT);
+  window._fT = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// init
+updateBPM(state.bpm);
+updateSig(state.sig);
+document.getElementById('volRange').value = state.vol;
+document.getElementById('volVal').textContent = state.vol + '%';
+document.getElementById('vibrate').checked = state.vibrate;
+renderBeatDots();
+renderRoutineList();
+</script>
+
+</body>
+</html>
