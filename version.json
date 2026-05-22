@@ -1,5 +1,5 @@
 {
-  "version": "20260522-1000-52f9515",
-  "builtAt": "2026-05-22T02:00:43Z",
-  "notes": "v4.2 LINE 通知整合：Cloud Function + 前端 client + 4 觸發點（後端待 OAuth 部署）"
+  "version": "20260522-1046-3359081",
+  "builtAt": "2026-05-22T02:46:09Z",
+  "notes": "v4.3 LINE 通知正式啟用：Cloud Function 部署 teachers-ai-assistant-g4iph + endpoint 已驗證"
 }

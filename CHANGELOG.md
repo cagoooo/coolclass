@@ -7,6 +7,35 @@
 
 ---
 
+## [4.3.0] · 2026-05-22 · LINE 通知正式啟用 ✅
+
+### Deployed
+- ✅ **Cloud Function `notifyLine` 已部署**：`teachers-ai-assistant-g4iph` / asia-east1
+- ✅ **Cloud Function `notifyLineHealth` 已部署**：健康檢查 endpoint
+- ✅ **Secrets 已設定**：`COOLCLASS_LINE_CHANNEL_ACCESS_TOKEN` + `COOLCLASS_LINE_ADMIN_USER_ID`（用 Node.js 寫檔避開 Windows CRLF 雷）
+- ✅ **Pre-deploy self-test 通過**：直接打 LINE Push API 200 OK
+- ✅ **End-to-end 測試通過**：透過 Cloud Function 推 feedback_submitted Flex Card 收到 ✓
+- ✅ **`line-notify.js` ENDPOINT 已更新**：指向實際部署的 URL
+
+### 部署細節
+| 項目 | 值 |
+|---|---|
+| Firebase 專案 | `teachers-ai-assistant-g4iph` |
+| Region | asia-east1（台灣） |
+| Runtime | Node.js 20 |
+| Endpoint | `https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/notifyLine` |
+| Health | `https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/notifyLineHealth` |
+| maxInstances | 5（控成本） |
+| Rate limit | 60 秒 10 條 |
+
+### 預期通知情境（已驗證）
+- 🆕 使用者填寫 feedback.html → LINE 收藏卡 ✓
+- ✅ 使用者完成 backup.html 匯出 → LINE 收綠卡
+- 🎉 使用者首次完成 onboarding → LINE 收藍卡
+- ❌ 前端發生 JS 錯誤 → LINE 收紅卡
+
+---
+
 ## [4.2.0] · 2026-05-22 · LINE 通知整合（前端 + 後端 + 4 觸發點）
 
 ### Added — 後端

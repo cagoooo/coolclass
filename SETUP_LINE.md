@@ -1,8 +1,10 @@
-# 📲 LINE 通知後端部署手冊（v4.2）
+# 📲 LINE 通知後端部署手冊（v4.3 已部署完成 ✅）
 
-> 這份是給阿凱老師親自跑的 setup 步驟。OAuth 流程不能由 Claude 代執行（需要點 Google 同意按鈕），所以這 5 步要自己花 ~15 分鐘做完。
+> **2026-05-22 已上線**：Cloud Function 部署在 `teachers-ai-assistant-g4iph` 專案，endpoint URL `https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/notifyLine`，self-test 200 OK，端對端 Flex Card 收到 ✓
 >
-> 做完後：使用者填回饋表、匯出備份、第一次完成 onboarding、發生 JS 錯誤時，你的 LINE 會自動收到 Flex Card 通知 ✨
+> 這份手冊保留作為「未來如要遷移專案 / 重新部署 / 換 token」的參考文件。一般使用無需再做任何事。
+>
+> 4 個觸發已上線：使用者填回饋表、匯出備份、第一次完成 onboarding、發生 JS 錯誤時，阿凱老師 LINE 會自動收到 Flex Card 通知 ✨
 
 ---
 

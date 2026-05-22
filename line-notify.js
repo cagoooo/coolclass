@@ -14,10 +14,10 @@
   'use strict';
   if (window.AkaiNotifyLine) return;
 
-  // ====== Endpoint 設定 ======
-  // 阿凱老師部署 Cloud Function 後，把 URL 填這裡：
-  //   範例：https://asia-east1-coolclass-xxxxx.cloudfunctions.net/notifyLine
-  const ENDPOINT = 'https://asia-east1-smes-e1dc3.cloudfunctions.net/notifyLine';
+  // ====== Endpoint 設定（v4.3 已正式部署）======
+  // Cloud Function: teachers-ai-assistant-g4iph / asia-east1
+  // 部署於 2026-05-22 · secrets: COOLCLASS_LINE_CHANNEL_ACCESS_TOKEN + _ADMIN_USER_ID
+  const ENDPOINT = 'https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/notifyLine';
 
   // 給 fork 的老師：把上面 ENDPOINT 改成空字串即可停用整套通知。
   // 或在 console 跑 localStorage.setItem('akai_line_off','1')；
