@@ -2,6 +2,8 @@
 
 # 🌈 教室小幫手
 
+> 📌 **目前版本：v4.3.0**（依據 `CHANGELOG.md`）
+
 ### 老師的每日課堂工具 · **32 個免費小工具**
 
 [![Live](https://img.shields.io/badge/🌐_線上版-cagoooo.github.io%2Fcoolclass-2a1f4a?style=for-the-badge)](https://cagoooo.github.io/coolclass/)
