@@ -466,6 +466,6 @@
 
 下一步建議從 **第 1 輪 · 打磨體驗** 開始，5 個小任務一週可結。
 
-Made with ❤️ by 阿凱老師（[桃園市龍潭區石門國民小學](https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5)）
+Made with ❤️ by 阿凱老師（[桃園市龍潭區石門國民小學](https://www.smes.tyc.edu.tw/modules/school/index.php?department_id=2&zone_id=0&page_id=2&content_id=11&type=news&from_op=all_news#a5)）
 
 </div>
