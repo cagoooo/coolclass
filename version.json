@@ -1,5 +1,5 @@
 {
-  "version": "20260522-1046-3359081",
-  "builtAt": "2026-05-22T02:46:09Z",
-  "notes": "v4.3 LINE 通知正式啟用：Cloud Function 部署 teachers-ai-assistant-g4iph + endpoint 已驗證"
+  "version": "20261117-1359-3585c8e",
+  "builtAt": "2026-11-17T05:59:11Z",
+  "notes": "v4.3.1 頁尾署名改連阿凱老師教育科技創新專區（升版讓離線快取更新）"
 }
