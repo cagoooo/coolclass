@@ -11,8 +11,10 @@
  * activate 後 postMessage SW_ACTIVATED 通知所有 clients，
  * 配合 sw-update.js 顯示更新 banner。
  */
-const BUILD_VERSION = "20261117-1359-3585c8e";  // ← bump-version.sh 會替換這行
-const CACHE = `akai-classroom-${BUILD_VERSION}`;
+const BUILD_VERSION = "20261117-1513-d019ef1";  // ← bump-version.sh 會替換這行
+// 同一網域（cagoooo.github.io）的所有工具共用快取空間，只能清除自己這個前綴的快取
+const CACHE_PREFIX = 'akai-classroom-';
+const CACHE = `${CACHE_PREFIX}${BUILD_VERSION}`;
 
 const CORE_ASSETS = [
   './',
@@ -88,9 +90,9 @@ self.addEventListener('install', (event) => {
 // ===== activate: 清舊 cache + claim + 廣播更新 =====
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // 清掉其他版本的 cache
+    // 只清掉本站自己的舊版 cache（不動同網域其他工具的快取）
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k)));
     // 立刻接管所有 client
     await self.clients.claim();
     // 廣播給所有 client：SW 已更新

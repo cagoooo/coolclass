@@ -113,11 +113,11 @@
       const btn = document.getElementById('akai-update-reload');
       btn.textContent = '更新中…';
       btn.disabled = true;
-      // 清掉所有 cache，確保完全吃新版
+      // 清掉本站自己的 cache，確保完全吃新版（同網域其他工具的快取不動）
       try {
         if ('caches' in window) {
           const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
+          await Promise.all(keys.filter(k => k.startsWith('akai-classroom-')).map(k => caches.delete(k)));
         }
       } catch (e) {}
       // 通知 SW skipWaiting（如果有 waiting 中的）
