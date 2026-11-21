@@ -355,6 +355,17 @@ exports.notifyLine = onRequest({
   const event = body.event || 'unknown';
   const payload = body.payload || {};
 
+  // 舊版快取前端仍會送「Script error.」（跨網域腳本被瀏覽器隱藏內容的錯誤，無法修復），後端直接略過
+  if (event === 'js_error') {
+    const msg = String(payload.message || '').trim();
+    const src = String(payload.source || '');
+    if (/^script error\.?$/i.test(msg) || src === ':0:0') {
+      logger.info('[notifyLine] ignore opaque cross-origin js_error', { msg, src });
+      res.status(200).send({ ok: true, ignored: 'opaque-script-error' });
+      return;
+    }
+  }
+
   // 附帶 server-side metadata
   payload._url = payload._url || (req.headers['referer'] || '').substring(0, 100);
   payload._ua = payload._ua || (req.headers['user-agent'] || '').substring(0, 100);

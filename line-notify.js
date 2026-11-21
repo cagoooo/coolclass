@@ -90,9 +90,28 @@
 
   // ====== 全域錯誤監聽 ======
   let errorReportedKey = null;
+
+  // 只回報「自己網站的程式」出的錯。
+  // - "Script error." + 沒有檔名：瀏覽器把跨網域腳本的錯誤內容藏起來（多半是 LINE／FB 內建瀏覽器、
+  //   翻譯或外掛自己注入的程式），我們看不到也修不了，回報只是噪音。
+  // - 檔名不是本站（chrome-extension://、其他網域）：同理略過。
+  // - 資源載入失敗（img/script 404）的 error 事件沒有 message，也略過。
+  function isOwnError(e) {
+    const msg = String(e.message || '');
+    const file = String(e.filename || '');
+    if (!msg) return false;
+    if (/^script error\.?$/i.test(msg.trim())) return false;
+    if (!file) return false;
+    try {
+      if (new URL(file, location.href).origin !== location.origin) return false;
+    } catch { return false; }
+    return true;
+  }
+
   function setupErrorHandler() {
     window.addEventListener('error', (e) => {
       try {
+        if (!isOwnError(e)) return;
         const msg = (e.message || '').substring(0, 200);
         const src = ((e.filename || '') + ':' + (e.lineno || 0) + ':' + (e.colno || 0)).substring(0, 200);
         const key = msg + src;
