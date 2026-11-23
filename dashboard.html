@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用儀表板 · 教室小幫手</title>
+<meta name="description" content="教室小幫手管理用使用儀表板：每日活躍裝置、熱門工具、回饋與錯誤紀錄">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ff97c5">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Fraunces:opsz,ital,wght@9..144,1,500;9..144,1,900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="crayon.css">
+<style>
+  /* ===== 管理金鑰 ===== */
+  .login-box { max-width: 560px; margin: 0 auto; }
+  .login-box p { line-height: 1.7; margin: 0 0 14px; }
+  .login-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .login-row input {
+    flex: 1 1 240px; padding: 12px 14px; font: inherit; font-size: 15px;
+    border: 2.5px solid var(--ink); border-radius: 12px; background: #fff;
+    box-shadow: 2px 2px 0 var(--ink); min-width: 0;
+  }
+  .login-msg { margin-top: 10px; font-weight: 700; color: var(--r); min-height: 1.4em; }
+
+  /* ===== 工具列 ===== */
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 22px; }
+  .toolbar .updated { margin-left: auto; color: var(--muted); font-size: 14px; }
+
+  /* ===== 數字卡 ===== */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .kpi {
+    background: #fff; border: var(--bw) solid var(--ink); border-radius: var(--rad);
+    padding: 16px 18px; box-shadow: 4px 4px 0 var(--ink);
+  }
+  .kpi .lbl { font-size: 14px; font-weight: 700; color: var(--muted); }
+  .kpi .num { font-family: 'Fraunces', serif; font-weight: 900; font-size: 40px; line-height: 1.1; margin-top: 4px; }
+  .kpi .hint { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .kpi.y { background: #fff6cf; } .kpi.g { background: #e5f7e8; } .kpi.b { background: #e5efff; }
+  .kpi.p { background: #f2e8ff; } .kpi.r { background: #ffe9e9; } .kpi.c { background: #e3f6f9; }
+
+  /* ===== 每日長條圖 ===== */
+  .chart { display: flex; align-items: flex-end; gap: 4px; height: 220px; padding: 8px 2px 0; border-bottom: 2.5px solid var(--ink); }
+  .bar {
+    flex: 1 1 0; min-width: 0; position: relative; display: flex; flex-direction: column-reverse;
+    height: 100%; cursor: pointer; border-radius: 6px 6px 0 0;
+  }
+  .bar:hover .bar-old, .bar.sel .bar-old { background: var(--b); }
+  .bar-old { background: #9cc0ff; border-radius: 6px 6px 0 0; }
+  .bar-new { background: var(--orange); }
+  .bar .bar-old:only-child { border-radius: 6px 6px 0 0; }
+  .bar-stack { display: flex; flex-direction: column-reverse; width: 100%; border-radius: 6px 6px 0 0; overflow: hidden; }
+  .bar.today .bar-stack { outline: 2.5px dashed var(--ink); outline-offset: 1px; }
+  .x-labels { display: flex; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .x-labels span { flex: 1 1 0; text-align: center; min-width: 0; overflow: visible; white-space: nowrap; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; margin-top: 12px; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; }
+  .day-detail { margin-top: 12px; padding: 12px 14px; background: var(--paper-2); border: 2px solid var(--ink); border-radius: 12px; font-size: 15px; line-height: 1.6; }
+
+  /* ===== 熱門工具 ===== */
+  .seg { display: inline-flex; border: 2.5px solid var(--ink); border-radius: 999px; overflow: hidden; margin-left: auto; }
+  .seg button { border: 0; background: #fff; font: inherit; font-weight: 700; padding: 6px 14px; cursor: pointer; }
+  .seg button.on { background: var(--ink); color: var(--paper); }
+  .rank { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .rank li { display: grid; grid-template-columns: 34px minmax(120px, 220px) 1fr 64px; align-items: center; gap: 10px; font-size: 15px; }
+  .rank .no { font-family: 'Fraunces', serif; font-weight: 900; font-size: 20px; text-align: center; }
+  .rank .track { height: 18px; background: var(--paper-2); border-radius: 999px; border: 2px solid var(--ink); overflow: hidden; }
+  .rank .fill { height: 100%; background: var(--g); }
+  .rank .cnt { text-align: right; font-weight: 700; }
+  .empty { color: var(--muted); padding: 10px 0; }
+
+  /* ===== 回饋 ===== */
+  .fb-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .fb-card { border: 2.5px solid var(--ink); border-radius: var(--rad-sm); padding: 14px 16px; background: #fffdf6; box-shadow: 3px 3px 0 var(--ink); }
+  .fb-card .top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-weight: 700; margin-bottom: 8px; }
+  .fb-card .stars { color: #e0a200; letter-spacing: 1px; }
+  .fb-card dl { margin: 0; display: grid; grid-template-columns: 74px 1fr; gap: 6px 10px; font-size: 15px; line-height: 1.6; }
+  .fb-card dt { color: var(--muted); font-weight: 700; }
+  .fb-card dd { margin: 0; white-space: pre-wrap; word-break: break-word; }
+  .fb-card .meta { margin-top: 8px; font-size: 13px; color: var(--muted); }
+
+  /* ===== 表格 ===== */
+  .tbl-wrap { overflow-x: auto; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 15px; }
+  table.tbl th, table.tbl td { text-align: left; padding: 10px 10px; border-bottom: 1.5px solid #e6dcc4; vertical-align: top; }
+  table.tbl th { font-size: 14px; color: var(--muted); border-bottom: 2.5px solid var(--ink); white-space: nowrap; }
+  .chip { display: inline-block; padding: 2px 10px; margin: 2px 4px 2px 0; border-radius: 999px; background: var(--paper-2); border: 1.5px solid var(--ink); font-size: 13px; white-space: nowrap; }
+  .err-msg { font-family: ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; }
+
+  .note { font-size: 14px; color: var(--muted); line-height: 1.7; margin: 10px 0 0; }
+  .hidden { display: none !important; }
+
+  /* ===== 頁尾 ===== */
+  .site-footer {
+    margin-top: 50px; border-top: 1px solid #d9ccb0;
+    background: linear-gradient(180deg, #f6efdf, #efe5cf);
+    position: relative; z-index: 1;
+  }
+  .site-footer::before { content: ''; display: block; height: 4px; background: linear-gradient(90deg, var(--pink), var(--y), var(--b)); }
+  .footer-inner { max-width: 1500px; margin: 0 auto; padding: 28px 32px 18px; display: grid; grid-template-columns: 1.2fr 2fr 1fr; gap: 28px; align-items: start; }
+  .footer-brand { display: flex; gap: 14px; align-items: center; }
+  .footer-brand img { width: 48px; height: 48px; border-radius: 14px; box-shadow: 3px 3px 0 var(--ink); background: #fff; }
+  .footer-brand strong { display: block; font-size: 18px; }
+  .footer-brand span { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .footer-points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .footer-points li { display: flex; gap: 10px; align-items: flex-start; }
+  .fp-icon { font-size: 22px; line-height: 1; }
+  .footer-points strong { display: block; font-size: 15px; }
+  .footer-points small { display: block; color: var(--muted); font-size: 14px; line-height: 1.5; margin-top: 2px; }
+  .footer-links { display: flex; flex-direction: column; gap: 8px; }
+  .footer-link { color: var(--ink); font-weight: 700; text-decoration: none; font-size: 15px; }
+  .footer-link:hover { color: var(--b); }
+  .footer-bottom { max-width: 1500px; margin: 0 auto; padding: 14px 32px 24px; border-top: 1px dashed #cdbd9b; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); }
+  .site-credit { margin: 0; }
+  .site-credit__heart { display: inline-block; margin: 0 2px; }
+  .site-credit__author { color: inherit; font-weight: 700; text-decoration: none; border-bottom: 1px dotted currentColor; }
+  .site-credit__author:hover { color: var(--r); }
+  .version-tag { margin: 0; padding: 3px 12px; border-radius: 999px; background: rgba(255,255,255,.7); border: 1px solid #cdbd9b; font-size: 13px; }
+
+  @media (max-width: 1024px) {
+    .footer-inner { grid-template-columns: 1fr 1fr; }
+    .footer-points { grid-column: 1 / -1; grid-row: 2; }
+  }
+  @media (max-width: 720px) {
+    .kpi .num { font-size: 32px; }
+    .chart { height: 170px; gap: 2px; }
+    .x-labels { gap: 2px; font-size: 11px; }
+    .rank li { grid-template-columns: 26px 1fr 52px; }
+    .rank .track { grid-column: 2 / 4; grid-row: 2; }
+    .fb-list { grid-template-columns: 1fr; }
+    .seg { margin-left: 0; }
+    .toolbar .updated { margin-left: 0; width: 100%; }
+    .footer-inner { grid-template-columns: 1fr; padding: 24px 18px 14px; }
+    .footer-points { grid-template-columns: 1fr; grid-row: auto; }
+    .footer-links { flex-direction: row; flex-wrap: wrap; }
+    .footer-link { padding: 8px 14px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; }
+    .footer-bottom { flex-direction: column; text-align: center; padding: 14px 18px 22px; }
+    .footer-dot { display: none; }
+    .footer-school { display: block; margin-top: 4px; }
+    /* 手機版表格改成卡片 */
+    table.tbl thead { display: none; }
+    table.tbl, table.tbl tbody, table.tbl tr, table.tbl td { display: block; width: 100%; }
+    table.tbl tr { border: 2px solid var(--ink); border-radius: 12px; margin-bottom: 10px; padding: 6px 4px; background: #fffdf6; }
+    table.tbl td { border: 0; padding: 4px 10px; }
+    table.tbl td::before { content: attr(data-label) '：'; color: var(--muted); font-weight: 700; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-deco" aria-hidden="true"><span class="blob blob-y"></span><span class="blob blob-b"></span></div>
+
+<a class="home-btn" href="index.html">← 回主頁</a>
+
+<div class="wrap wide">
+
+  <section class="page-hero">
+    <div>
+      <span class="eyebrow">DASHBOARD · 管理用</span>
+      <h1>教室小幫手<em>使用儀表板</em></h1>
+      <p class="sub">
+        <span class="badge">每日活躍裝置</span>
+        <span class="badge">熱門工具</span>
+        <span class="badge">完整回饋</span>
+        <span class="badge">錯誤紀錄</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- 管理金鑰 -->
+  <section class="block login-box hidden" id="loginBlock">
+    <div class="block-head"><div class="step">🔑</div><h2>輸入管理金鑰</h2></div>
+    <p>這一頁只給阿凱老師看。管理金鑰存在電腦的 <b>H:\Coolclass\.env</b> 檔案裡（<code>COOLCLASS_DASHBOARD_KEY=</code> 後面那一串）。輸入一次後，這台電腦會記住。</p>
+    <form class="login-row" id="loginForm">
+      <input type="password" id="keyInput" autocomplete="off" placeholder="貼上管理金鑰" aria-label="管理金鑰">
+      <button class="btn primary" type="submit">打開儀表板</button>
+    </form>
+    <div class="login-msg" id="loginMsg"></div>
+  </section>
+
+  <div id="dash" class="hidden">
+    <div class="toolbar">
+      <button class="btn y" id="btnRefresh" type="button">🔄 重新整理</button>
+      <button class="btn b" id="btnReport" type="button">📮 發週報預覽到 Chat</button>
+      <button class="btn" id="btnLogout" type="button">🚪 忘記金鑰</button>
+      <span class="updated" id="updated"></span>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <section class="block">
+      <div class="block-head"><div class="step">1</div><h2>最近 30 天每日活躍裝置</h2><span class="tail">點長條看當天細節</span></div>
+      <div class="chart" id="chart" role="img" aria-label="最近 30 天每日活躍裝置長條圖"></div>
+      <div class="x-labels" id="xlabels"></div>
+      <div class="legend"><span><i style="background:#9cc0ff"></i>之前就用過的裝置</span><span><i style="background:var(--orange)"></i>當天第一次出現的新裝置</span><span><i style="border:2px dashed var(--ink)"></i>今天</span></div>
+      <div class="day-detail" id="dayDetail">點一根長條，看那一天的細節。</div>
+      <p class="note">「裝置」是指一個瀏覽器：同一位老師用兩台電腦會算 2 台；清掉瀏覽器資料後會被當成新裝置。2026-11-23 晚上 8 點以前的資料沒有存過（舊日誌顯示 11/17～11/23 約有 67 台裝置完成首次引導）。</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="step">2</div><h2>熱門工具排行</h2>
+        <div class="seg" role="tablist" aria-label="統計期間">
+          <button type="button" class="on" data-range="7">近 7 天</button>
+          <button type="button" data-range="30">近 30 天</button>
+        </div>
+      </div>
+      <ol class="rank" id="rank"></ol>
+      <p class="note">數字是「台次」：一台裝置一天打開某個工具算 1 次，不含首頁。</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div class="step">3</div><h2>老師回饋</h2><span class="tail" id="fbTail"></span></div>
+      <div class="fb-list" id="fbList"></div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div class="step">4</div><h2>最近活躍的裝置</h2><span class="tail">最多 60 台，班級名稱是老師在班級名單填的</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>班級</th><th>第一次出現</th><th>最後使用</th><th>用過幾種工具</th><th>最常用</th><th>裝置</th></tr></thead>
+          <tbody id="devBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><div class="step">5</div><h2>最近的前端錯誤</h2><span class="tail">最多 20 筆</span></div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th>時間</th><th>頁面</th><th>錯誤訊息</th><th>位置</th></tr></thead>
+          <tbody id="errBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="block tinted-paper">
+      <div class="block-head"><div class="step">📮</div><h2>每週週報</h2></div>
+      <p style="margin:0;line-height:1.7" id="weeklyInfo"></p>
+    </section>
+  </div>
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-brand"><img src="icon.svg" alt="" width="48" height="48">
+      <div><strong>教室小幫手</strong><span>32 個國小班級經營小工具</span></div></div>
+    <ul class="footer-points">
+      <li><span class="fp-icon">🔒</span><div><strong>只有管理者看得到</strong><small>要輸入管理金鑰，後端驗證後才給資料</small></div></li>
+      <li><span class="fp-icon">🙈</span><div><strong>不收學生資料</strong><small>只統計匿名裝置與工具名稱，學生名單留在老師電腦</small></div></li>
+      <li><span class="fp-icon">📮</span><div><strong>每週一自動週報</strong><small>早上 8 點後發到 Google Chat</small></div></li>
+    </ul>
+    <nav class="footer-links" aria-label="快速連結">
+      <a class="footer-link" href="index.html">🏠 回主頁</a>
+      <a class="footer-link" href="feedback.html">💬 回饋表單</a>
+      <a class="footer-link" href="https://console.firebase.google.com/project/teachers-ai-assistant-g4iph/firestore" target="_blank" rel="noopener noreferrer">🗄️ Firestore 主控台</a>
+    </nav>
+  </div>
+  <div class="footer-bottom">
+    <p class="site-credit">Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+      <a href="https://cagoooo.github.io/Akai/" target="_blank" rel="noopener noreferrer" class="site-credit__author">阿凱老師</a>
+      <span class="footer-school"><span class="footer-dot" aria-hidden="true">・</span>桃園市龍潭區石門國民小學</span></p>
+    <p class="version-tag">儀表板 v1.0</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  const API = 'https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/coolclassStats';
+  const KEY_STORE = 'akai_dash_key_v1';
+  const $ = (id) => document.getElementById(id);
+  let data = null;
+  let range = '7';
+  let selected = null;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function getKey() { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } }
+  function setKey(k) { try { k ? localStorage.setItem(KEY_STORE, k) : localStorage.removeItem(KEY_STORE); } catch {} }
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.add('show');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+  function fmtTime(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+  }
+  function md(day) { return day ? Number(day.slice(5, 7)) + '/' + Number(day.slice(8, 10)) : '—'; }
+  function weekday(day) { return '日一二三四五六'[new Date(day + 'T00:00:00Z').getUTCDay()]; }
+  function shortUa(ua) {
+    ua = String(ua || '');
+    const os = /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /CrOS/.test(ua) ? 'Chromebook' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : '其他';
+    const br = /Line\//.test(ua) ? 'LINE' : /FBAN|FBAV/.test(ua) ? 'Facebook' : /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : '';
+    return br ? os + '・' + br : os;
+  }
+
+  async function api(body) {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-dashboard-key': getKey() },
+      body: JSON.stringify(body || {}),
+    });
+    let j = {};
+    try { j = await r.json(); } catch {}
+    return { status: r.status, body: j };
+  }
+
+  function showLogin(msg) {
+    $('dash').classList.add('hidden');
+    $('loginBlock').classList.remove('hidden');
+    $('loginMsg').textContent = msg || '';
+    $('keyInput').focus();
+  }
+
+  async function load() {
+    $('updated').textContent = '讀取中…';
+    let res;
+    try { res = await api({ action: 'stats' }); }
+    catch { $('updated').textContent = '連線失敗，請稍後再按重新整理'; if (!data) showLogin('連線失敗，請確認網路後再試一次'); return; }
+    if (res.status === 401) { setKey(''); showLogin('金鑰不對，請再確認一次'); return; }
+    if (res.status === 429) { showLogin('嘗試太多次了，請等 1 分鐘再試'); return; }
+    if (!res.body.ok) { $('updated').textContent = '讀取失敗（' + res.status + '），請稍後再試'; return; }
+    data = res.body;
+    $('loginBlock').classList.add('hidden');
+    $('dash').classList.remove('hidden');
+    render();
+  }
+
+  function render() {
+    const t = data.totals;
+    $('updated').textContent = '更新時間：' + fmtTime(data.generatedAt);
+    const todayRow = data.days[data.days.length - 1] || {};
+    const kpis = [
+      ['y', '今天活躍裝置', todayRow.devices || 0, '今天新加入 ' + (todayRow.newDevices || 0) + ' 台'],
+      ['g', '近 7 天活躍裝置', t.active7, '近 7 天新加入 ' + t.newDevices7 + ' 台'],
+      ['b', '近 30 天活躍裝置', t.active30, '累計 ' + t.devices + ' 台裝置'],
+      ['p', '近 7 天工具使用', t.toolOpens7, '台次（一台一天一工具算 1）'],
+      ['c', '近 30 天回饋', t.feedback30, '下方可看完整內容'],
+      ['r', '近 7 天前端錯誤', t.errors7, t.errors7 ? '下方可看詳情' : '目前一切正常'],
+    ];
+    $('kpis').innerHTML = kpis.map(([c, l, n, h]) =>
+      `<div class="kpi ${c}"><div class="lbl">${esc(l)}</div><div class="num">${esc(n)}</div><div class="hint">${esc(h)}</div></div>`).join('');
+
+    // 每日長條圖
+    const max = Math.max(1, ...data.days.map(d => d.devices));
+    $('chart').innerHTML = data.days.map((d, i) => {
+      const oldN = Math.max(0, d.devices - d.newDevices);
+      const total = d.devices / max * 100;
+      const newPct = d.devices ? d.newDevices / d.devices * 100 : 0;
+      const isToday = i === data.days.length - 1;
+      return `<div class="bar${isToday ? ' today' : ''}${selected === i ? ' sel' : ''}" data-i="${i}" title="${md(d.day)}（${weekday(d.day)}）${d.devices} 台">
+        <div class="bar-stack" style="height:${total}%">
+          ${oldN ? `<div class="bar-old" style="height:${100 - newPct}%"></div>` : ''}
+          ${d.newDevices ? `<div class="bar-new" style="height:${newPct}%"></div>` : ''}
+        </div></div>`;
+    }).join('');
+    $('xlabels').innerHTML = data.days.map((d, i) =>
+      `<span>${(i % 5 === 4 || i === data.days.length - 1) ? md(d.day) : ''}</span>`).join('');
+    if (selected == null) showDay(data.days.length - 1);
+
+    renderRank();
+
+    // 回饋
+    $('fbTail').textContent = data.feedback.length ? '最新 ' + data.feedback.length + ' 則' : '';
+    $('fbList').innerHTML = data.feedback.length ? data.feedback.map(f => `
+      <article class="fb-card">
+        <div class="top"><span class="stars">${'★'.repeat(f.stars || 0)}${'☆'.repeat(5 - (f.stars || 0))}</span><span>${esc(fmtTime(f.at))}</span></div>
+        <dl>
+          <dt>身分</dt><dd>${esc(f.role || '未填')}</dd>
+          <dt>推薦</dt><dd>${esc(f.recommend || '未填')}</dd>
+          <dt>常用</dt><dd>${esc(f.favs || '—')}</dd>
+          <dt>卡關</dt><dd>${esc(f.pain || '—')}</dd>
+          <dt>期望</dt><dd>${esc(f.wish || '—')}</dd>
+          <dt>其他</dt><dd>${esc(f.extra || '—')}</dd>
+          <dt>Email</dt><dd>${f.email && f.email !== '未留' ? `<a href="mailto:${esc(f.email)}">${esc(f.email)}</a>` : '未留'}</dd>
+        </dl>
+        <div class="meta">${esc(f.classname || '未填班級')}・${esc(shortUa(f.ua))}</div>
+      </article>`).join('') : '<div class="empty">還沒有收到回饋。老師在「給阿凱建議」頁送出後就會出現在這裡。</div>';
+
+    // 裝置
+    $('devBody').innerHTML = data.devices.length ? data.devices.map(d => `
+      <tr>
+        <td data-label="班級">${esc(d.classname || '未填')}</td>
+        <td data-label="第一次出現">${esc(md(d.firstDay))}</td>
+        <td data-label="最後使用">${esc(fmtTime(d.lastSeen))}</td>
+        <td data-label="用過幾種工具">${esc(d.toolCount)}</td>
+        <td data-label="最常用">${d.topTools.map(t => `<span class="chip">${esc(t.name)} ${esc(t.count)}</span>`).join('') || '—'}</td>
+        <td data-label="裝置">${esc(shortUa(d.ua))}</td>
+      </tr>`).join('') : '<tr><td colspan="6" class="empty">還沒有裝置紀錄。</td></tr>';
+
+    // 錯誤
+    $('errBody').innerHTML = data.errors.length ? data.errors.map(e => `
+      <tr>
+        <td data-label="時間">${esc(fmtTime(e.at))}</td>
+        <td data-label="頁面">${esc(e.page || '—')}</td>
+        <td data-label="錯誤訊息" class="err-msg">${esc(e.message || '—')}</td>
+        <td data-label="位置" class="err-msg">${esc(e.source || '—')}</td>
+      </tr>`).join('') : '<tr><td colspan="4" class="empty">✅ 最近沒有前端錯誤。</td></tr>';
+
+    // 週報
+    const w = data.weekly;
+    $('weeklyInfo').innerHTML = !w
+      ? '週報旗標還沒建立。下一個老師打開教室小幫手時會自動建立，下週一早上 8 點後開始發。'
+      : `上一次處理的是 <b>${esc(md(w.lastWeekStart))} 那一週</b>。` +
+        (w.lastSentAt ? `最近一次週報在 ${esc(fmtTime(w.lastSentAt))} 發送，${w.lastSentOk ? '✅ 成功' : '⚠️ 失敗'}。` : '第一份週報會在下週一早上 8 點後發出。') +
+        '<br>想先看看長什麼樣子，可以按上方「發週報預覽到 Chat」（統計最近 7 天）。';
+  }
+
+  function renderRank() {
+    const list = range === '7' ? data.tools7 : data.tools30;
+    const max = Math.max(1, ...list.map(t => t.count));
+    $('rank').innerHTML = list.length ? list.slice(0, 15).map((t, i) => `
+      <li><span class="no">${i + 1}</span><span>${esc(t.name)}</span>
+        <span class="track"><span class="fill" style="display:block;width:${t.count / max * 100}%"></span></span>
+        <span class="cnt">${esc(t.count)}</span></li>`).join('')
+      : '<li class="empty">這段期間還沒有工具使用紀錄。</li>';
+  }
+
+  function showDay(i) {
+    selected = i;
+    const d = data.days[i];
+    document.querySelectorAll('.bar').forEach(b => b.classList.toggle('sel', Number(b.dataset.i) === i));
+    $('dayDetail').innerHTML = `<b>${md(d.day)}（${weekday(d.day)}）</b>：活躍 <b>${d.devices}</b> 台裝置，其中新加入 <b>${d.newDevices}</b> 台；工具使用 ${d.toolOpens} 台次、回饋 ${d.feedback} 則、前端錯誤 ${d.errors} 次。`;
+  }
+
+  $('chart').addEventListener('click', (e) => {
+    const bar = e.target.closest('.bar');
+    if (bar) showDay(Number(bar.dataset.i));
+  });
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    range = b.dataset.range;
+    document.querySelectorAll('.seg button').forEach(x => x.classList.toggle('on', x === b));
+    if (data) renderRank();
+  }));
+  $('loginForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const k = $('keyInput').value.trim();
+    if (!k) { $('loginMsg').textContent = '請先貼上管理金鑰'; return; }
+    setKey(k); $('keyInput').value = ''; $('loginMsg').textContent = '驗證中…';
+    load();
+  });
+  $('btnRefresh').addEventListener('click', load);
+  $('btnLogout').addEventListener('click', () => { setKey(''); data = null; showLogin('已忘記這台電腦上的金鑰'); });
+  $('btnReport').addEventListener('click', async () => {
+    const btn = $('btnReport'); btn.disabled = true;
+    try {
+      const r = await api({ action: 'sendReport' });
+      toast(r.body.sent ? '✅ 週報預覽已發到 Google Chat' : '⚠️ 週報沒有發出去，請稍後再試');
+    } catch { toast('⚠️ 連線失敗，請稍後再試'); }
+    btn.disabled = false;
+  });
+
+  // 支援 dashboard.html#key=xxxx 一次帶入金鑰（讀完就從網址列拿掉）
+  const m = location.hash.match(/key=([^&]+)/);
+  if (m) { setKey(decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname); }
+
+  if (getKey()) load(); else showLogin('');
+})();
+</script>
+</body>
+</html>
