@@ -11,7 +11,7 @@
  * activate 後 postMessage SW_ACTIVATED 通知所有 clients，
  * 配合 sw-update.js 顯示更新 banner。
  */
-const BUILD_VERSION = "20261123-2034-6d5f26b";  // ← bump-version.sh 會替換這行
+const BUILD_VERSION = "20261123-2138-e0ec1a6";  // ← bump-version.sh 會替換這行
 // 同一網域（cagoooo.github.io）的所有工具共用快取空間，只能清除自己這個前綴的快取
 const CACHE_PREFIX = 'akai-classroom-';
 const CACHE = `${CACHE_PREFIX}${BUILD_VERSION}`;

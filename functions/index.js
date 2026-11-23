@@ -23,7 +23,7 @@
  * 每週一 08:00 後第一個事件會順便發上週週報到 Google Chat（旗標存在 coolclass_meta/weekly_report）。
  *
  * 部署（同專案有別的應用的函式，一律點名部署，不要整包 --only functions）：
- *   firebase deploy --only functions:notifyLine,functions:notifyLineHealth,functions:coolclassStats
+ *   firebase deploy --only functions:notifyLine,functions:notifyLineHealth,functions:coolclassStats,functions:coolclassDailyDigest
  *
  * 前端呼叫：
  *   await fetch('https://asia-east1-<PROJECT>.cloudfunctions.net/notifyLine', {
@@ -33,6 +33,7 @@
  *   });
  */
 const { onRequest } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
 // Firestore 套件很大，等第一次真的要寫入才載入（部署分析時才不會逾時）
@@ -363,10 +364,11 @@ const allowChat = makeLimiter(10);
 
 // ===== Firestore 紀錄 =====
 const KNOWN_EVENTS = new Set([
-  'feedback_submitted', 'backup_exported', 'first_install', 'js_error', 'tool_open', 'tool_first_use',
+  'feedback_submitted', 'backup_exported', 'backup_restored', 'first_install', 'js_error', 'tool_open', 'tool_first_use',
 ]);
-// 只記錄、不發 Chat 的事件（工具開啟一天會有上百次，發通知會洗版）
-const SILENT_EVENTS = new Set(['tool_open', 'tool_first_use']);
+// 只記錄、不即時發 Chat 的事件：工具開啟一天上百次；新老師、備份改由每天 21:00 的戰報彙整成一則
+// （2026-11-23 使用者反映首次引導通知太頻繁）。回饋與前端錯誤仍即時通知。
+const SILENT_EVENTS = new Set(['tool_open', 'tool_first_use', 'first_install', 'backup_exported', 'backup_restored']);
 
 const ROLE_MAP = { elementary: '國小老師', middle: '國中老師', high: '高中老師', cram: '補教/安親', admin: '行政/主任', other: '其他' };
 const RECOMMEND_MAP = { yes: '已推薦', maybe: '可能會', not_yet: '試用中', no: '不太會' };
@@ -779,6 +781,12 @@ exports.coolclassStats = onRequest({
   const today = taipeiDay(new Date());
 
   try {
+    if (action === 'sendDaily') {
+      const d = await buildDailyDigest(db, today);
+      const sent = await sendDailyDigest(GOOGLE_CHAT_WEBHOOK.value(), d, { preview: true });
+      res.status(200).send({ ok: sent, sent });
+      return;
+    }
     if (action === 'sendReport') {
       // 手動預覽：最近 7 天（含今天）
       const report = await buildReport(db, addDays(today, -6), today);
@@ -788,16 +796,27 @@ exports.coolclassStats = onRequest({
     }
 
     const from30 = addDays(today, -29);
-    const [dailyMap, totalSnap, active7Snap, active30Snap, fbSnap, evSnap, devSnap, metaSnap] = await Promise.all([
+    const [dailyMap, totalSnap, active7Snap, active30Snap, fbSnap, evSnap, devSnap, metaSnap, dailyMetaSnap] = await Promise.all([
       loadDaily(db, from30, today),
       db.collection('coolclass_devices').count().get(),
       db.collection('coolclass_devices').where('lastDay', '>=', addDays(today, -6)).count().get(),
-      db.collection('coolclass_devices').where('lastDay', '>=', from30).count().get(),
+      // 近 30 天活躍裝置要看各自有沒有備份過，所以整批讀（只取 events 欄位）
+      db.collection('coolclass_devices').where('lastDay', '>=', from30).select('events').get(),
       db.collection('coolclass_feedback').orderBy('at', 'desc').limit(50).get(),
       db.collection('coolclass_events').orderBy('at', 'desc').limit(400).get(),
       db.collection('coolclass_devices').orderBy('lastSeen', 'desc').limit(60).get(),
       db.collection('coolclass_meta').doc('weekly_report').get(),
+      db.collection('coolclass_meta').doc('daily_digest').get(),
     ]);
+
+    let active30 = 0;
+    let backedUp30 = 0;
+    active30Snap.forEach((doc) => {
+      if (String(doc.id).startsWith('selftest-')) return;
+      active30++;
+      const ev = (doc.data() || {}).events || {};
+      if ((Number(ev.backup_exported) || 0) > 0) backedUp30++;
+    });
 
     const days = [];
     for (let d = from30; d <= today; d = addDays(d, 1)) {
@@ -838,6 +857,7 @@ exports.coolclassStats = onRequest({
       devices.push({
         firstDay: d.firstDay || null, lastDay: d.lastDay || null, lastSeen: tsToIso(d.lastSeen),
         classname: d.lastClass || '', ua: d.lastUa || '',
+        backups: Number((d.events || {}).backup_exported) || 0,
         toolCount: tools.length, topTools: tools.slice(0, 3).map(([k, v]) => ({ key: k, name: toolName(k), count: v })),
       });
     });
@@ -850,7 +870,9 @@ exports.coolclassStats = onRequest({
       totals: {
         devices: totalSnap.data().count,
         active7: active7Snap.data().count,
-        active30: active30Snap.data().count,
+        active30,
+        backedUp30,
+        neverBackedUp30: active30 - backedUp30,
         newDevices7: sum7.newDevices,
         toolOpens7: sum7.events.tool_open || 0,
         errors7: sum7.events.js_error || 0,
@@ -867,11 +889,117 @@ exports.coolclassStats = onRequest({
         lastSentOk: metaSnap.data().lastSentOk == null ? null : metaSnap.data().lastSentOk,
         lastSentAt: tsToIso(metaSnap.data().lastSentAt),
       } : null,
+      daily: dailyMetaSnap.exists ? {
+        lastDay: dailyMetaSnap.data().lastDay || null,
+        lastSentOk: dailyMetaSnap.data().lastSentOk == null ? null : dailyMetaSnap.data().lastSentOk,
+        lastSentAt: tsToIso(dailyMetaSnap.data().lastSentAt),
+      } : null,
     });
   } catch (e) {
     logger.error('[stats] failed', { msg: e.message });
     res.status(500).send({ ok: false, error: 'stats failed' });
   }
+});
+
+// =====================================================================
+// 每日戰報（2026-11-23）：每天 21:00（台北）把當天的使用情況彙整成「一則」Google Chat 卡片，
+// 取代原本每位新老師一則的「首次完成引導」通知（做法比照班級小管家 dailyUsageDigest）。
+// 當天完全沒人使用就不發，不製造噪音。
+// =====================================================================
+async function buildDailyDigest(db, day) {
+  const yesterday = addDays(day, -1);
+  const [dailyMap, fb, devSnap] = await Promise.all([
+    loadDaily(db, yesterday, day),
+    feedbackBetween(db, day, day),
+    db.collection('coolclass_devices').where('firstDay', '==', day).limit(200).get(),
+  ]);
+  const today = dailyMap[day] || {};
+  const prev = dailyMap[yesterday] || {};
+  const sum = summarize(dailyMap, day, day);
+  const classes = new Set();
+  devSnap.forEach((doc) => {
+    const c = String(doc.data().lastClass || '').trim();
+    if (c) classes.add(c);
+  });
+  return {
+    day,
+    devices: Object.keys(today.devices || {}).filter(k => !k.startsWith('selftest-')).length,
+    prevDevices: Object.keys(prev.devices || {}).filter(k => !k.startsWith('selftest-')).length,
+    newDevices: Number(today.newDevices) || 0,
+    firstInstall: Number((today.events || {}).first_install) || 0,
+    backups: Number((today.events || {}).backup_exported) || 0,
+    restores: Number((today.events || {}).backup_restored) || 0,
+    errors: Number((today.events || {}).js_error) || 0,
+    feedbackCount: fb.length,
+    topTools: sum.topTools,
+    newClasses: [...classes].slice(0, 8),
+  };
+}
+
+async function sendDailyDigest(webhookUrl, d, opts) {
+  const url = (webhookUrl || '').trim();
+  if (!url || url === 'DISABLED') return false;
+  const dateLabel = new Date(d.day + 'T12:00:00+08:00').toLocaleDateString('zh-TW', {
+    timeZone: 'Asia/Taipei', month: '2-digit', day: '2-digit', weekday: 'short',
+  });
+  const label = opts && opts.preview ? '今日戰報預覽（手動發送）' : '今日戰報';
+  const top = d.topTools.slice(0, 5).map(([k, v], i) => `${i + 1}. ${toolName(k)}　${v} 台`).join('\n') || '今天還沒有工具使用紀錄';
+  const widgets = [
+    { decoratedText: { topLabel: '今天活躍裝置', text: `👩‍🏫 ${d.devices} 台 ${trendText(d.devices, d.prevDevices).replace('上週', '昨天')}`, wrapText: true } },
+    { decoratedText: { topLabel: '新加入', text: `🆕 ${d.newDevices} 台新裝置・${d.firstInstall} 台完成首次引導`, wrapText: true } },
+  ];
+  if (d.newClasses.length) {
+    widgets.push({ decoratedText: { topLabel: '新加入的班級', text: `🏫 ${d.newClasses.join('、')}`, wrapText: true } });
+  }
+  widgets.push(
+    { decoratedText: { topLabel: '今天最常用的工具', text: top, wrapText: true } },
+    { decoratedText: { topLabel: '備份', text: `💾 ${d.backups} 次備份・${d.restores} 次還原`, wrapText: true } },
+    { decoratedText: { topLabel: '回饋與錯誤', text: `💬 回饋 ${d.feedbackCount} 則・${d.errors ? `⚠️ 前端錯誤 ${d.errors} 次` : '✅ 沒有錯誤'}`, wrapText: true } },
+    { buttonList: { buttons: [{ text: '打開使用儀表板', onClick: { openLink: { url: DASHBOARD_URL } } }] } },
+  );
+  const payload = {
+    text: `📈 【${APP_NAME}】${label} ${dateLabel}：${d.devices} 台裝置使用、新加入 ${d.newDevices} 台`,
+    cardsV2: [{
+      cardId: `coolclass-daily-${d.day}`,
+      card: {
+        header: { title: `📈 ${label}｜${APP_NAME}`, subtitle: dateLabel },
+        sections: [{ widgets }],
+      },
+    }],
+  };
+  try {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify(payload) });
+    if (!r.ok) {
+      logger.warn('[daily] chat failed', { status: r.status, body: (await r.text().catch(() => '')).substring(0, 200) });
+      return false;
+    }
+    return true;
+  } catch (e) {
+    logger.warn('[daily] chat exception', { msg: e.message });
+    return false;
+  }
+}
+
+exports.coolclassDailyDigest = onSchedule({
+  schedule: 'every day 21:00',
+  timeZone: 'Asia/Taipei',
+  region: 'asia-east1',
+  secrets: [GOOGLE_CHAT_WEBHOOK],
+  memory: '256MiB',
+  timeoutSeconds: 120,
+}, async () => {
+  const { db, FieldValue } = fsMod();
+  const day = taipeiDay(new Date());
+  const d = await buildDailyDigest(db, day);
+  if (!d.devices && !d.feedbackCount && !d.errors) {
+    logger.info('[daily] 今天沒有人使用，靜默略過', { day });
+    return;
+  }
+  const ok = await sendDailyDigest(GOOGLE_CHAT_WEBHOOK.value(), d);
+  await db.collection('coolclass_meta').doc('daily_digest').set({
+    lastDay: day, lastSentOk: ok, lastSentAt: FieldValue.serverTimestamp(), devices: d.devices,
+  }, { merge: true });
+  logger.info('[daily] 戰報', { day, devices: d.devices, ok });
 });
 
 // ===== 健康檢查（給前端確認 endpoint 在）=====

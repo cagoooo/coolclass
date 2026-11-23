@@ -91,6 +91,8 @@
   .err-msg { font-family: ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; }
 
   .note { font-size: 14px; color: var(--muted); line-height: 1.7; margin: 10px 0 0; }
+  .backup-bar { height: 22px; border: 2.5px solid var(--ink); border-radius: 999px; background: #ffe3e3; overflow: hidden; }
+  .backup-bar .bb-ok { display: block; height: 100%; background: var(--g); }
   .hidden { display: none !important; }
 
   /* ===== 頁尾 ===== */
@@ -184,7 +186,8 @@
   <div id="dash" class="hidden">
     <div class="toolbar">
       <button class="btn y" id="btnRefresh" type="button">🔄 重新整理</button>
-      <button class="btn b" id="btnReport" type="button">📮 發週報預覽到 Chat</button>
+      <button class="btn g" id="btnDaily" type="button">📈 發今日戰報預覽</button>
+      <button class="btn b" id="btnReport" type="button">📮 發週報預覽</button>
       <button class="btn" id="btnLogout" type="button">🚪 忘記金鑰</button>
       <span class="updated" id="updated"></span>
     </div>
@@ -217,11 +220,18 @@
       <div class="fb-list" id="fbList"></div>
     </section>
 
+    <section class="block tinted-paper">
+      <div class="block-head"><div class="step">💾</div><h2>資料備份情況</h2><span class="tail">老師的班級資料只存在各自電腦</span></div>
+      <div class="backup-bar" id="backupBar"></div>
+      <p style="margin:12px 0 0;line-height:1.7" id="backupText"></p>
+      <p class="note">只算 2026-11-23 晚上 8 點以後的備份；在那之前備份過的老師，這裡會先被算成「還沒備份」。</p>
+    </section>
+
     <section class="block">
       <div class="block-head"><div class="step">4</div><h2>最近活躍的裝置</h2><span class="tail">最多 60 台，班級名稱是老師在班級名單填的</span></div>
       <div class="tbl-wrap">
         <table class="tbl">
-          <thead><tr><th>班級</th><th>第一次出現</th><th>最後使用</th><th>用過幾種工具</th><th>最常用</th><th>裝置</th></tr></thead>
+          <thead><tr><th>班級</th><th>第一次出現</th><th>最後使用</th><th>用過幾種工具</th><th>最常用</th><th>備份</th><th>裝置</th></tr></thead>
           <tbody id="devBody"></tbody>
         </table>
       </div>
@@ -238,7 +248,7 @@
     </section>
 
     <section class="block tinted-paper">
-      <div class="block-head"><div class="step">📮</div><h2>每週週報</h2></div>
+      <div class="block-head"><div class="step">📮</div><h2>Google Chat 戰報與週報</h2></div>
       <p style="margin:0;line-height:1.7" id="weeklyInfo"></p>
     </section>
   </div>
@@ -251,7 +261,7 @@
     <ul class="footer-points">
       <li><span class="fp-icon">🔒</span><div><strong>只有管理者看得到</strong><small>要輸入管理金鑰，後端驗證後才給資料</small></div></li>
       <li><span class="fp-icon">🙈</span><div><strong>不收學生資料</strong><small>只統計匿名裝置與工具名稱，學生名單留在老師電腦</small></div></li>
-      <li><span class="fp-icon">📮</span><div><strong>每週一自動週報</strong><small>早上 8 點後發到 Google Chat</small></div></li>
+      <li><span class="fp-icon">📮</span><div><strong>每天戰報＋每週週報</strong><small>每晚 9 點一則、每週一早上一則，發到 Google Chat</small></div></li>
     </ul>
     <nav class="footer-links" aria-label="快速連結">
       <a class="footer-link" href="index.html">🏠 回主頁</a>
@@ -393,8 +403,18 @@
         <td data-label="最後使用">${esc(fmtTime(d.lastSeen))}</td>
         <td data-label="用過幾種工具">${esc(d.toolCount)}</td>
         <td data-label="最常用">${d.topTools.map(t => `<span class="chip">${esc(t.name)} ${esc(t.count)}</span>`).join('') || '—'}</td>
+        <td data-label="備份">${d.backups ? `✅ ${esc(d.backups)} 次` : '⚠️ 還沒有'}</td>
         <td data-label="裝置">${esc(shortUa(d.ua))}</td>
-      </tr>`).join('') : '<tr><td colspan="6" class="empty">還沒有裝置紀錄。</td></tr>';
+      </tr>`).join('') : '<tr><td colspan="7" class="empty">還沒有裝置紀錄。</td></tr>';
+
+    // 備份情況
+    const act = t.active30 || 0;
+    const bk = t.backedUp30 || 0;
+    const pct = act ? Math.round(bk / act * 100) : 0;
+    $('backupBar').innerHTML = `<span class="bb-ok" style="width:${pct}%"></span>`;
+    $('backupText').innerHTML = act
+      ? `近 30 天活躍的 <b>${act}</b> 台裝置中，<b>${bk}</b> 台備份過（${pct}%），<b style="color:var(--r)">${act - bk}</b> 台還沒有備份。<br>還沒備份的老師一旦換電腦或清除瀏覽器資料，班級資料就救不回來；首頁和每 14 天的提醒會請他們備份。`
+      : '還沒有活躍裝置的資料。';
 
     // 錯誤
     $('errBody').innerHTML = data.errors.length ? data.errors.map(e => `
@@ -405,13 +425,16 @@
         <td data-label="位置" class="err-msg">${esc(e.source || '—')}</td>
       </tr>`).join('') : '<tr><td colspan="4" class="empty">✅ 最近沒有前端錯誤。</td></tr>';
 
-    // 週報
+    // 今日戰報＋週報
+    const dd = data.daily;
+    const dailyLine = '📈 <b>今日戰報</b>：每天晚上 9 點發一則（當天沒人使用就不發）。' +
+      (dd && dd.lastSentAt ? `最近一次是 ${esc(fmtTime(dd.lastSentAt))}，${dd.lastSentOk ? '✅ 成功' : '⚠️ 失敗'}。` : '還沒發過。') + '<br>';
     const w = data.weekly;
-    $('weeklyInfo').innerHTML = !w
+    $('weeklyInfo').innerHTML = dailyLine + '📮 <b>每週週報</b>：' + (!w
       ? '週報旗標還沒建立。下一個老師打開教室小幫手時會自動建立，下週一早上 8 點後開始發。'
       : `上一次處理的是 <b>${esc(md(w.lastWeekStart))} 那一週</b>。` +
         (w.lastSentAt ? `最近一次週報在 ${esc(fmtTime(w.lastSentAt))} 發送，${w.lastSentOk ? '✅ 成功' : '⚠️ 失敗'}。` : '第一份週報會在下週一早上 8 點後發出。') +
-        '<br>想先看看長什麼樣子，可以按上方「發週報預覽到 Chat」（統計最近 7 天）。';
+        '<br>想先看看長什麼樣子，可以按上方「發今日戰報預覽」或「發週報預覽」（週報預覽統計最近 7 天）。');
   }
 
   function renderRank() {
@@ -449,14 +472,16 @@
   });
   $('btnRefresh').addEventListener('click', load);
   $('btnLogout').addEventListener('click', () => { setKey(''); data = null; showLogin('已忘記這台電腦上的金鑰'); });
-  $('btnReport').addEventListener('click', async () => {
-    const btn = $('btnReport'); btn.disabled = true;
+  async function sendPreview(btnId, action, okMsg) {
+    const btn = $(btnId); btn.disabled = true;
     try {
-      const r = await api({ action: 'sendReport' });
-      toast(r.body.sent ? '✅ 週報預覽已發到 Google Chat' : '⚠️ 週報沒有發出去，請稍後再試');
+      const r = await api({ action });
+      toast(r.body.sent ? okMsg : '⚠️ 沒有發出去，請稍後再試');
     } catch { toast('⚠️ 連線失敗，請稍後再試'); }
     btn.disabled = false;
-  });
+  }
+  $('btnReport').addEventListener('click', () => sendPreview('btnReport', 'sendReport', '✅ 週報預覽已發到 Google Chat'));
+  $('btnDaily').addEventListener('click', () => sendPreview('btnDaily', 'sendDaily', '✅ 今日戰報預覽已發到 Google Chat'));
 
   // 支援 dashboard.html#key=xxxx 一次帶入金鑰（讀完就從網址列拿掉）
   const m = location.hash.match(/key=([^&]+)/);

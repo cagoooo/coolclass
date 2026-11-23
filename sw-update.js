@@ -210,12 +210,30 @@
   window.addEventListener('pageshow', (e) => { if (e.persisted) checkVersion(); });
   window.addEventListener('online', checkVersion);
 
-  // ===== v3.6：30 天備份提醒 =====
-  // 若使用者有大量資料、且 30+ 天沒匯出備份，跳藍色 banner
+  // ===== v3.6：備份提醒（v4.6 由 30 天縮短為 14 天）=====
+  // 若使用者有資料、且 14+ 天沒匯出備份，跳藍色 banner
   const BACKUP_KEY = 'akai_last_backup_v1';
   const BACKUP_DISMISS_KEY = 'akai_backup_reminder_dismissed_v1';
-  const BACKUP_DAYS_THRESHOLD = 30;
-  const DISMISS_DAYS = 14;  // 暫時關閉 14 天後再提醒
+  const BACKUP_DAYS_THRESHOLD = 14;
+  const DISMISS_DAYS = 7;  // 暫時關閉 7 天後再提醒
+
+  // ===== v4.6：請瀏覽器保留這個網站的資料 =====
+  // 沒有「保留」時，瀏覽器在空間不足（或 Safari 很久沒打開）時可能自動清掉 localStorage。
+  // Chrome／Edge／Safari 會自己判斷、不跳視窗；Firefox 會跳詢問視窗，所以 Firefox 不自動問（備份頁有按鈕）。
+  setTimeout(function () {
+    try {
+      if (!navigator.storage || !navigator.storage.persist || !navigator.storage.persisted) return;
+      if (/Firefox\//.test(navigator.userAgent)) return;
+      if (!hasMeaningfulData()) return;
+      navigator.storage.persisted().then(function (ok) {
+        if (ok) return;
+        const asked = localStorage.getItem('akai_persist_asked_v1');
+        if (asked && Date.now() - new Date(asked).getTime() < 7 * 86400000) return;  // 一週最多問一次
+        localStorage.setItem('akai_persist_asked_v1', new Date().toISOString());
+        return navigator.storage.persist();
+      }).catch(function () {});
+    } catch (e) {}
+  }, 10000);
 
   function hasMeaningfulData() {
     // 檢查至少有 roster 或多月出勤紀錄才提醒

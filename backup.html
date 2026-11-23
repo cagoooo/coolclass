@@ -76,9 +76,9 @@
       <span class="eyebrow">BACKUP · 備份與還原</span>
       <h1>一鍵<em>備份</em>所有班級資料，<br>換電腦也不會丟。</h1>
       <p class="sub">
-        <span class="badge">含 11 個工具的設定 + 紀錄</span>
+        <span class="badge" id="toolCountBadge">所有工具的資料都會備份</span>
         <span class="badge">JSON 格式</span>
-        <span class="badge">純本機</span>
+        <span class="badge">含作品牆圖片</span>
       </p>
     </div>
     <div class="right-aux">
@@ -107,7 +107,7 @@
       <span class="tail">下載成 JSON 檔放雲端 / USB / 備份硬碟</span>
     </div>
     <p style="color:var(--muted);font-size:14px;margin:0 0 14px;">
-      建議每月匯出一次。檔名會自動帶上日期，方便管理多份備份。
+      建議<b>每週</b>匯出一次，存到 Google 雲端硬碟或 USB。檔名會自動帶上日期，方便管理多份備份。<br>換新電腦時，在新電腦打開這一頁按「選檔案還原」，所有工具的資料（含作品牆圖片）就會搬過去。
     </p>
     <div class="btn-bar">
       <button class="btn primary lg" onclick="exportAll()">📥 立即下載全部備份</button>
@@ -131,22 +131,22 @@
     </div>
   </section>
 
-  <!-- v3.9 B1：升級到 IndexedDB -->
+  <!-- v4.6：儲存空間與資料保護（原「升級到 IndexedDB」按鈕已移除：搬過去後各工具讀不到資料） -->
   <section class="block" id="upgrade" style="border-color:var(--g);background:linear-gradient(135deg,#e8f7ec 0%,#f5fbf6 100%);">
     <div class="block-head">
-      <div class="step" style="background:var(--g);">💪</div>
-      <h2>升級儲存到 IndexedDB</h2>
-      <span class="tail">解除 localStorage 5MB 上限</span>
+      <div class="step" style="background:var(--g);">🛡️</div>
+      <h2>儲存空間與資料保護</h2>
+      <span class="tail">資料存在這個瀏覽器裡</span>
     </div>
     <p style="color:var(--muted);font-size:14px;margin:0 0 12px;line-height:1.6;">
-      情緒打卡 / 出勤 / 行為觀察 / 親師溝通等資料用一年下來可能會塞滿 <b>localStorage 的 5MB</b>。<br>
-      升級後這些大資料會搬到 <b>IndexedDB（容量幾乎無上限）</b>，小設定仍留在 localStorage（讀取快）。
+      教室小幫手的資料只存在<b>這台電腦的這個瀏覽器</b>，不會上傳到網路。所以：換電腦、清除瀏覽器資料、用無痕視窗，資料都不會跟著走。<br>
+      最保險的做法是<b>定期下載備份檔</b>。下面也會顯示瀏覽器有沒有答應「不要自動清掉這個網站的資料」。
     </p>
     <div id="quotaInfo" style="background:#fff;padding:12px 14px;border-radius:10px;border:2px dashed var(--ink);font-size:13px;margin-bottom:14px;line-height:1.7;">
       📊 儲存空間檢測中…
     </div>
     <div class="btn-bar">
-      <button class="btn g lg" onclick="upgradeStorage()">💪 立刻升級到 IndexedDB</button>
+      <button class="btn g" onclick="askPersist()">🛡️ 請瀏覽器保留資料</button>
       <button class="btn y" onclick="refreshQuota()">🔄 重新檢測</button>
     </div>
   </section>
@@ -194,6 +194,10 @@
 <script src="empty-state.js" defer></script>
 <script src="line-notify.js" defer></script>
 <script>
+// v4.6（2026-11-23）：備份改成「所有工具」的資料都帶走。
+// 以前只備份固定 13 種資料，座位表、課表、行為觀察、親師溝通、班費、閱讀紀錄、作品牆圖片等 20 多種工具的資料
+// 都沒有進備份檔，老師換電腦還原後會發現不見。現在改成：本機所有 akai_ 開頭的資料都備份，
+// 只排除「這台裝置自己用」的設定（裝置代號、提醒關閉時間等），作品牆圖片另外從它自己的資料庫一起帶走。
 const KEYS_INFO = [
   { key: 'akai_roster_v1',       name: '👥 班級名單',          summary: r => `${r.className || '未命名'} · ${r.count || 0} 人 · ${Object.keys(r.names||{}).length} 個姓名` },
   { key: 'akai_emotion_v1',      name: '😊 情緒打卡',          summary: r => `${Object.keys(r.records||{}).length} 天紀錄` },
@@ -208,7 +212,46 @@ const KEYS_INFO = [
   { key: 'akai_onboarded_v1',    name: '📖 引導狀態',          summary: r => r === '1' ? '已完成首次引導' : '未完成' },
   { key: 'akai_points_v1',       name: '🏆 班級積點',          summary: r => `${Object.keys(r.points||{}).length} 位有紀錄` },
   { key: 'akai_bell_v1',         name: '🔔 上下課鈴聲',        summary: r => `${(r.slots||[]).length} 個時段 · ${r.enabled ? '已啟用' : '未啟用'}` },
+  { key: 'akai_behavior_v1',     name: '🎯 行為觀察' },
+  { key: 'akai_birthday_v1',     name: '🎂 生日榜' },
+  { key: 'akai_contact_v1',      name: '📞 親師溝通記錄' },
+  { key: 'akai_dictation_v1',    name: '🎤 錄音轉文字' },
+  { key: 'akai_eco_v1',          name: '🌱 環保打卡' },
+  { key: 'akai_evaluation_v1',   name: '✍️ 學期評語' },
+  { key: 'akai_fieldtrip_v1',    name: '🎒 戶外教學助手' },
+  { key: 'akai_finance_v1',      name: '💰 班費記帳' },
+  { key: 'akai_fitness_v1',      name: '🏃 體適能登錄' },
+  { key: 'akai_lesson_v1',       name: '📚 教案備忘' },
+  { key: 'akai_lottery_v1',      name: '🎲 萬用抽籤箱' },
+  { key: 'akai_lunch_v1',        name: '🍱 午餐點餐' },
+  { key: 'akai_metronome_v1',    name: '🎵 節拍器' },
+  { key: 'akai_reading_v1',      name: '📖 閱讀紀錄表' },
+  { key: 'akai_rules_v1',        name: '📜 班級公約' },
+  { key: 'akai_schedule_v1',     name: '📅 課表' },
+  { key: 'akai_seating_v1',      name: '🪑 座位表' },
+  { key: 'akai_student_notes_v1', name: '🎓 學生個人報告備註' },
+  { key: 'akai_substitute_v1',   name: '📋 代課交接單' },
+  { key: 'akai_worksheet_v1',    name: '📝 學習單' },
+  { key: 'akai_favs_v1',         name: '⭐ 我的常用工具' },
+  { key: 'akai_gallery_v1',      name: '🖼️ 學生作品牆（設定）' },
 ];
+const GALLERY_BACKUP_KEY = '__gallery_works';   // 作品牆圖片（存在獨立的 IndexedDB）
+const GALLERY_NAME = '🖼️ 學生作品牆（作品圖片）';
+
+// 只屬於「這台裝置」的設定：不備份、也不從備份還原（不然兩台電腦會被當成同一台）
+const DEVICE_ONLY_KEYS = new Set([
+  'akai_device_id_v1', 'akai_notify_queue_v1', 'akai_tool_open_v1', 'akai_dash_key_v1', 'akai_line_off',
+  'akai_first_install_notified_v1', 'akai_idb_migrated_v1', 'akai_install_dismissed',
+  'akai_backup_reminder_dismissed_v1', 'akai_last_backup_v1', 'akai_first_use_v1', 'akai_persist_asked_v1',
+]);
+function isDataKey(k) {
+  return typeof k === 'string' && k.startsWith('akai_') && !DEVICE_ONLY_KEYS.has(k) && !k.startsWith('akai_empty_state_shown_');
+}
+function keyName(k) {
+  if (k === GALLERY_BACKUP_KEY) return GALLERY_NAME;
+  const info = KEYS_INFO.find(i => i.key === k);
+  return info ? info.name : '📦 ' + k.replace(/^akai_/, '').replace(/_v\d+$/, '');
+}
 
 function loadKey(key) {
   try {
@@ -219,74 +262,141 @@ function loadKey(key) {
   } catch { return null; }
 }
 
-function renderSummary() {
-  const table = document.getElementById('summaryTable');
-  table.innerHTML = '';
-  let totalBytes = 0;
-  KEYS_INFO.forEach(info => {
-    const raw = localStorage.getItem(info.key);
-    const data = loadKey(info.key);
-    if (!raw) {
-      // 還沒有資料
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td style="opacity:.4;">${info.name}</td><td style="opacity:.4;">—</td>`;
-      table.appendChild(tr);
-      return;
+function localDataKeys() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (isDataKey(k)) out.push(k);
     }
-    totalBytes += raw.length;
-    let summary = '';
-    try { summary = info.summary(data); } catch { summary = '✓'; }
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${info.name}<br><span style="color:var(--mute-2);font-size:11px;">${summary}</span></td><td>${(raw.length / 1024).toFixed(1)} KB</td>`;
-    table.appendChild(tr);
-  });
+  } catch {}
+  return out;
+}
 
+// 共用資料庫（akai_classroom）裡的 key：曾經按過「升級到 IndexedDB」的電腦，資料會在這裡
+async function idbDataKeys() {
+  if (!window.AkaiStore) return [];
+  try {
+    const all = await AkaiStore.list();
+    const ls = new Set(localDataKeys());
+    return all.filter(k => isDataKey(k) && !ls.has(k));
+  } catch { return []; }
+}
+
+// ===== 作品牆圖片（獨立 IndexedDB：akai_gallery_v1 / works）=====
+function openGalleryDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) return reject(new Error('no indexedDB'));
+    const req = indexedDB.open('akai_gallery_v1', 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('works')) db.createObjectStore('works', { keyPath: 'id' });
+    };
+    req.onsuccess = (e) => resolve(e.target.result);
+    req.onerror = (e) => reject(e.target.error);
+  });
+}
+async function galleryAll() {
+  try {
+    const db = await openGalleryDB();
+    return await new Promise((res, rej) => {
+      const req = db.transaction(['works'], 'readonly').objectStore('works').getAll();
+      req.onsuccess = () => res(req.result || []);
+      req.onerror = () => rej(req.error);
+    });
+  } catch { return []; }
+}
+async function galleryPutAll(list) {
+  const db = await openGalleryDB();
+  return await new Promise((res, rej) => {
+    const tx = db.transaction(['works'], 'readwrite');
+    const st = tx.objectStore('works');
+    let n = 0;
+    list.forEach(rec => { if (rec && rec.id != null) { st.put(rec); n++; } });
+    tx.oncomplete = () => res(n);
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+async function renderSummary() {
+  const table = document.getElementById('summaryTable');
+  let totalBytes = 0;
+  const rows = [];
+  const present = new Set();
+  for (const k of localDataKeys()) {
+    const raw = localStorage.getItem(k) || '';
+    totalBytes += raw.length;
+    present.add(k);
+    const info = KEYS_INFO.find(i => i.key === k);
+    let summary = '';
+    if (info && info.summary) { try { summary = info.summary(loadKey(k)); } catch { summary = '✓'; } }
+    rows.push({ name: keyName(k), summary, size: raw.length });
+  }
+  for (const k of await idbDataKeys()) {
+    present.add(k);
+    let size = 0;
+    try { size = JSON.stringify(await AkaiStore.get(k) || '').length; } catch {}
+    totalBytes += size;
+    rows.push({ name: keyName(k), summary: '存在瀏覽器資料庫', size });
+  }
+  const works = await galleryAll();
+  if (works.length) {
+    const size = JSON.stringify(works).length;
+    totalBytes += size;
+    rows.push({ name: GALLERY_NAME, summary: `${works.length} 件作品`, size });
+  }
+  rows.sort((a, b) => b.size - a.size);
+  const empty = KEYS_INFO.filter(i => !present.has(i.key) && i.key !== 'akai_onboarded_v1');
+  table.innerHTML = rows.map(r =>
+    `<tr><td>${escapeHtml(r.name)}${r.summary ? `<br><span style="color:var(--mute-2);font-size:11px;">${escapeHtml(r.summary)}</span>` : ''}</td><td>${(r.size / 1024).toFixed(1)} KB</td></tr>`).join('') +
+    (empty.length ? `<tr><td colspan="2" style="opacity:.5;font-size:12px;">還沒有資料：${empty.map(i => escapeHtml(i.name)).join('、')}</td></tr>` : '');
   document.getElementById('totalKB').textContent = (totalBytes / 1024).toFixed(1);
+  const badge = document.getElementById('toolCountBadge');
+  if (badge) badge.textContent = `目前 ${rows.length} 項資料都會備份`;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 // v3.9 B2：schema 版本（每次有資料結構改動就 bump）
-const SCHEMA_VERSION = '3.9';
+// v4.6：備份範圍改成所有工具 + 作品牆圖片
+const SCHEMA_VERSION = '4.6';
 
 function buildBackup() {
   const out = {
     _meta: {
       app: '教室小幫手 / classroom-kit',
-      version: 'backup-v1',
-      schemaVersion: SCHEMA_VERSION,  // v3.9 B2
-      appVersion: 'v3.9',
+      version: 'backup-v2',
+      schemaVersion: SCHEMA_VERSION,
+      appVersion: 'v4.6',
       exportedAt: new Date().toISOString(),
       keysIncluded: [],
     },
   };
-  KEYS_INFO.forEach(info => {
-    const raw = localStorage.getItem(info.key);
+  localDataKeys().forEach(k => {
+    const raw = localStorage.getItem(k);
     if (raw === null) return;
-    try {
-      out[info.key] = JSON.parse(raw);
-    } catch {
-      out[info.key] = raw; // 字串型（如 onboarded）
-    }
-    out._meta.keysIncluded.push(info.key);
+    try { out[k] = JSON.parse(raw); } catch { out[k] = raw; }
+    out._meta.keysIncluded.push(k);
   });
-  // v3.9：包含 BIG_KEYS 從 IndexedDB（如果有用 AkaiStore）
-  // 注意：buildBackup 是同步，IndexedDB 是 async — 由 buildBackupAsync 處理
   return out;
 }
 
-// v3.9：async 版本（含 IndexedDB 資料）
+// 含瀏覽器資料庫（IndexedDB）裡的資料與作品牆圖片
 async function buildBackupAsync() {
   const out = buildBackup();
-  if (window.AkaiStore && AkaiStore.isMigrated()) {
-    for (const key of AkaiStore.BIG_KEYS) {
-      if (out[key] !== undefined) continue;  // localStorage 還有就不覆蓋
-      try {
-        const v = await AkaiStore.get(key);
-        if (v !== null && v !== undefined) {
-          out[key] = v;
-          out._meta.keysIncluded.push(key);
-        }
-      } catch {}
-    }
+  for (const k of await idbDataKeys()) {
+    if (out[k] !== undefined) continue;  // localStorage 還有就不覆蓋
+    try {
+      const v = await AkaiStore.get(k);
+      if (v !== null && v !== undefined) { out[k] = v; out._meta.keysIncluded.push(k); }
+    } catch {}
+  }
+  const works = await galleryAll();
+  if (works.length) {
+    out[GALLERY_BACKUP_KEY] = works;
+    out._meta.keysIncluded.push(GALLERY_BACKUP_KEY);
   }
   return out;
 }
@@ -367,6 +477,7 @@ async function doImport(text, source) {
     alert('JSON 格式不對，無法還原。');
     return;
   }
+  if (!obj || typeof obj !== 'object') { alert('檔案內容不對，無法還原。'); return; }
   if (!obj._meta || !obj._meta.keysIncluded) {
     if (!confirm('這個 JSON 看起來不是「教室小幫手」的備份。仍要繼續嗎？')) return;
   }
@@ -375,52 +486,60 @@ async function doImport(text, source) {
   const exportedAt = obj._meta?.exportedAt;
   const appVer = obj._meta?.appVersion;
   let versionWarn = '';
-  if (backupSchema && backupSchema !== SCHEMA_VERSION) {
-    versionWarn = `\n⚠️ 版本提示：這份備份來自 schema v${backupSchema}（當前 v${SCHEMA_VERSION}）。\n大部分欄位可相容，少數新功能（如「我的常用」⭐）可能不在備份內。`;
+  if (backupSchema && Number(backupSchema) < 4.6) {
+    versionWarn = `\n⚠️ 提醒：這份備份是舊版（v${backupSchema}）做的，舊版只會備份 13 種工具，\n座位表、課表、行為觀察、親師溝通、班費、作品牆等資料可能不在裡面。`;
   } else if (!backupSchema) {
-    versionWarn = `\n⚠️ 版本提示：這份備份來自 v3.8 以前（沒寫 schema 版本），相容性自行確認。`;
+    versionWarn = `\n⚠️ 提醒：這份備份來自 v3.8 以前（沒寫版本），相容性請自行確認。`;
   }
   const ageDays = exportedAt ? Math.floor((Date.now() - new Date(exportedAt).getTime()) / 86400000) : null;
   const ageNote = ageDays !== null ? `\n📅 備份距今 ${ageDays} 天前${appVer ? ' · 來源 ' + appVer : ''}` : '';
 
-  const allKeys = [...KEYS_INFO.map(i => i.key), ...(window.AkaiStore?.BIG_KEYS || [])];
-  const willRestore = [...new Set(allKeys)].filter(k => obj[k] !== undefined);
+  // 還原：備份檔裡所有 akai_ 資料（排除裝置自己的設定）＋作品牆圖片
+  const willRestore = Object.keys(obj).filter(k => isDataKey(k) || (k === GALLERY_BACKUP_KEY && Array.isArray(obj[k])));
   if (willRestore.length === 0) {
     alert('檔案內沒有任何可還原的資料。');
     return;
   }
 
-  // 預覽：每個 key 預估筆數
   const preview = willRestore.map(k => {
     const v = obj[k];
-    const info = KEYS_INFO.find(i => i.key === k);
     let sizeNote = '';
     try {
       if (Array.isArray(v)) sizeNote = ` (${v.length} 筆)`;
       else if (v && typeof v === 'object') sizeNote = ` (${Object.keys(v).length} 個欄位)`;
     } catch {}
-    return '· ' + (info?.name || k) + sizeNote;
+    return '· ' + keyName(k) + sizeNote;
   }).join('\n');
 
-  if (!confirm(`要從「${source}」還原 ${willRestore.length} 個項目嗎？\n\n⚠️ 這會覆蓋目前的本機資料。建議先按「立即下載備份」存一份保險。${ageNote}${versionWarn}\n\n要還原的項目：\n${preview}`)) return;
+  if (!confirm(`要從「${source}」還原 ${willRestore.length} 個項目嗎？\n\n⚠️ 這會覆蓋目前本機的同名資料（作品牆的作品會合併）。建議先按「立即下載備份」存一份保險。${ageNote}${versionWarn}\n\n要還原的項目：\n${preview}`)) return;
 
-  let lsOk = 0, idbOk = 0;
+  let lsOk = 0, idbOk = 0, galleryOk = 0;
+  const failed = [];
   for (const k of willRestore) {
     const v = obj[k];
+    if (k === GALLERY_BACKUP_KEY) {
+      try { galleryOk = await galleryPutAll(v); } catch (e) { console.error(e); failed.push(keyName(k)); }
+      continue;
+    }
     if (window.AkaiStore && AkaiStore.BIG_KEYS.includes(k) && AkaiStore.isMigrated()) {
-      try { await AkaiStore.set(k, v); idbOk++; } catch (e) { console.error(e); }
-    } else {
-      try {
-        localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
-        lsOk++;
-      } catch (err) {
-        if (err.name === 'QuotaExceededError' && window.AkaiStore) {
-          try { await AkaiStore.set(k, v); idbOk++; } catch {}
-        }
-      }
+      try { await AkaiStore.set(k, v); idbOk++; } catch (e) { console.error(e); failed.push(keyName(k)); }
+      continue;
+    }
+    try {
+      localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
+      lsOk++;
+    } catch (err) {
+      if (err && err.name === 'QuotaExceededError' && window.AkaiStore) {
+        try { await AkaiStore.set(k, v); idbOk++; } catch { failed.push(keyName(k)); }
+      } else failed.push(keyName(k));
     }
   }
-  flash(`✓ 已還原 ${lsOk + idbOk} 個項目（${lsOk} 個 localStorage + ${idbOk} 個 IndexedDB）`);
+  const total = lsOk + idbOk + (galleryOk ? 1 : 0);
+  flash(`✓ 已還原 ${total} 個項目${galleryOk ? `（含 ${galleryOk} 件作品）` : ''}`);
+  if (failed.length) alert('以下項目沒有還原成功（可能是瀏覽器空間不足）：\n' + failed.join('\n'));
+  if (window.AkaiNotifyLine) {
+    try { window.AkaiNotifyLine('backup_restored', { size: `${(text.length / 1024).toFixed(1)} KB`, tools: total + ' 項', fromSchema: backupSchema || '' }); } catch {}
+  }
   setTimeout(renderSummary, 200);
 }
 
@@ -448,38 +567,40 @@ function flash(text) {
 async function refreshQuota() {
   const box = document.getElementById('quotaInfo');
   if (!window.AkaiStore) {
-    box.innerHTML = '⚠️ AkaiStore 未載入';
+    box.innerHTML = '⚠️ 儲存工具還沒載入，請按「重新檢測」';
     return;
   }
   const u = await AkaiStore.getUsage();
   const lsKB = (u.localStorageBytes / 1024).toFixed(1);
   const lsPct = u.localStoragePercent.toFixed(1);
   const idbMB = u.quota > 0 ? (u.used / 1024 / 1024).toFixed(2) : '—';
-  const idbQuotaMB = u.quota > 0 ? (u.quota / 1024 / 1024).toFixed(0) : '—';
-  const statusEmoji = u.migrated ? '✅' : (u.localStoragePercent >= 80 ? '🔴' : (u.localStoragePercent >= 50 ? '🟡' : '🟢'));
+  const statusEmoji = u.localStoragePercent >= 80 ? '🔴' : (u.localStoragePercent >= 50 ? '🟡' : '🟢');
+  let persist = '❔ 這個瀏覽器不支援查詢';
+  try {
+    if (navigator.storage && navigator.storage.persisted) {
+      persist = (await navigator.storage.persisted())
+        ? '✅ 瀏覽器已答應保留，不會因為空間不足自動清掉'
+        : '⚠️ 還沒答應（空間不足或很久沒打開時，瀏覽器可能自動清掉）→ 請按下方「請瀏覽器保留資料」，並定期下載備份';
+    }
+  } catch {}
   box.innerHTML = `
-    <div><b>📦 localStorage：</b> ${lsKB} KB / 約 5,120 KB（${lsPct}%）${statusEmoji}</div>
-    <div><b>🗄 IndexedDB：</b> ${idbMB} MB / ${idbQuotaMB} MB（瀏覽器配額）</div>
-    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--ink);">
-      <b>狀態：</b> ${u.migrated ? '✅ 已升級到 IndexedDB（大資料安全存放）' : '⚠️ 尚未升級，大資料仍在 localStorage'}
-    </div>
+    <div><b>📦 一般儲存（localStorage）：</b> ${lsKB} KB / 約 5,120 KB（${lsPct}%）${statusEmoji}</div>
+    <div><b>🗄 瀏覽器資料庫（作品牆圖片等）：</b> ${idbMB} MB</div>
+    <div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--ink);"><b>資料保留：</b> ${persist}</div>
+    ${u.localStoragePercent >= 80 ? '<div style="color:var(--r);font-weight:700;margin-top:6px;">🔴 一般儲存快滿了！請先下載備份，再把用不到的舊紀錄刪掉。</div>' : ''}
   `;
 }
-async function upgradeStorage() {
-  if (!window.AkaiStore) { alert('AkaiStore 未載入'); return; }
-  if (AkaiStore.isMigrated()) {
-    alert('已經升級過了，無須重複操作。');
+
+async function askPersist() {
+  if (!navigator.storage || !navigator.storage.persist) {
+    alert('這個瀏覽器不支援這個功能，請記得定期下載備份。');
     return;
   }
-  if (!confirm('要把所有大資料（情緒/出勤/行為觀察/親師溝通等）從 localStorage 搬到 IndexedDB 嗎？\n\n✓ 這是安全的操作\n✓ 資料完整保留，只是換個倉庫\n✓ 升級後 5MB 限制就不再是問題\n\n建議先「立即下載備份」存一份保險。')) return;
-  flash('🔄 正在遷移…');
-  try {
-    const report = await AkaiStore.migrateAll();
-    flash(`✅ 升級完成！遷移 ${report.moved.length} 筆、跳過 ${report.skipped.length} 筆${report.failed.length ? '、失敗 ' + report.failed.length : ''}`);
-    setTimeout(() => { refreshQuota(); renderSummary(); }, 300);
-  } catch (e) {
-    alert('遷移失敗：' + e.message);
-  }
+  let ok = false;
+  try { ok = await navigator.storage.persist(); } catch {}
+  try { localStorage.setItem('akai_persist_asked_v1', new Date().toISOString()); } catch {}
+  flash(ok ? '✅ 瀏覽器已答應保留資料' : '⚠️ 瀏覽器這次沒答應（常用一陣子或把網站加到主畫面後比較容易成功），請記得定期備份');
+  refreshQuota();
 }
 
 // ===== v3.9 B4：資料健康檢查 =====
@@ -570,9 +691,10 @@ async function runHealthCheck() {
   box.innerHTML = (issues.length === 0 ? '<div style="color:var(--g);font-weight:700;font-size:15px;margin-bottom:10px;">🎉 全部健康，沒有發現問題！</div>' : issuesHtml) + winsHtml;
 }
 
-window.addEventListener('focus', renderSummary);
-renderSummary();
-refreshQuota();
+window.addEventListener('focus', () => { renderSummary(); });
+// 等延後載入的 akai-store.js 準備好（DOMContentLoaded 會在 defer 腳本跑完後才觸發），才看得到瀏覽器資料庫裡的資料
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { renderSummary(); refreshQuota(); });
+else { renderSummary(); refreshQuota(); }
 
 // 如果 URL 有 #upgrade，自動滾過去
 if (location.hash === '#upgrade') {

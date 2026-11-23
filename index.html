@@ -236,6 +236,35 @@
   }
 
   /* ====================================================== */
+  /* v4.6 資料安全提示                                      */
+  /* ====================================================== */
+  .data-safe {
+    display: flex; align-items: center; gap: 14px;
+    border: 3px solid var(--ink); border-radius: 18px;
+    padding: 12px 18px; margin: 0 0 22px;
+    box-shadow: 4px 4px 0 var(--ink);
+    color: var(--ink); text-decoration: none; font-size: 15px;
+    background: #e5f7e8;
+    transition: transform .15s;
+  }
+  .data-safe:hover { transform: translate(-1px, -1px); }
+  .data-safe.hidden { display: none; }
+  .data-safe.warn { background: #fff6cf; }
+  .data-safe.danger { background: #ffe3e3; }
+  .data-safe.info { background: #e5efff; }
+  .data-safe .ds-icn { font-size: 26px; flex-shrink: 0; }
+  .data-safe .ds-msg { flex: 1; line-height: 1.5; }
+  .data-safe .ds-msg b { display: block; }
+  .data-safe .ds-go {
+    flex-shrink: 0; font-weight: 700; padding: 7px 14px; border-radius: 999px;
+    background: var(--ink); color: var(--paper); font-size: 14px; white-space: nowrap;
+  }
+  @media (max-width: 600px) {
+    .data-safe { flex-wrap: wrap; padding: 12px 14px; }
+    .data-safe .ds-go { width: 100%; text-align: center; }
+  }
+
+  /* ====================================================== */
   /* 今日 HERO 區塊                                        */
   /* ====================================================== */
   .today {
@@ -937,6 +966,13 @@
     </a>
   </div>
 
+  <!-- ===== v4.6 資料安全提示（資料只存在這台電腦，提醒定期備份 / 換電腦時還原） ===== -->
+  <a class="data-safe hidden" id="dataSafe" href="backup.html">
+    <span class="ds-icn" id="dsIcn">💾</span>
+    <span class="ds-msg"><b id="dsTitle">資料安全</b><span id="dsText"></span></span>
+    <span class="ds-go" id="dsGo">去備份 →</span>
+  </a>
+
   <!-- ===== ⭐ 我的常用工具 ===== -->
   <section id="favs-section" class="empty">
     <div class="favs-head">
@@ -1417,6 +1453,41 @@ if (!window.AkaiRoster) {
    首頁腳本：今日儀表板、PWA 安裝、班級名單顯示
    localStorage 鍵名沿用 v2：akai_*_v1
    =========================================================== */
+
+// ---- v4.6 資料安全提示 ----
+(function renderDataSafe() {
+  const box = document.getElementById('dataSafe');
+  if (!box) return;
+  const DEVICE_ONLY = ['akai_device_id_v1', 'akai_notify_queue_v1', 'akai_tool_open_v1', 'akai_dash_key_v1', 'akai_line_off',
+    'akai_first_install_notified_v1', 'akai_idb_migrated_v1', 'akai_install_dismissed', 'akai_backup_reminder_dismissed_v1',
+    'akai_last_backup_v1', 'akai_first_use_v1', 'akai_persist_asked_v1', 'akai_onboarded_v1', 'akai_tweaks_v1', 'akai_favs_v1'];
+  let dataKeys = 0;
+  let last = null;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('akai_') && DEVICE_ONLY.indexOf(k) === -1 && k.indexOf('akai_empty_state_shown_') !== 0) dataKeys++;
+    }
+    last = localStorage.getItem('akai_last_backup_v1');
+  } catch { return; }
+  const set = (cls, icn, title, text, go) => {
+    box.className = 'data-safe ' + cls;
+    document.getElementById('dsIcn').textContent = icn;
+    document.getElementById('dsTitle').textContent = title;
+    document.getElementById('dsText').textContent = text;
+    document.getElementById('dsGo').textContent = go;
+  };
+  if (!dataKeys) {
+    set('info', '🔁', '換了新電腦？', '以前在別台電腦用過教室小幫手，可以用備份檔把班級資料搬過來。', '從備份還原 →');
+    return;
+  }
+  const days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
+  const where = `你有 ${dataKeys} 項班級資料，只存在這台電腦的瀏覽器裡。`;
+  if (days === null) set('danger', '⚠️', '還沒有備份過！', where + '換電腦或清除瀏覽器資料就會不見，建議現在備份一次。', '立即備份 →');
+  else if (days >= 14) set('danger', '⚠️', `上次備份是 ${days} 天前`, where + '建議每週備份一次。', '立即備份 →');
+  else if (days >= 7) set('warn', '💾', `上次備份是 ${days} 天前`, where + '差不多該備份了。', '去備份 →');
+  else set('', '✅', days === 0 ? '今天已備份' : `上次備份是 ${days} 天前`, '資料有好好備份，很棒！記得把備份檔存到雲端硬碟或 USB。', '備份頁 →');
+})();
 
 // ---- 安裝引導 ----
 let deferredPrompt = null;

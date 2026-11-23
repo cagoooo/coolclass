@@ -193,7 +193,9 @@
      * 釋放 localStorage 空間（保留小資料如 roster / tweaks）
      */
     async migrateAll() {
-      const report = { moved: [], skipped: [], failed: [] };
+      // v4.6 停用：各工具頁直接讀 localStorage，搬到 IndexedDB 後會讀不到資料。保留函式名稱只為相容。
+      const report = { moved: [], skipped: Array.from(BIG_KEYS), failed: [], disabled: true };
+      if (report.disabled) return report;
       for (const key of BIG_KEYS) {
         try {
           const raw = localStorage.getItem(key);
@@ -266,6 +268,46 @@
 
   window.AkaiStore = AkaiStore;
 
+  // ===== v4.6：把舊版「升級到 IndexedDB」搬走的資料搬回來 =====
+  // 舊版備份頁的升級按鈕會把行為觀察、親師溝通、班費、出勤等資料從 localStorage 搬進瀏覽器資料庫並刪掉原本那份，
+  // 但各工具頁都還是直接讀 localStorage，結果老師打開工具會看到「資料不見了」（其實還在資料庫裡）。
+  // 這裡在任何頁面載入時檢查：搬過的資料如果 localStorage 沒有，就複製回來；成功後刪掉資料庫那份、重新整理一次。
+  (async function restoreMigratedData() {
+    if (!isMigrated()) return;
+    let restored = 0;
+    let stillInIdb = 0;
+    for (const key of BIG_KEYS) {
+      try {
+        if (localStorage.getItem(key) !== null) continue;
+        const v = await idbGet(key);
+        if (v === undefined || v === null) continue;
+        const str = typeof v === 'string' ? v : JSON.stringify(v);
+        try {
+          localStorage.setItem(key, str);
+        } catch (e) {
+          stillInIdb++;  // localStorage 真的滿了：留在資料庫，備份頁仍會一起備份
+          continue;
+        }
+        if (localStorage.getItem(key) === str) {
+          restored++;
+          try { await idbRemove(key); } catch {}
+        }
+      } catch {}
+    }
+    if (!stillInIdb) {
+      try { localStorage.removeItem(MIGRATED_MARKER); } catch {}
+    }
+    if (restored) {
+      console.info('[AkaiStore] 已把 ' + restored + ' 項資料從瀏覽器資料庫搬回來');
+      try {
+        if (!sessionStorage.getItem('akai_idb_restored_reload')) {
+          sessionStorage.setItem('akai_idb_restored_reload', '1');
+          location.reload();
+        }
+      } catch {}
+    }
+  })();
+
   // ===== Quota guard banner =====
   AkaiStore.onWarning((u) => {
     if (document.getElementById('akai-quota-banner')) return;
@@ -320,14 +362,14 @@
     banner.innerHTML = `
       <div class="qg-text">
         ⚠️ 儲存空間快滿了 <span class="qg-pct">${pct}%</span><br>
-        建議升級到 IndexedDB（解 5MB 限制）
+        請先下載備份，再把用不到的舊紀錄刪掉
       </div>
-      <button class="qg-upgrade" type="button">💪 立刻升級</button>
+      <button class="qg-upgrade" type="button">💾 去備份</button>
       <button class="qg-later" type="button">稍後再說</button>
     `;
     document.body.appendChild(banner);
     banner.querySelector('.qg-upgrade').onclick = () => {
-      window.location.href = 'backup.html#upgrade';
+      window.location.href = 'backup.html';
       banner.remove();
     };
     banner.querySelector('.qg-later').onclick = () => banner.remove();
