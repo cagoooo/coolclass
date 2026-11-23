@@ -11,8 +11,16 @@
  *   COOLCLASS_LINE_ADMIN_USER_ID         ← 阿凱老師個人 LINE userId
  *   GOOGLE_CHAT_WEBHOOK_URL              ← Google Chat 空間 Webhook（與同專案其他函式共用）
  *
- * 部署：
- *   cd functions && firebase deploy --only functions:notifyLine
+ * 2026-11-23 起：每個事件都另外寫進 Firestore（(default) 資料庫，集合一律 coolclass_ 前綴，
+ * 不碰同專案 Message 應用的資料），Chat 只是通知、資料庫才是帳冊：
+ *   coolclass_events/{自動}      每一筆事件（含 tool_open 工具開啟統計）
+ *   coolclass_feedback/{自動}    回饋表單完整內容（含 Email，只有後台看得到）
+ *   coolclass_devices/{裝置代號}  每台裝置第一次／最後一次出現、用過哪些工具
+ *   coolclass_daily/{YYYY-MM-DD} 每天（台北時間）的事件數、工具開啟數、活躍裝置
+ * 前端不能直接讀寫這些集合（未登入讀寫已實測 403），只有本函式用 Admin SDK 寫入。
+ *
+ * 部署（同專案有別的應用的函式，一律點名部署，不要整包 --only functions）：
+ *   firebase deploy --only functions:notifyLine,functions:notifyLineHealth
  *
  * 前端呼叫：
  *   await fetch('https://asia-east1-<PROJECT>.cloudfunctions.net/notifyLine', {
@@ -24,6 +32,17 @@
 const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
 const logger = require('firebase-functions/logger');
+// Firestore 套件很大，等第一次真的要寫入才載入（部署分析時才不會逾時）
+let _fs = null;
+function fsMod() {
+  if (!_fs) {
+    const { initializeApp, getApps } = require('firebase-admin/app');
+    const firestore = require('firebase-admin/firestore');
+    if (!getApps().length) initializeApp();
+    _fs = { db: firestore.getFirestore(), FieldValue: firestore.FieldValue };
+  }
+  return _fs;
+}
 
 const LINE_TOKEN = defineSecret('COOLCLASS_LINE_CHANNEL_ACCESS_TOKEN');
 const LINE_USER  = defineSecret('COOLCLASS_LINE_ADMIN_USER_ID');
@@ -58,13 +77,15 @@ function buildCardFromEvent(event, payload) {
         appName: '教室小幫手',
         fields: [
           { icon: '⭐', label: '評分', value: '★'.repeat(payload.stars || 0) + '☆'.repeat(5 - (payload.stars || 0)) },
-          { icon: '👤', label: '身分', value: String(payload.role || '未填').substring(0, 30) },
+          { icon: '👤', label: '身分', value: String(ROLE_MAP[payload.role] || payload.role || '未填').substring(0, 30) },
           { icon: '💝', label: '常用', value: String(payload.favs || '無').substring(0, 80) },
           { icon: '🚧', label: '卡關', value: String(payload.pain || '無').substring(0, 100) },
           { icon: '✨', label: '期望', value: String(payload.wish || '無').substring(0, 100) },
+          { icon: '📢', label: '推薦', value: String(RECOMMEND_MAP[payload.recommend] || payload.recommend || '未填').substring(0, 30) },
+          { icon: '💌', label: '其他', value: String(payload.extra || '無').substring(0, 100) },
           { icon: '📧', label: '聯絡', value: String(payload.email || '未留').substring(0, 50) },
         ],
-        footerNote: '到 feedback.html 看完整訊息',
+        footerNote: '完整內容已存到 Firestore 的 coolclass_feedback',
       };
 
     case 'backup_exported':
@@ -204,7 +225,7 @@ function chatFields(card) {
     // 聯絡信箱屬於個資，Chat 只標示有沒有留
     if (f.label === '聯絡') {
       const left = f.value && f.value !== '未留';
-      return { icon: f.icon, label: f.label, value: left ? '有留（到 feedback.html 查看）' : '未留' };
+      return { icon: f.icon, label: f.label, value: left ? '有留（到 Firestore 的 coolclass_feedback 查看）' : '未留' };
     }
     return { icon: f.icon, label: f.label, value: chatSafe(f.value) };
   });
@@ -320,14 +341,141 @@ async function pushLine(token, userId, card) {
   }
 }
 
-// ===== 簡易記憶體 rate limit（每個 instance 60 秒內最多 10 條）=====
-const rateLog = [];
-function checkRateLimit() {
-  const now = Date.now();
-  // 清掉 60 秒前的紀錄
-  while (rateLog.length > 0 && rateLog[0] < now - 60000) rateLog.shift();
-  if (rateLog.length >= 10) return false;
-  rateLog.push(now);
+// ===== 簡易記憶體 rate limit =====
+// 2026-11-23：研習時一次幾十位老師同時打開，原本「每分鐘 10 則」會把紀錄擋掉。
+// 改成兩層：寫資料庫每個 instance 每分鐘 300 則（防惡意灌爆）、推 Google Chat 每分鐘 10 則（防洗版）。
+// 超過 Chat 上限時照樣記到資料庫，只是不發通知。
+function makeLimiter(max) {
+  const log = [];
+  return function allow() {
+    const now = Date.now();
+    while (log.length > 0 && log[0] < now - 60000) log.shift();
+    if (log.length >= max) return false;
+    log.push(now);
+    return true;
+  };
+}
+const allowRecord = makeLimiter(300);
+const allowChat = makeLimiter(10);
+
+// ===== Firestore 紀錄 =====
+const KNOWN_EVENTS = new Set([
+  'feedback_submitted', 'backup_exported', 'first_install', 'js_error', 'tool_open', 'tool_first_use',
+]);
+// 只記錄、不發 Chat 的事件（工具開啟一天會有上百次，發通知會洗版）
+const SILENT_EVENTS = new Set(['tool_open', 'tool_first_use']);
+
+const ROLE_MAP = { elementary: '國小老師', middle: '國中老師', high: '高中老師', cram: '補教/安親', admin: '行政/主任', other: '其他' };
+const RECOMMEND_MAP = { yes: '已推薦', maybe: '可能會', not_yet: '試用中', no: '不太會' };
+
+function clip(value, max) {
+  if (value == null) return '';
+  return Array.from(String(value)).slice(0, max).join('');
+}
+
+function cleanDevice(value) {
+  const v = String(value || '');
+  return /^[A-Za-z0-9-]{8,40}$/.test(v) ? v : '';
+}
+
+function cleanTool(value) {
+  const v = String(value || '').toLowerCase();
+  return /^[a-z0-9-]{1,30}$/.test(v) ? v : '';
+}
+
+function taipeiDay(date) {
+  // en-CA 會輸出 YYYY-MM-DD
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+// 只挑每種事件需要的欄位存，不把前端送來的整包原封不動寫進資料庫
+function pickDetail(event, payload) {
+  switch (event) {
+    case 'js_error':
+      return { message: clip(payload.message, 300), source: clip(payload.source, 200) };
+    case 'backup_exported':
+      return { size: clip(payload.size, 30), tools: clip(payload.tools, 200) };
+    case 'feedback_submitted':
+      return { stars: Number(payload.stars) || 0, role: clip(payload.role, 30) };
+    case 'unknown_event':
+      return { raw: clip(JSON.stringify(payload), 300) };
+    default:
+      return {};
+  }
+}
+
+async function recordEvent(event, payload) {
+  const { db, FieldValue } = fsMod();
+  const now = new Date();
+  const day = taipeiDay(now);
+  const device = cleanDevice(payload._device);
+  const tool = cleanTool(payload.tool);
+  const at = FieldValue.serverTimestamp();
+  const base = {
+    event,
+    at,
+    day,
+    device: device || null,
+    tool: tool || null,
+    page: clip(payload._url, 100),
+    classname: clip(payload._classname, 30),
+    ua: clip(payload._ua, 160),
+    clientTs: clip(payload._ts, 30),
+    retried: payload._retry === true,
+  };
+
+  const writes = [];
+  writes.push(db.collection('coolclass_events').add({ ...base, detail: pickDetail(event, payload) }));
+
+  if (event === 'feedback_submitted') {
+    writes.push(db.collection('coolclass_feedback').add({
+      at,
+      day,
+      device: base.device,
+      classname: base.classname,
+      page: base.page,
+      ua: base.ua,
+      stars: Math.max(0, Math.min(5, Number(payload.stars) || 0)),
+      role: ROLE_MAP[payload.role] || clip(payload.role, 30),
+      recommend: RECOMMEND_MAP[payload.recommend] || clip(payload.recommend, 30),
+      favs: clip(payload.favs, 500),
+      pain: clip(payload.pain, 2000),
+      wish: clip(payload.wish, 2000),
+      extra: clip(payload.extra, 2000),
+      email: clip(payload.email, 100),
+    }));
+  }
+
+  // 每台裝置一份檔案：第一次出現時間、最後出現時間、用過哪些工具
+  let isNewDevice = false;
+  if (device) {
+    const ref = db.collection('coolclass_devices').doc(device);
+    writes.push(db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      isNewDevice = !snap.exists;
+      const data = {
+        lastSeen: at,
+        lastDay: day,
+        lastClass: base.classname,
+        lastUa: base.ua,
+        events: { [event]: FieldValue.increment(1) },
+      };
+      if (tool) data.tools = { [tool]: FieldValue.increment(1) };
+      if (isNewDevice) {
+        data.firstSeen = at;
+        data.firstDay = day;
+      }
+      tx.set(ref, data, { merge: true });
+    }));
+  }
+  await Promise.all(writes);
+
+  // 每日統計（放在裝置檔之後，才知道是不是新裝置）
+  const daily = { day, updatedAt: at, events: { [event]: FieldValue.increment(1) } };
+  if (tool && event === 'tool_open') daily.tools = { [tool]: FieldValue.increment(1) };
+  if (device) daily.devices = { [device]: true };
+  if (isNewDevice) daily.newDevices = FieldValue.increment(1);
+  await db.collection('coolclass_daily').doc(day).set(daily, { merge: true });
   return true;
 }
 
@@ -344,16 +492,21 @@ exports.notifyLine = onRequest({
     return;
   }
 
-  // Rate limit
-  if (!checkRateLimit()) {
+  // Rate limit（資料庫層）
+  if (!allowRecord()) {
     logger.warn('[notifyLine] rate limited');
     res.status(429).send({ ok: false, error: 'too many requests' });
     return;
   }
 
   const body = req.body || {};
-  const event = body.event || 'unknown';
-  const payload = body.payload || {};
+  const rawEvent = String(body.event || 'unknown').substring(0, 40);
+  const payload = (body.payload && typeof body.payload === 'object' && !Array.isArray(body.payload)) ? body.payload : {};
+  if (JSON.stringify(payload).length > 20000) {
+    res.status(413).send({ ok: false, error: 'payload too large' });
+    return;
+  }
+  const event = KNOWN_EVENTS.has(rawEvent) ? rawEvent : 'unknown_event';
 
   // 舊版快取前端仍會送「Script error.」（跨網域腳本被瀏覽器隱藏內容的錯誤，無法修復），後端直接略過
   if (event === 'js_error') {
@@ -370,6 +523,37 @@ exports.notifyLine = onRequest({
   payload._url = payload._url || (req.headers['referer'] || '').substring(0, 100);
   payload._ua = payload._ua || (req.headers['user-agent'] || '').substring(0, 100);
 
+  // 1) 先記帳：寫進 Firestore
+  let recorded = false;
+  try {
+    recorded = await recordEvent(event, payload);
+  } catch (e) {
+    // 寫不進資料庫時，把重點留在日誌裡，事後還查得到
+    logger.error('[notifyLine] firestore write failed', {
+      msg: e.message, event, device: cleanDevice(payload._device), tool: cleanTool(payload.tool),
+      feedback: event === 'feedback_submitted' ? {
+        stars: payload.stars, role: payload.role,
+        pain: clip(payload.pain, 500), wish: clip(payload.wish, 500), extra: clip(payload.extra, 500),
+      } : undefined,
+    });
+  }
+
+  // 2) 再通知：工具開啟這類統計事件、未知事件、補送的舊事件不發 Chat（補送的回饋例外，還是要讓阿凱老師知道）
+  const silent = SILENT_EVENTS.has(event) || event === 'unknown_event'
+    || (payload._retry === true && event !== 'feedback_submitted');
+  if (silent) {
+    logger.info('[notifyLine] recorded', { event, recorded, tool: cleanTool(payload.tool) });
+    // 資料庫失敗時回 503 讓前端稍後補送
+    res.status(recorded ? 200 : 503).send({ ok: recorded, recorded });
+    return;
+  }
+
+  if (!allowChat()) {
+    logger.warn('[notifyLine] chat rate limited, recorded only', { event, recorded });
+    res.status(200).send({ ok: recorded, recorded, chat: false, line: false, chatSkipped: 'rate-limit' });
+    return;
+  }
+
   const card = buildCardFromEvent(event, payload);
   // LINE 只推錯誤卡片（js_error），其餘事件只發 Google Chat
   const sendLine = card.status === 'failed';
@@ -379,11 +563,11 @@ exports.notifyLine = onRequest({
       pushGoogleChat(GOOGLE_CHAT_WEBHOOK.value(), card),
       sendLine ? pushLine(LINE_TOKEN.value().trim(), LINE_USER.value().trim(), card) : Promise.resolve(false),
     ]);
-    logger.info('[notifyLine] sent', { event, chat, line, lineTried: sendLine });
-    res.status(200).send({ ok: chat || line, chat, line });
+    logger.info('[notifyLine] sent', { event, recorded, chat, line, lineTried: sendLine });
+    res.status(200).send({ ok: recorded || chat || line, recorded, chat, line });
   } catch (e) {
     logger.error('[notifyLine] exception', { msg: e.message });
-    res.status(500).send({ ok: false, error: 'notify failed' });
+    res.status(recorded ? 200 : 500).send({ ok: recorded, recorded, error: 'notify failed' });
   }
 });
 

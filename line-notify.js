@@ -9,6 +9,11 @@
  * - 自帶元資料：班級名、URL、UA
  * - 重複事件去重：同一個 event 1 分鐘內最多送 1 次
  * - 可關閉：使用者在 console 跑 `localStorage.setItem('akai_line_off','1')`
+ *
+ * v4.4（2026-11-23）：
+ * - 匿名裝置代號 _device（隨機產生，存在 akai_device_id_v1，不含任何個資），後端用來分辨新老師與同一人換頁
+ * - tool_open：每個工具頁每天只記一次「今天有打開」，後端只存資料庫、不發通知
+ * - 送失敗（斷線、伺服器忙）先存在 akai_notify_queue_v1，下次開頁或恢復連線時補送
  */
 (function () {
   'use strict';
@@ -26,11 +31,11 @@
   const DEDUPE_WINDOW_MS = 60 * 1000;  // 同事件 60 秒內只送一次
   const dedupeMap = new Map();
 
-  function shouldSend(event) {
+  function shouldSend(key) {
     const now = Date.now();
-    const last = dedupeMap.get(event) || 0;
+    const last = dedupeMap.get(key) || 0;
     if (now - last < DEDUPE_WINDOW_MS) return false;
-    dedupeMap.set(event, now);
+    dedupeMap.set(key, now);
     // 清理過舊紀錄
     for (const [k, v] of dedupeMap) {
       if (now - v > DEDUPE_WINDOW_MS * 5) dedupeMap.delete(k);
@@ -59,25 +64,49 @@
     } catch { return ''; }
   }
 
-  /**
-   * 通知 LINE
-   * @param {string} event - 事件名（feedback_submitted / backup_exported / first_install / js_error / tool_first_use）
-   * @param {object} payload - 事件資料
-   * @param {boolean} [opts.skipDedupe] - 跳過去重檢查
-   */
-  function notify(event, payload, opts) {
-    if (isDisabled()) return Promise.resolve({ skipped: 'disabled' });
-    if (!event) return Promise.reject(new Error('event required'));
-    if (!opts || !opts.skipDedupe) {
-      if (!shouldSend(event)) return Promise.resolve({ skipped: 'dedupe' });
+  // ====== 匿名裝置代號（v4.4）======
+  // 只是一串隨機字，用來分辨「新老師」和「同一人換頁」，不含姓名、信箱等任何個資。
+  const DEVICE_KEY = 'akai_device_id_v1';
+  let memoryDeviceId = '';
+  function getDeviceId() {
+    try {
+      let id = localStorage.getItem(DEVICE_KEY);
+      if (id && /^[A-Za-z0-9-]{8,40}$/.test(id)) return id;
+      id = (window.crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(DEVICE_KEY, id);
+      return id;
+    } catch {
+      if (!memoryDeviceId) memoryDeviceId = 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+      return memoryDeviceId;
     }
-    payload = Object.assign({
-      _classname: getClassName(),
-      _url: location.pathname,
-      _ua: navigator.userAgent.substring(0, 80),
-      _ts: new Date().toISOString(),
-    }, payload || {});
+  }
 
+  // ====== 送失敗補送佇列（v4.4）======
+  const QUEUE_KEY = 'akai_notify_queue_v1';
+  const QUEUE_MAX = 30;
+  const QUEUE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+  function readQueue() {
+    try {
+      const q = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+      return Array.isArray(q) ? q : [];
+    } catch { return []; }
+  }
+  function writeQueue(q) {
+    try {
+      if (q.length) localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-QUEUE_MAX)));
+      else localStorage.removeItem(QUEUE_KEY);
+    } catch {}
+  }
+  function enqueue(event, payload) {
+    const q = readQueue();
+    q.push({ event, payload, queuedAt: Date.now() });
+    writeQueue(q);
+  }
+
+  function post(event, payload) {
     // 用 keepalive: true 讓頁面關閉時仍可送出
     return fetch(ENDPOINT, {
       method: 'POST',
@@ -85,7 +114,85 @@
       body: JSON.stringify({ event, payload }),
       keepalive: true,
       mode: 'cors',
-    }).then(r => r.json().catch(() => ({ ok: r.ok }))).catch(() => ({ ok: false }));
+    }).then((r) => {
+      // 429（伺服器忙）、5xx（暫時壞掉）值得稍後再送；4xx 其他狀況重送也沒用
+      const retryable = r.status === 429 || r.status >= 500;
+      return r.json().catch(() => ({ ok: r.ok })).then((j) => Object.assign({ ok: r.ok }, j, { retryable }));
+    }).catch(() => ({ ok: false, retryable: true }));
+  }
+
+  let flushing = false;
+  function flushQueue() {
+    if (flushing || isDisabled()) return;
+    if (navigator.onLine === false) return;
+    const q = readQueue().filter(item => item && item.event && Date.now() - (item.queuedAt || 0) < QUEUE_MAX_AGE_MS);
+    if (!q.length) { writeQueue([]); return; }
+    flushing = true;
+    writeQueue([]);
+    const left = [];
+    // 一筆一筆送，避免一次灌爆後端
+    q.reduce((p, item) => p.then(() => {
+      const payload = Object.assign({}, item.payload, { _retry: true });
+      return post(item.event, payload).then((res) => {
+        if (!res.ok && res.retryable) left.push(item);
+      });
+    }), Promise.resolve()).then(() => {
+      if (left.length) writeQueue(left.concat(readQueue()));
+      flushing = false;
+    }, () => { flushing = false; });
+  }
+
+  /**
+   * 送出事件
+   * @param {string} event - 事件名（feedback_submitted / backup_exported / first_install / js_error / tool_open）
+   * @param {object} payload - 事件資料
+   * @param {boolean} [opts.skipDedupe] - 跳過去重檢查
+   */
+  function notify(event, payload, opts) {
+    if (isDisabled()) return Promise.resolve({ skipped: 'disabled' });
+    if (!event) return Promise.reject(new Error('event required'));
+    if (!opts || !opts.skipDedupe) {
+      const key = event + '|' + ((payload && payload.tool) || '');
+      if (!shouldSend(key)) return Promise.resolve({ skipped: 'dedupe' });
+    }
+    payload = Object.assign({
+      _classname: getClassName(),
+      _url: location.pathname,
+      _ua: navigator.userAgent.substring(0, 80),
+      _ts: new Date().toISOString(),
+      _device: getDeviceId(),
+    }, payload || {});
+
+    return post(event, payload).then((res) => {
+      if (!res.ok && res.retryable) enqueue(event, payload);
+      return res;
+    });
+  }
+
+  // ====== 工具使用統計（v4.4）：每個工具頁每天只記一次 ======
+  const TOOL_OPEN_KEY = 'akai_tool_open_v1';
+  function todayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function currentTool() {
+    const file = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+    const name = file.replace(/\.html?$/, '') || 'index';
+    return /^[a-z0-9-]{1,30}$/.test(name) ? name : '';
+  }
+  function setupToolOpen() {
+    const tool = currentTool();
+    if (!tool) return;
+    try {
+      const today = todayStr();
+      let rec = {};
+      try { rec = JSON.parse(localStorage.getItem(TOOL_OPEN_KEY) || '{}') || {}; } catch { rec = {}; }
+      if (rec.day !== today || !Array.isArray(rec.tools)) rec = { day: today, tools: [] };
+      if (rec.tools.indexOf(tool) !== -1) return;
+      rec.tools.push(tool);
+      localStorage.setItem(TOOL_OPEN_KEY, JSON.stringify(rec));
+      notify('tool_open', { tool }, { skipDedupe: true });
+    } catch {}
   }
 
   // ====== 全域錯誤監聽 ======
@@ -165,4 +272,8 @@
 
   setupErrorHandler();
   setupFirstInstall();
+  setupToolOpen();
+  // 頁面載入後 5 秒、以及恢復連線時，補送之前沒送成功的事件
+  setTimeout(flushQueue, 5000);
+  window.addEventListener('online', flushQueue);
 })();

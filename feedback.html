@@ -155,7 +155,7 @@
       </div>
 
       <div style="border-top:2px dashed var(--ink);padding-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
-        <button type="button" class="btn primary lg" onclick="submitFb()">📤 送出 / 複製到剪貼簿</button>
+        <button type="button" class="btn primary lg" onclick="submitFb()">📤 送出回饋（同時複製備份）</button>
         <button type="button" class="btn y" onclick="sendMail()">📧 用 Email 寄出</button>
         <button type="button" class="btn" onclick="resetFb()">🔄 重填</button>
       </div>
@@ -291,18 +291,27 @@ function payloadForLine() {
 
 async function submitFb() {
   const txt = buildPayload();
-  // ===== v4.2：同步推 LINE =====
+  // ===== v4.4：完整內容存到後端資料庫，送不出去時自動暫存、下次開頁補送 =====
+  let sent = null;
   if (window.AkaiNotifyLine) {
-    try { window.AkaiNotifyLine('feedback_submitted', payloadForLine()); } catch {}
+    try {
+      sent = await window.AkaiNotifyLine('feedback_submitted', payloadForLine(), { skipDedupe: true });
+    } catch { sent = null; }
   }
+  const delivered = !!(sent && sent.ok);
+  const statusMsg = delivered
+    ? '✅ 你的回饋已送到阿凱老師的後台，謝謝你！'
+    : (sent && sent.retryable
+      ? '📮 目前連線不穩，回饋已先暫存在這台裝置，下次打開教室小幫手時會自動補送。'
+      : '⚠️ 回饋沒有送出成功，請把剪貼簿內容貼到 LINE 或 Email 給阿凱老師。');
   try {
     await navigator.clipboard.writeText(txt);
-    showThanks(`你的回饋已複製到剪貼簿（${txt.length} 字）<br><br>已自動推送通知給阿凱老師 ✨<br><br>請貼到 LINE 群或 Email 給阿凱老師：<br><b>ipad@mail2.smes.tyc.edu.tw</b><br><br>或之後 Google Form 連結啟用時直接填那邊。`);
+    showThanks(`${statusMsg}<br><br>內容也已複製到剪貼簿（${txt.length} 字）當備份。<br><br>想多聊聊也可以寄 Email 給阿凱老師：<br><b>ipad@mail2.smes.tyc.edu.tw</b>`);
   } catch {
     // fallback: 顯示 textarea 讓使用者手動複製
     const ta = document.createElement('textarea');
     ta.value = txt; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); showThanks('已複製到剪貼簿（fallback 模式）'); }
+    try { document.execCommand('copy'); showThanks(`${statusMsg}<br><br>內容也已複製到剪貼簿當備份。`); }
     catch { alert('無法複製。請手動 Ctrl+A、Ctrl+C：\n\n' + txt); }
     document.body.removeChild(ta);
   }
