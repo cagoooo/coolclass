@@ -64,6 +64,27 @@
     } catch { return ''; }
   }
 
+  // ====== 使用漏斗用的小旗標（v4.8）：在哪種瀏覽器、完成引導了沒、設定班級名單了沒 ======
+  function inAppKind() {
+    if (window.AkaiInApp) return window.AkaiInApp;
+    const ua = navigator.userAgent || '';
+    if (/\bLine\//i.test(ua)) return 'line';
+    if (/FBAN|FBAV|FB_IAB/i.test(ua)) return 'facebook';
+    if (/Instagram/i.test(ua)) return 'instagram';
+    if (/; wv\)/.test(ua)) return 'webview';
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return 'app';
+    return '';
+  }
+  function flag(key) {
+    try { return localStorage.getItem(key) === '1' ? 1 : 0; } catch { return 0; }
+  }
+  function hasRoster() {
+    try {
+      const r = JSON.parse(localStorage.getItem('akai_roster_v1') || 'null');
+      return !!(r && (String(r.className || '').trim() || Object.keys(r.names || {}).some(k => String(r.names[k] || '').trim())));
+    } catch { return false; }
+  }
+
   // ====== 匿名裝置代號（v4.4）======
   // 只是一串隨機字，用來分辨「新老師」和「同一人換頁」，不含姓名、信箱等任何個資。
   const DEVICE_KEY = 'akai_device_id_v1';
@@ -158,9 +179,12 @@
     payload = Object.assign({
       _classname: getClassName(),
       _url: location.pathname,
-      _ua: navigator.userAgent.substring(0, 80),
+      _ua: navigator.userAgent.substring(0, 300),  // v4.8：保留完整，才分得出 LINE／臉書內建瀏覽器
       _ts: new Date().toISOString(),
       _device: getDeviceId(),
+      _inapp: inAppKind(),
+      _onb: flag('akai_onboarded_v1'),
+      _roster: hasRoster() ? 1 : 0,
     }, payload || {});
 
     return post(event, payload).then((res) => {

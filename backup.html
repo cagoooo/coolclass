@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<script src="inapp-escape.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>備份與還原 · 教室小幫手</title>
 <meta name="description" content="教室小幫手 — 老師的每日課堂工具。免登入、不上傳、離線可用。">
@@ -85,6 +86,29 @@
       <span class="big" id="totalKB">—</span>
       <span class="sml">KB · 目前資料量</span>
     </div>
+  </section>
+
+  <!-- v4.8：從 LINE 等 App 內建瀏覽器搬家過來（網址帶 #move 才顯示） -->
+  <section class="block tinted-y" id="moveBlock" style="display:none;">
+    <div class="block-head">
+      <div class="step">📦</div>
+      <h2>完成搬家：貼上班級資料</h2>
+    </div>
+    <p style="font-size:15px;margin:0 0 14px;line-height:1.7;">
+      剛剛在 LINE（或其他 App）裡按了「搬到瀏覽器」，資料已經複製好了。<br>
+      現在按下面的按鈕，資料就會搬進這個瀏覽器，之後從這裡打開教室小幫手就好。
+    </p>
+    <div class="btn-bar">
+      <button class="btn primary lg" onclick="importFromClipboard()">📋 貼上搬家資料</button>
+    </div>
+    <details id="movePasteBox" style="margin-top:14px;">
+      <summary style="cursor:pointer;font-weight:700;">按了沒反應？改用手動貼上</summary>
+      <p style="font-size:14px;margin:10px 0 8px;line-height:1.6;">長按下面的框框選「貼上」，再按「用貼上的內容搬家」。</p>
+      <textarea id="movePasteArea" rows="4" style="width:100%;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:10px;padding:10px;font-size:14px;" placeholder="長按這裡 → 貼上"></textarea>
+      <div class="btn-bar" style="margin-top:10px;">
+        <button class="btn g" onclick="doImport(document.getElementById('movePasteArea').value, '手動貼上')">✅ 用貼上的內容搬家</button>
+      </div>
+    </details>
   </section>
 
   <!-- 摘要 -->
@@ -467,7 +491,17 @@ async function importFromClipboard() {
     const text = await navigator.clipboard.readText();
     doImport(text, '剪貼簿');
   } catch {
-    alert('無法讀剪貼簿。請改用「選檔案還原」。');
+    // 讀不到剪貼簿（沒給權限、App 不支援）：打開手動貼上框
+    const box = document.getElementById('movePasteBox');
+    const block = document.getElementById('moveBlock');
+    if (box && block) {
+      block.style.display = '';
+      box.open = true;
+      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      flash('讀不到剪貼簿，請長按框框貼上');
+    } else {
+      alert('無法讀剪貼簿。請改用「選檔案還原」。');
+    }
   }
 }
 
@@ -695,6 +729,12 @@ window.addEventListener('focus', () => { renderSummary(); });
 // 等延後載入的 akai-store.js 準備好（DOMContentLoaded 會在 defer 腳本跑完後才觸發），才看得到瀏覽器資料庫裡的資料
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => { renderSummary(); refreshQuota(); });
 else { renderSummary(); refreshQuota(); }
+
+// v4.8：從 App 內建瀏覽器搬家過來
+if (location.hash === '#move') {
+  const mb = document.getElementById('moveBlock');
+  if (mb) { mb.style.display = ''; setTimeout(() => mb.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300); }
+}
 
 // 如果 URL 有 #upgrade，自動滾過去
 if (location.hash === '#upgrade') {

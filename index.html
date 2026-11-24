@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<script src="inapp-escape.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>教室小幫手 — 老師的每日課堂工具</title>
 <!--
@@ -255,13 +256,42 @@
   .data-safe .ds-icn { font-size: 26px; flex-shrink: 0; }
   .data-safe .ds-msg { flex: 1; line-height: 1.5; }
   .data-safe .ds-msg b { display: block; }
-  .data-safe .ds-go {
-    flex-shrink: 0; font-weight: 700; padding: 7px 14px; border-radius: 999px;
-    background: var(--ink); color: var(--paper); font-size: 14px; white-space: nowrap;
+  .data-safe .ds-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+  .data-safe .ds-go, .data-safe .ds-sub {
+    font-weight: 700; padding: 9px 16px; border-radius: 999px; font-size: 14px; white-space: nowrap;
+    text-decoration: none; border: 2.5px solid var(--ink);
   }
+  .data-safe .ds-go { background: var(--ink); color: var(--paper); }
+  .data-safe .ds-sub { background: #fff; color: var(--ink); }
+  .data-safe .ds-sub[hidden] { display: none; }
   @media (max-width: 600px) {
     .data-safe { flex-wrap: wrap; padding: 12px 14px; }
-    .data-safe .ds-go { width: 100%; text-align: center; }
+    .data-safe .ds-actions { width: 100%; }
+    .data-safe .ds-go, .data-safe .ds-sub { flex: 1 1 0; text-align: center; padding: 11px 10px; }
+    .data-safe .ds-go { flex-grow: 2; }
+  }
+
+  /* ====================================================== */
+  /* v4.8 老師最常用（快速按鈕）                             */
+  /* ====================================================== */
+  .quick-tools {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    margin: 0 0 18px;
+  }
+  .quick-tools .qt-lbl { font-weight: 900; font-size: 15px; margin-right: 4px; color: var(--ink); }
+  .quick-tools a {
+    display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px;
+    border: 2.5px solid var(--ink); border-radius: 999px; background: #fff;
+    box-shadow: 2px 2px 0 var(--ink); color: var(--ink); font-weight: 700; font-size: 15px;
+    text-decoration: none; white-space: nowrap; transition: transform .12s;
+  }
+  .quick-tools a:hover { transform: translate(-1px, -1px); }
+  .quick-tools a.qt-more { background: var(--ink); color: var(--paper); }
+  @media (max-width: 600px) {
+    /* 手機：一排左右滑，不佔高度 */
+    .quick-tools { flex-wrap: nowrap; overflow-x: auto; margin: 0 -18px 16px; padding: 2px 18px 6px; scrollbar-width: none; }
+    .quick-tools::-webkit-scrollbar { display: none; }
+    .quick-tools .qt-lbl { flex-shrink: 0; }
   }
 
   /* ====================================================== */
@@ -920,6 +950,28 @@
     <button class="ghost" onclick="hideInstall()">✕</button>
   </div>
 
+  <!-- ===== v4.8 老師最常用（依後台統計 11/23～11/24 的熱門工具）：手機上不用捲到下面就能開始用 ===== -->
+  <nav class="quick-tools" aria-label="老師最常用的工具">
+    <span class="qt-lbl">🔥 老師最常用</span>
+    <a href="emotion.html">😊 情緒打卡</a>
+    <a href="cards.html">🌈 能量卡</a>
+    <a href="timer.html">⏱️ 計時器</a>
+    <a href="marquee.html">📢 跑馬燈</a>
+    <a href="points.html">🏆 積點榜</a>
+    <a href="picker.html">🎯 抽號</a>
+    <a href="#tools-all" class="qt-more">全部 32 個 ↓</a>
+  </nav>
+
+  <!-- ===== v4.6 資料安全提示（v4.8：還沒設定班級名單時，先帶老師去設定） ===== -->
+  <div class="data-safe hidden" id="dataSafe">
+    <span class="ds-icn" id="dsIcn">💾</span>
+    <span class="ds-msg"><b id="dsTitle">資料安全</b><span id="dsText"></span></span>
+    <span class="ds-actions">
+      <a class="ds-sub" id="dsSub" href="backup.html" hidden>從備份還原</a>
+      <a class="ds-go" id="dsGo" href="backup.html">去備份 →</a>
+    </span>
+  </div>
+
   <!-- ===== 今日 HERO ===== -->
   <section class="today">
     <div>
@@ -966,13 +1018,6 @@
     </a>
   </div>
 
-  <!-- ===== v4.6 資料安全提示（資料只存在這台電腦，提醒定期備份 / 換電腦時還原） ===== -->
-  <a class="data-safe hidden" id="dataSafe" href="backup.html">
-    <span class="ds-icn" id="dsIcn">💾</span>
-    <span class="ds-msg"><b id="dsTitle">資料安全</b><span id="dsText"></span></span>
-    <span class="ds-go" id="dsGo">去備份 →</span>
-  </a>
-
   <!-- ===== ⭐ 我的常用工具 ===== -->
   <section id="favs-section" class="empty">
     <div class="favs-head">
@@ -983,7 +1028,7 @@
   </section>
 
   <!-- ===== 五大核心工具 ===== -->
-  <div class="sec-title">
+  <div class="sec-title" id="tools-all">
     <div class="num">A</div>
     <h2>
       五大核心工具
@@ -1470,15 +1515,28 @@ if (!window.AkaiRoster) {
     }
     last = localStorage.getItem('akai_last_backup_v1');
   } catch { return; }
-  const set = (cls, icn, title, text, go) => {
+  const set = (cls, icn, title, text, go, href, sub) => {
     box.className = 'data-safe ' + cls;
     document.getElementById('dsIcn').textContent = icn;
     document.getElementById('dsTitle').textContent = title;
     document.getElementById('dsText').textContent = text;
-    document.getElementById('dsGo').textContent = go;
+    const goEl = document.getElementById('dsGo');
+    goEl.textContent = go;
+    goEl.href = href || 'backup.html';
+    document.getElementById('dsSub').hidden = !sub;
   };
-  if (!dataKeys) {
-    set('info', '🔁', '換了新電腦？', '以前在別台電腦用過教室小幫手，可以用備份檔把班級資料搬過來。', '從備份還原 →');
+  // v4.8：後台統計發現大部分老師沒設定班級名單（工具只會顯示「3 號」），還沒設定就先帶去設定
+  let hasRoster = false;
+  try {
+    const r = JSON.parse(localStorage.getItem('akai_roster_v1') || 'null');
+    hasRoster = !!(r && (String(r.className || '').trim() || Object.keys(r.names || {}).some(k => String(r.names[k] || '').trim())));
+  } catch { hasRoster = false; }
+  if (!hasRoster) {
+    set('info', '👥', '第一步：設定班級名單（約 1 分鐘）',
+      dataKeys
+        ? '設定後，情緒打卡、抽號、分組、座位表都會顯示學生姓名，不只是「3 號」。'
+        : '設定後，情緒打卡、抽號、分組、座位表都會顯示學生姓名。以前在別台電腦用過的話，也可以從備份還原。',
+      '設定班級名單 →', 'roster.html', !dataKeys);
     return;
   }
   const days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;

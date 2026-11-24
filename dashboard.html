@@ -2,6 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
+<script src="inapp-escape.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>使用儀表板 · 教室小幫手</title>
 <meta name="description" content="教室小幫手管理用使用儀表板：每日活躍裝置、熱門工具、回饋與錯誤紀錄">
@@ -91,6 +92,12 @@
   .err-msg { font-family: ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; }
 
   .note { font-size: 14px; color: var(--muted); line-height: 1.7; margin: 10px 0 0; }
+  .funnel { display: grid; gap: 12px; }
+  .fn-row { display: grid; grid-template-columns: minmax(150px, 220px) 1fr 120px; gap: 12px; align-items: center; font-size: 15px; }
+  .fn-track { height: 22px; border: 2.5px solid var(--ink); border-radius: 999px; background: var(--paper-2); overflow: hidden; }
+  .fn-fill { display: block; height: 100%; }
+  .fn-num { text-align: right; font-weight: 700; }
+  @media (max-width: 720px) { .fn-row { grid-template-columns: 1fr auto; } .fn-track { grid-column: 1 / -1; grid-row: 2; } }
   .backup-bar { height: 22px; border: 2.5px solid var(--ink); border-radius: 999px; background: #ffe3e3; overflow: hidden; }
   .backup-bar .bb-ok { display: block; height: 100%; background: var(--g); }
   .hidden { display: none !important; }
@@ -220,6 +227,12 @@
       <div class="fb-list" id="fbList"></div>
     </section>
 
+    <section class="block">
+      <div class="block-head"><div class="step">🪜</div><h2>使用漏斗</h2><span class="tail">近 30 天活躍裝置</span></div>
+      <div class="funnel" id="funnel"></div>
+      <p class="note" id="funnelNote"></p>
+    </section>
+
     <section class="block tinted-paper">
       <div class="block-head"><div class="step">💾</div><h2>資料備份情況</h2><span class="tail">老師的班級資料只存在各自電腦</span></div>
       <div class="backup-bar" id="backupBar"></div>
@@ -284,6 +297,7 @@
   'use strict';
   const API = 'https://asia-east1-teachers-ai-assistant-g4iph.cloudfunctions.net/coolclassStats';
   const KEY_STORE = 'akai_dash_key_v1';
+  const IN_APP_NAMES = { line: 'LINE', facebook: 'Facebook', instagram: 'Instagram', messenger: 'Messenger', wechat: '微信', kakao: 'KakaoTalk', webview: 'App 內建瀏覽器' };
   const $ = (id) => document.getElementById(id);
   let data = null;
   let range = '7';
@@ -308,7 +322,7 @@
   function shortUa(ua) {
     ua = String(ua || '');
     const os = /iPad/.test(ua) ? 'iPad' : /iPhone/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /CrOS/.test(ua) ? 'Chromebook' : /Mac OS X/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : '其他';
-    const br = /Line\//.test(ua) ? 'LINE' : /FBAN|FBAV/.test(ua) ? 'Facebook' : /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : '';
+    const br = /Line\//.test(ua) ? 'LINE' : /; wv\)/.test(ua) ? 'App 內建' :/FBAN|FBAV/.test(ua) ? 'Facebook' : /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : /Firefox\//.test(ua) ? 'Firefox' : '';
     return br ? os + '・' + br : os;
   }
 
@@ -404,8 +418,27 @@
         <td data-label="用過幾種工具">${esc(d.toolCount)}</td>
         <td data-label="最常用">${d.topTools.map(t => `<span class="chip">${esc(t.name)} ${esc(t.count)}</span>`).join('') || '—'}</td>
         <td data-label="備份">${d.backups ? `✅ ${esc(d.backups)} 次` : '⚠️ 還沒有'}</td>
-        <td data-label="裝置">${esc(shortUa(d.ua))}</td>
+        <td data-label="裝置">${esc(shortUa(d.ua))}${d.inApp && d.inApp !== 'app' ? `<br><span class="chip">📱 ${esc(IN_APP_NAMES[d.inApp] || d.inApp)} 內</span>` : d.inApp === 'app' ? '<br><span class="chip">📲 已裝成 App</span>' : ''}</td>
       </tr>`).join('') : '<tr><td colspan="7" class="empty">還沒有裝置紀錄。</td></tr>';
+
+    // 使用漏斗
+    const fu = data.funnel || { known: 0 };
+    const kn = fu.known || 0;
+    const pctOf = n => kn ? Math.round(n / kn * 100) : 0;
+    const rows = [
+      ['打開教室小幫手', kn, '#9cc0ff'],
+      ['看完（或跳過）首次引導', fu.onboarded || 0, '#b070ff'],
+      ['設定了班級名單', fu.hasRoster || 0, '#6bcb77'],
+    ];
+    $('funnel').innerHTML = kn ? rows.map(([label, n, color]) => `
+      <div class="fn-row"><span class="fn-lbl">${esc(label)}</span>
+        <span class="fn-track"><span class="fn-fill" style="width:${pctOf(n)}%;background:${color}"></span></span>
+        <span class="fn-num">${esc(n)} 台（${pctOf(n)}%）</span></div>`).join('')
+      : '<div class="empty">新版統計（v4.8）上線後才開始累積，老師下次打開時就會出現。</div>';
+    const kinds = Object.entries(fu.inAppKinds || {}).map(([k, v]) => `${IN_APP_NAMES[k] || k} ${v} 台`).join('、');
+    $('funnelNote').innerHTML = kn
+      ? `目前停在 App 內建瀏覽器的有 <b>${esc(fu.inAppNow || 0)}</b> 台${kinds ? '（' + esc(kinds) + '）' : ''}，曾經從 App 內建瀏覽器打開的有 ${esc(fu.everInApp || 0)} 台；已經裝成 App 的有 ${esc(fu.installedApp || 0)} 台。<br>只算 v4.8 以後回報過的裝置（${esc(kn)} 台）。`
+      : '';
 
     // 備份情況
     const act = t.active30 || 0;

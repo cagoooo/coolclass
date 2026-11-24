@@ -17,7 +17,7 @@
     {
       tag: 'WELCOME · 你好',
       title: '歡迎使用<em>教室小幫手</em>',
-      desc: '一套給老師的每日課堂工具，<b>已收錄 26 個小工具</b>：情緒打卡、能量卡、抽號、計時器、跑馬燈、座位表、生日榜、行為觀察…<br><br><b>免登入、不會把資料上傳</b>，所有記錄都存在你的瀏覽器裡。',
+      desc: '一套給老師的每日課堂工具，<b>已收錄 32 個小工具</b>：情緒打卡、能量卡、抽號、計時器、跑馬燈、座位表、生日榜、行為觀察…<br><br><b>免登入、不會把資料上傳</b>，所有記錄都存在你的瀏覽器裡。',
       visual: 'rainbow',
       cta: '開始介紹 →',
     },
@@ -38,9 +38,9 @@
       cta: '下一步 →',
     },
     {
-      tag: 'STEP 3 · 認識 26 工具',
-      title: '<em>六大組</em>分類速覽',
-      desc: '<b>🌅 基礎五件套</b>：情緒/待辦/能量卡/出勤/跑馬燈<br><b>📚 課堂控場</b>：抽號/計時器/分組/鈴聲<br><b>🏆 班級管理</b>：積點榜/月度報告/情緒趨勢<br><b>🎓 學生視角</b>：成長報告/班費/Kiosk 打卡<br><b>🎉 教室生態</b>：抽籤箱/班級公約/作品牆<br><b>🪑 老師日常</b>：座位/課表/生日/午餐/親師/行為/代課/戶外/教案',
+      tag: 'STEP 3 · 認識 32 工具',
+      title: '<em>七大組</em>分類速覽',
+      desc: '<b>🌅 基礎五件套</b>：情緒/待辦/能量卡/出勤/跑馬燈<br><b>📚 課堂控場</b>：抽號/計時器/分組/鈴聲<br><b>🏆 班級管理</b>：積點榜/月度報告/情緒趨勢<br><b>🎓 學生視角</b>：成長報告/班費/Kiosk 打卡<br><b>🎉 教室生態</b>：抽籤箱/班級公約/作品牆<br><b>🪑 老師日常</b>：座位/課表/生日/午餐/親師/行為/代課/戶外/教案<br><b>📖 教學好幫手</b>：閱讀紀錄/學習單/體適能/節拍器/環保打卡/錄音轉文字/學期評語',
       visual: 'tools',
       cta: '下一步 →',
     },
@@ -54,13 +54,24 @@
     {
       tag: 'TIPS · 右下角探秘',
       title: '<em>右下角</em>三顆按鈕',
-      desc: '<b>🧭 工具導航</b> — 點開展示 26 工具分類面板（含搜尋），一鍵跳到任何工具<br><b>⬆ 回到頂部</b> — 捲到下方時浮現，點一下平滑回頂<br><b>🎨 視覺微調</b> — 換主色、深色模式、扁平模式、字級調整<br><br>還有：左上角「← 回主頁」、按 <b>?</b> 看當頁快捷鍵、跑馬燈支援「一鍵自動讀今日重點」<br><br>祝你和孩子一起，過好每一天 🌈',
+      desc: '<b>🧭 工具導航</b> — 點開展示 32 工具分類面板（含搜尋），一鍵跳到任何工具<br><b>⬆ 回到頂部</b> — 捲到下方時浮現，點一下平滑回頂<br><b>🎨 視覺微調</b> — 換主色、深色模式、扁平模式、字級調整<br><br>還有：左上角「← 回主頁」、按 <b>?</b> 看當頁快捷鍵、跑馬燈支援「一鍵自動讀今日重點」<br><br>祝你和孩子一起，過好每一天 🌈',
       visual: 'tips',
       cta: '開始使用 ✨',
+      // v4.8：還沒設定班級名單的老師，最後一步再給一次捷徑（後台統計大多數老師沒設定）
+      goto: 'roster.html',
+      gotoLabel: '👥 先設定班級名單',
+      gotoIfNoRoster: true,
     },
   ];
 
   let idx = 0;
+
+  function hasRoster() {
+    try {
+      const r = JSON.parse(localStorage.getItem('akai_roster_v1') || 'null');
+      return !!(r && (String(r.className || '').trim() || Object.keys(r.names || {}).some(k => String(r.names[k] || '').trim())));
+    } catch { return false; }
+  }
   let overlay = null;
 
   function el(html) {
@@ -117,7 +128,7 @@
     const nextBtn = overlay.querySelector('.akai-ob-next');
     nextBtn.textContent = s.cta || '下一步 →';
     const gotoBtn = overlay.querySelector('.akai-ob-goto');
-    if (s.goto) {
+    if (s.goto && !(s.gotoIfNoRoster && hasRoster())) {
       gotoBtn.style.display = '';
       gotoBtn.textContent = s.gotoLabel || '前往';
       gotoBtn.onclick = () => { markDone(); window.location.href = s.goto; };

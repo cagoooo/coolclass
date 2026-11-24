@@ -424,7 +424,7 @@ async function recordEvent(event, payload) {
     tool: tool || null,
     page: clip(payload._url, 100),
     classname: clip(payload._classname, 30),
-    ua: clip(payload._ua, 160),
+    ua: clip(payload._ua, 300),
     clientTs: clip(payload._ts, 30),
     retried: payload._retry === true,
   };
@@ -466,6 +466,13 @@ async function recordEvent(event, payload) {
         events: { [event]: FieldValue.increment(1) },
       };
       if (tool) data.tools = { [tool]: FieldValue.increment(1) };
+      // v4.8 使用漏斗：在哪種瀏覽器、完成引導了沒、設定班級名單了沒
+      if (payload._onb === 0 || payload._onb === 1) data.onboarded = payload._onb === 1;
+      if (payload._roster === 0 || payload._roster === 1) data.hasRoster = payload._roster === 1;
+      if (typeof payload._inapp === 'string') {
+        data.inApp = clip(payload._inapp, 20);
+        if (payload._inapp && payload._inapp !== 'app') data.everInApp = true;
+      }
       if (isNewDevice) {
         data.firstSeen = at;
         data.firstDay = day;
@@ -801,7 +808,7 @@ exports.coolclassStats = onRequest({
       db.collection('coolclass_devices').count().get(),
       db.collection('coolclass_devices').where('lastDay', '>=', addDays(today, -6)).count().get(),
       // 近 30 天活躍裝置要看各自有沒有備份過，所以整批讀（只取 events 欄位）
-      db.collection('coolclass_devices').where('lastDay', '>=', from30).select('events').get(),
+      db.collection('coolclass_devices').where('lastDay', '>=', from30).select('events', 'onboarded', 'hasRoster', 'inApp', 'everInApp').get(),
       db.collection('coolclass_feedback').orderBy('at', 'desc').limit(50).get(),
       db.collection('coolclass_events').orderBy('at', 'desc').limit(400).get(),
       db.collection('coolclass_devices').orderBy('lastSeen', 'desc').limit(60).get(),
@@ -811,11 +818,21 @@ exports.coolclassStats = onRequest({
 
     let active30 = 0;
     let backedUp30 = 0;
+    const funnel = { known: 0, onboarded: 0, hasRoster: 0, inAppNow: 0, everInApp: 0, installedApp: 0, inAppKinds: {} };
     active30Snap.forEach((doc) => {
       if (String(doc.id).startsWith('selftest-')) return;
       active30++;
       const ev = (doc.data() || {}).events || {};
       if ((Number(ev.backup_exported) || 0) > 0) backedUp30++;
+      const dd = doc.data() || {};
+      if (typeof dd.onboarded === 'boolean') {
+        funnel.known++;
+        if (dd.onboarded) funnel.onboarded++;
+        if (dd.hasRoster) funnel.hasRoster++;
+        if (dd.inApp === 'app') funnel.installedApp++;
+        else if (dd.inApp) { funnel.inAppNow++; funnel.inAppKinds[dd.inApp] = (funnel.inAppKinds[dd.inApp] || 0) + 1; }
+        if (dd.everInApp) funnel.everInApp++;
+      }
     });
 
     const days = [];
@@ -858,6 +875,8 @@ exports.coolclassStats = onRequest({
         firstDay: d.firstDay || null, lastDay: d.lastDay || null, lastSeen: tsToIso(d.lastSeen),
         classname: d.lastClass || '', ua: d.lastUa || '',
         backups: Number((d.events || {}).backup_exported) || 0,
+        hasRoster: typeof d.hasRoster === 'boolean' ? d.hasRoster : null,
+        inApp: d.inApp || '',
         toolCount: tools.length, topTools: tools.slice(0, 3).map(([k, v]) => ({ key: k, name: toolName(k), count: v })),
       });
     });
@@ -878,6 +897,7 @@ exports.coolclassStats = onRequest({
         errors7: sum7.events.js_error || 0,
         feedback30: sum30.events.feedback_submitted || 0,
       },
+      funnel,
       days,
       tools7: mapTools(sum7.topTools),
       tools30: mapTools(sum30.topTools),

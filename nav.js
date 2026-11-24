@@ -2,7 +2,7 @@
  *
  * 在所有頁面右下角自動注入兩個 floating action button：
  *   ⬆ 回到頂部   (bottom: 84px, right: 20px) — 只在 scroll > 300px 顯示
- *   🧭 工具導航  (bottom: 148px, right: 20px) — 永遠顯示，點開展示 26 工具分類面板
+ *   🧭 工具導航  (bottom: 148px, right: 20px) — 永遠顯示，點開展示 32 工具分類面板
  *
  * 與 tweaks FAB（bottom: 20px）堆疊不衝突。
  * SW banner / 備份 banner 居中（left: 50%）也不會撞。
