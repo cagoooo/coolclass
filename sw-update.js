@@ -17,94 +17,145 @@
   let clientVersion = null;      // client 啟動時看到的版本（基準）
   let updateAvailable = false;   // 已經顯示過 banner
 
+  // ===== 通知卡片共用樣式（v4.7：更新通知、備份提醒共用）=====
+  // 電腦：畫面下方置中的卡片（避開右下角工具導航按鈕）
+  // 手機：從底部滑出的面板，按鈕又大又好點，會避開 iPhone 底部橫條
+  function ensureSheetStyle() {
+    if (document.getElementById('akai-sheet-style')) return;
+    const style = document.createElement('style');
+    style.id = 'akai-sheet-style';
+    style.textContent = `
+      @keyframes akai-sheet-in {
+        from { transform: translate(-50%, 24px); opacity: 0; }
+        to   { transform: translate(-50%, 0);    opacity: 1; }
+      }
+      .akai-sheet {
+        position: fixed; left: 50%; bottom: 24px;
+        transform: translate(-50%, 0);
+        width: min(560px, calc(100vw - 200px));
+        box-sizing: border-box;
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 16px 14px 14px;
+        background: #fffdf6; color: #2a1f4a;
+        border: 3px solid #2a1f4a; border-radius: 20px;
+        box-shadow: 5px 5px 0 #2a1f4a, 0 18px 40px rgba(42,31,74,.18);
+        font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
+        z-index: 999999;
+        animation: akai-sheet-in .35s cubic-bezier(.34,1.4,.64,1);
+      }
+      .akai-sheet .akai-sh-icon {
+        flex: 0 0 48px; width: 48px; height: 48px; border-radius: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 26px; border: 2.5px solid #2a1f4a;
+        background: linear-gradient(135deg, #ff97c5, #ffd23f);
+      }
+      .akai-sheet.akai-sh-blue .akai-sh-icon { background: linear-gradient(135deg, #4d96ff, #6bcb77); }
+      .akai-sheet .akai-sh-body { flex: 1 1 auto; min-width: 0; }
+      .akai-sheet .akai-sh-title { display: block; font-weight: 900; font-size: 16px; line-height: 1.35; }
+      .akai-sheet .akai-sh-text {
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        font-size: 14px; line-height: 1.5; color: #44345e; margin-top: 2px;
+      }
+      .akai-sheet .akai-sh-meta { display: block; font-size: 12px; color: #8a7aa8; margin-top: 3px; }
+      .akai-sheet .akai-sh-actions { flex: 0 0 auto; display: flex; gap: 8px; align-items: center; }
+      .akai-sheet button {
+        font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+        min-height: 42px; padding: 0 16px; border-radius: 999px;
+        border: 2.5px solid #2a1f4a; transition: transform .12s, box-shadow .12s;
+        white-space: nowrap;
+      }
+      .akai-sheet .akai-sh-go { background: #2a1f4a; color: #fffdf6; box-shadow: 2px 2px 0 #ff97c5; }
+      .akai-sheet.akai-sh-blue .akai-sh-go { box-shadow: 2px 2px 0 #4d96ff; }
+      .akai-sheet .akai-sh-later { background: #fff; color: #2a1f4a; }
+      .akai-sheet button:hover:not(:disabled) { transform: translate(-1px, -1px); }
+      .akai-sheet button:active:not(:disabled) { transform: translate(1px, 1px); box-shadow: none; }
+      .akai-sheet button:disabled { opacity: .7; cursor: progress; }
+      .akai-sheet button:focus-visible { outline: 3px solid #4d96ff; outline-offset: 2px; }
+
+      @keyframes akai-sheet-up {
+        from { transform: translateY(110%); }
+        to   { transform: translateY(0); }
+      }
+      @media (max-width: 720px) {
+        .akai-sheet {
+          left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+          width: auto; transform: none;
+          flex-wrap: wrap; gap: 12px;
+          padding: 14px; border-radius: 18px;
+          animation-name: akai-sheet-up;
+        }
+        .akai-sheet .akai-sh-icon { flex-basis: 44px; width: 44px; height: 44px; font-size: 24px; }
+        .akai-sheet .akai-sh-text { -webkit-line-clamp: 3; }
+        .akai-sheet .akai-sh-body { flex: 1 1 calc(100% - 60px); }
+        .akai-sheet .akai-sh-actions { flex: 1 1 100%; }
+        .akai-sheet .akai-sh-actions button { flex: 1 1 0; min-height: 46px; font-size: 15px; }
+        .akai-sheet .akai-sh-go { flex-grow: 2 !important; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .akai-sheet { animation: none; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // 「20261123-2138-e0ec1a6」→「11/23 21:38」
+  function versionLabel(v) {
+    const m = /^(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})/.exec(String(v || ''));
+    return m ? `${Number(m[2])}/${Number(m[3])} ${m[4]}:${m[5]}` : '';
+  }
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // 按「稍後」後，同一個版本 30 分鐘內不再跳（以前每 3 分鐘檢查一次就又跳出來）
+  const SNOOZE_KEY = 'akai_update_snooze_v1';
+  const SNOOZE_MS = 30 * 60 * 1000;
+  function isSnoozed(version) {
+    try {
+      const s = JSON.parse(sessionStorage.getItem(SNOOZE_KEY) || 'null');
+      return !!(s && s.v === (version || '') && Date.now() - s.t < SNOOZE_MS);
+    } catch { return false; }
+  }
+
   // ===== Banner UI =====
-  function showBanner(newVersion) {
+  async function showBanner(newVersion, notes) {
     if (updateAvailable) return;
     if (document.getElementById('akai-update-banner')) return;
+    if (isSnoozed(newVersion)) return;
     updateAvailable = true;
 
-    // 注入樣式
-    if (!document.getElementById('akai-update-style')) {
-      const style = document.createElement('style');
-      style.id = 'akai-update-style';
-      style.textContent = `
-        @keyframes akai-update-pop {
-          from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-          to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        #akai-update-banner {
-          position: fixed; bottom: 20px; left: 50%;
-          transform: translateX(-50%);
-          background: linear-gradient(135deg, #ff8aaa 0%, #ffaa70 100%);
-          color: #fff;
-          padding: 12px 18px 12px 22px;
-          border-radius: 999px;
-          font-weight: 700;
-          box-shadow: 0 10px 30px rgba(255,150,120,.4),
-                      0 0 0 4px rgba(255,255,255,.6);
-          display: flex; align-items: center; gap: 10px;
-          z-index: 999999;
-          font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
-          animation: akai-update-pop .4s cubic-bezier(.34,1.56,.64,1);
-          max-width: 92vw;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        #akai-update-banner .akai-text {
-          font-size: 14px; line-height: 1.4;
-        }
-        #akai-update-banner .akai-ver {
-          font-size: 10px; opacity: .85;
-          background: rgba(255,255,255,.25);
-          padding: 2px 8px; border-radius: 999px;
-          margin-left: 6px;
-          letter-spacing: 1px;
-          font-weight: 600;
-        }
-        #akai-update-banner button {
-          border: none; cursor: pointer;
-          font-family: inherit; font-weight: 700;
-          transition: transform .15s;
-        }
-        #akai-update-banner button:hover { transform: scale(1.05); }
-        #akai-update-banner .akai-go {
-          background: #fff; color: #c8568a;
-          padding: 7px 16px; border-radius: 999px;
-          font-size: 14px;
-          box-shadow: 0 2px 6px rgba(0,0,0,.1);
-        }
-        #akai-update-banner .akai-x {
-          background: transparent;
-          color: rgba(255,255,255,.85);
-          padding: 4px 8px;
-          font-size: 16px;
-          border-radius: 50%;
-        }
-        #akai-update-banner .akai-x:hover {
-          background: rgba(255,255,255,.2);
-          transform: scale(1.1);
-        }
-        @media (max-width: 480px) {
-          #akai-update-banner {
-            bottom: 12px;
-            padding: 10px 14px;
-            font-size: 13px;
-          }
-          #akai-update-banner .akai-ver { display: none; }
-        }
-      `;
-      document.head.appendChild(style);
+    // 從 SW 事件來的通知沒有說明文字，順手讀一下 version.json
+    if (!notes) {
+      try {
+        const r = await fetch(VERSION_URL + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' });
+        const d = r.ok ? await r.json() : null;
+        if (d) { notes = d.notes; newVersion = newVersion || d.version; }
+      } catch (e) {}
+      if (isSnoozed(newVersion)) { updateAvailable = false; return; }
     }
+    // 備份提醒正在顯示的話，先收起來（更新比較重要，兩張卡不要疊在一起）
+    const bk = document.getElementById('akai-backup-banner');
+    if (bk) bk.remove();
 
+    ensureSheetStyle();
+    const label = versionLabel(newVersion);
+    const showNotes = notes && notes !== '自動升版';
     const banner = document.createElement('div');
     banner.id = 'akai-update-banner';
+    banner.className = 'akai-sheet';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
     banner.innerHTML = `
-      <span class="akai-text">
-        🌈 有新版本了！更新一下嘗鮮看看 ✨
-        ${newVersion ? `<span class="akai-ver">v${newVersion}</span>` : ''}
+      <span class="akai-sh-icon" aria-hidden="true">🌈</span>
+      <span class="akai-sh-body">
+        <strong class="akai-sh-title">教室小幫手有新版本囉！</strong>
+        <span class="akai-sh-text">${showNotes ? '這次更新：' + escHtml(notes) : '重新整理一下，就能使用最新功能。'}</span>
+        ${label ? `<span class="akai-sh-meta">版本 ${escHtml(label)}・資料不會受影響</span>` : '<span class="akai-sh-meta">資料不會受影響</span>'}
       </span>
-      <button class="akai-go" id="akai-update-reload">立刻更新</button>
-      <button class="akai-x" id="akai-update-dismiss" title="稍後再說">✕</button>
+      <span class="akai-sh-actions">
+        <button type="button" class="akai-sh-later" id="akai-update-dismiss">稍後</button>
+        <button type="button" class="akai-sh-go" id="akai-update-reload">立即更新</button>
+      </span>
     `;
     document.body.appendChild(banner);
 
@@ -131,7 +182,7 @@
     document.getElementById('akai-update-dismiss').onclick = () => {
       banner.remove();
       updateAvailable = false;
-      // 5 分鐘後又會再來一次（如果版本還是新的）
+      try { sessionStorage.setItem(SNOOZE_KEY, JSON.stringify({ v: newVersion || '', t: Date.now() })); } catch (e) {}
     };
   }
 
@@ -193,7 +244,7 @@
         return;
       }
       if (data.version !== clientVersion) {
-        showBanner(data.version);
+        showBanner(data.version, data.notes);
       }
     } catch (e) {
       // 離線或網路錯誤就 silent
@@ -250,84 +301,32 @@
     } catch { return false; }
   }
 
-  function showBackupBanner(daysSince) {
+  function showBackupBanner(daysSince, neverBackedUp) {
     if (document.getElementById('akai-backup-banner')) return;
-    if (document.getElementById('akai-update-banner')) return;  // 別跟更新 banner 撞
+    if (document.getElementById('akai-update-banner')) return;  // 別跟更新通知疊在一起
+    if (/backup\.html$/.test(location.pathname)) return;         // 已經在備份頁就不用提醒
 
-    if (!document.getElementById('akai-backup-style')) {
-      const s = document.createElement('style');
-      s.id = 'akai-backup-style';
-      s.textContent = `
-        #akai-backup-banner {
-          position: fixed; bottom: 20px; left: 50%;
-          transform: translateX(-50%);
-          background: linear-gradient(135deg, #4d96ff 0%, #6bcb77 100%);
-          color: #fff;
-          padding: 12px 18px 12px 22px;
-          border-radius: 999px;
-          font-weight: 700;
-          box-shadow: 0 10px 30px rgba(80,150,255,.4),
-                      0 0 0 4px rgba(255,255,255,.6);
-          display: flex; align-items: center; gap: 10px;
-          z-index: 999998;
-          font-family: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', system-ui, sans-serif;
-          animation: akai-update-pop .4s cubic-bezier(.34,1.56,.64,1);
-          max-width: 92vw;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        #akai-backup-banner .akai-bk-text { font-size: 14px; line-height: 1.4; }
-        #akai-backup-banner .akai-bk-days {
-          font-size: 11px; opacity: .9;
-          background: rgba(255,255,255,.25);
-          padding: 2px 8px; border-radius: 999px;
-          margin-left: 6px;
-          font-family: 'Fraunces', serif; font-style: italic;
-          font-weight: 900;
-        }
-        #akai-backup-banner button {
-          border: none; cursor: pointer;
-          font-family: inherit; font-weight: 700;
-          transition: transform .15s;
-        }
-        #akai-backup-banner button:hover { transform: scale(1.05); }
-        #akai-backup-banner .akai-bk-go {
-          background: #fff; color: #4d96ff;
-          padding: 7px 14px; border-radius: 999px;
-          font-size: 13px;
-          box-shadow: 0 2px 6px rgba(0,0,0,.1);
-        }
-        #akai-backup-banner .akai-bk-x {
-          background: transparent;
-          color: rgba(255,255,255,.85);
-          padding: 4px 8px;
-          font-size: 16px;
-          border-radius: 50%;
-        }
-        #akai-backup-banner .akai-bk-x:hover {
-          background: rgba(255,255,255,.2);
-        }
-        @media (max-width: 480px) {
-          #akai-backup-banner { bottom: 70px; padding: 10px 14px; font-size: 13px; }
-        }
-      `;
-      document.head.appendChild(s);
-    }
-
+    ensureSheetStyle();
     const banner = document.createElement('div');
     banner.id = 'akai-backup-banner';
+    banner.className = 'akai-sheet akai-sh-blue';
+    banner.setAttribute('role', 'status');
+    banner.setAttribute('aria-live', 'polite');
     banner.innerHTML = `
-      <span class="akai-bk-text">
-        💾 該備份了！上次備份已經<span class="akai-bk-days">${daysSince} 天前</span>
+      <span class="akai-sh-icon" aria-hidden="true">💾</span>
+      <span class="akai-sh-body">
+        <strong class="akai-sh-title">${neverBackedUp ? `已經使用 ${daysSince} 天，還沒備份過` : `上次備份是 ${daysSince} 天前`}</strong>
+        <span class="akai-sh-text">班級資料只存在這台電腦，換電腦或清除瀏覽器就會不見。</span>
       </span>
-      <button class="akai-bk-go" id="akai-bk-go">立即備份</button>
-      <button class="akai-bk-x" id="akai-bk-x" title="14 天後再提醒">✕</button>
+      <span class="akai-sh-actions">
+        <button type="button" class="akai-sh-later" id="akai-bk-x">${DISMISS_DAYS} 天後提醒</button>
+        <button type="button" class="akai-sh-go" id="akai-bk-go">立即備份</button>
+      </span>
     `;
     document.body.appendChild(banner);
 
     document.getElementById('akai-bk-go').onclick = () => {
       banner.remove();
-      // 直接跳到備份頁
       location.href = './backup.html';
     };
     document.getElementById('akai-bk-x').onclick = () => {
@@ -349,14 +348,14 @@
       // 計算距上次備份天數
       const last = localStorage.getItem(BACKUP_KEY);
       if (!last) {
-        // 從未備份過 — 但給 30 天的觀察期
+        // 從未備份過 — 先給 14 天的觀察期
         const firstUse = localStorage.getItem('akai_first_use_v1');
         if (!firstUse) {
           localStorage.setItem('akai_first_use_v1', new Date().toISOString());
           return;
         }
         const since = Math.floor((Date.now() - new Date(firstUse).getTime()) / (86400 * 1000));
-        if (since >= BACKUP_DAYS_THRESHOLD) showBackupBanner(since);
+        if (since >= BACKUP_DAYS_THRESHOLD) showBackupBanner(since, true);
         return;
       }
       const since = Math.floor((Date.now() - new Date(last).getTime()) / (86400 * 1000));
